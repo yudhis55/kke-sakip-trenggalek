@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('opds', function (Blueprint $table) {
+        Schema::create('file_bukti_dukung', function (Blueprint $table) {
             $table->id();
+            $table->string('link_file');
+            $table->foreignId('bukti_dukung_id')->constrained('bukti_dukung')->restrictOnDelete();
+            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->boolean('is_perubahan');
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('opds');
+        Schema::dropIfExists('file_bukti_dukung');
     }
 };

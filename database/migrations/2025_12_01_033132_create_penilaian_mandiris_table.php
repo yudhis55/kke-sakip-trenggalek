@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('penilaian_mandiris', function (Blueprint $table) {
+        Schema::create('penilaian_mandiri', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tingkatan_nilai_id')->constrained('tingkatan_nilai')->restrictOnDelete();
+            $table->foreignId('kriteria_komponen_id')->constrained('kriteria_komponen')->restrictOnDelete();
+            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->boolean('is_perubahan');
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('penilaian_mandiris');
+        Schema::dropIfExists('penilaian_mandiri');
     }
 };

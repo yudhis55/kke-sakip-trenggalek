@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sub_komponens', function (Blueprint $table) {
+        Schema::create('sub_komponen', function (Blueprint $table) {
             $table->id();
+            $table->string('kode');
+            $table->string('nama');
+            $table->float('bobot');
+            $table->foreignId('komponen_id')->constrained('komponen')->restrictOnDelete();
+            $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sub_komponens');
+        Schema::dropIfExists('sub_komponen');
     }
 };

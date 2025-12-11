@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('penilaian_verifikators', function (Blueprint $table) {
+        Schema::create('penilaian_verifikator', function (Blueprint $table) {
             $table->id();
+            $table->boolean('is_verified')->nullable();
+            $table->text('keterangan')->nullable();
+            $table->foreignId('penilaian_mandiri_id')->constrained('penilaian_mandiri')->restrictOnDelete();
+            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->boolean('is_perubahan');
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('penilaian_verifikators');
+        Schema::dropIfExists('penilaian_verifikator');
     }
 };

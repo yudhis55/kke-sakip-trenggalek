@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('kriteria_komponens', function (Blueprint $table) {
+        Schema::create('tahun', function (Blueprint $table) {
             $table->id();
+            $table->integer('tahun');
             $table->timestamps();
         });
     }
@@ -22,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('kriteria_komponens');
+        Schema::dropIfExists('tahun');
     }
 };

@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $table) {
+        Schema::create('tingkatan_nilai', function (Blueprint $table) {
             $table->id();
+            $table->string('kode_nilai');
+            $table->float('bobot');
+            $table->foreignId('jenis_nilai_id')->constrained('jenis_nilai')->restrictOnDelete();
             $table->timestamps();
         });
     }
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('settings');
+        Schema::dropIfExists('tingkatan_nilai');
     }
 };

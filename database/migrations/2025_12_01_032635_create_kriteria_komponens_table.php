@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bukti_dukung', function (Blueprint $table) {
+        Schema::create('kriteria_komponen', function (Blueprint $table) {
             $table->id();
-            $table->text('nama');
-            $table->foreignId('kriteria_komponen_id')->constrained('kriteria_komponen')->restrictOnDelete();
+            $table->string('kode');
+            $table->string('nama');
             $table->foreignId('sub_komponen_id')->constrained('sub_komponen')->restrictOnDelete();
             $table->foreignId('komponen_id')->constrained('komponen')->restrictOnDelete();
+            $table->foreignId('jenis_nilai_id')->constrained('jenis_nilai')->restrictOnDelete();
             $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
             $table->timestamps();
         });
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bukti_dukung');
+        Schema::dropIfExists('kriteria_komponen');
     }
 };

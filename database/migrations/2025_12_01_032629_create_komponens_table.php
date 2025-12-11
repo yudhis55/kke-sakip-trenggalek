@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('komponen', function (Blueprint $table) {
             $table->id();
+            $table->string('kode');
+            $table->string('nama');
+            $table->float('bobot');
+            $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('komponen');
     }
 };
