@@ -4,12 +4,16 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "watch": "mix watch"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "axios": "^1.11.0",
+        "browser-sync": "^3.0.4",
+        "browser-sync-webpack-plugin": "^2.3.0",
         "concurrently": "^9.0.1",
+        "laravel-mix": "^6.0.49",
         "laravel-vite-plugin": "^2.0.0",
         "tailwindcss": "^4.0.0",
         "vite": "^7.0.7"
