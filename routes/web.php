@@ -11,13 +11,16 @@ use Illuminate\Support\Facades\Route;
 //     return view('welcome');
 // });
 
-// Route::middleware(['guest'])->group(function () {
-//     Route::get('/login', Login::class)->name('login');
-// });
+Route::middleware(['guest'])->group(function () {
+    Route::get('/', function () {
+        return redirect('/login');
+    });
+    Route::get('/login', Login::class);
+});
 
-Route::get('/', Login::class);
-Route::get('/dashboard', Dashboard::class);
-Route::get('/mapping', Mapping::class);
-Route::get('/lembar-kerja', LembarKerja::class);
-Route::get('/pengaturan', Pengaturan::class);
-
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', Dashboard::class);
+    Route::get('/mapping', Mapping::class);
+    Route::get('/lembar-kerja', LembarKerja::class);
+    Route::get('/pengaturan', Pengaturan::class);
+});
