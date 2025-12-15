@@ -1,11 +1,20 @@
-<div class="page-content">
+<div class="page-content" x-data="{
+    selectedKomponenId: {{ $this->komponenOptions->first()->id ?? 'null' }},
+    isKomponenSelected(komponenId) {
+        return this.selectedKomponenId === komponenId;
+    },
+    selectKomponen(komponenId) {
+        this.selectedKomponenId = komponenId;
+    }
+}">
     <div class="container-fluid">
 
         <!-- start page title -->
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0">Mapping</h4>
+                    <h4 class="mb-sm-0">Lembar Kerja</h4>
+                    </h4>
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
@@ -20,63 +29,47 @@
         <!-- end page title -->
 
         <div class="row">
-            <div class="col-xs-12">
-                <div class="d-flex flex-column h-100">
-                    <div class="col-xl-12">
-                        <div class="card">
-                            {{-- <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Mapping</h4>
-                                <div class="flex-shrink-0">
-                                    <div class="form-check form-switch form-switch-right form-switch-md">
-                                        <label for="responsive-table-showcode" class="form-label text-muted">Show
-                                            Code</label>
-                                        <input class="form-check-input code-switcher" type="checkbox"
-                                            id="responsive-table-showcode">
-                                    </div>
-                                </div>
-                            </div><!-- end card header --> --}}
-
-                            <div class="card-body">
-                                {{-- <p class="text-muted">Use <code>table-responsive</code> class to make any table
-                                    responsive across all viewports. Responsive tables allow tables to be scrolled
-                                    horizontally with ease.</p> --}}
-                                <div class="live-preview">
-                                    <div class="table-responsive">
-                                        <table class="table align-middle table-nowrap mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th></th>
-                                                    <th scope="col">Kode</th>
-                                                    <th scope="col">Komponen/Sub Komponen/Kriteria Komponen/Bukti
-                                                        Dukung</th>
-                                                    {{-- <th scope="col">Sub Komponen</th>
-                                                    <th scope="col">Kriteria Komponen</th> --}}
-                                                    <th scope="col">Bobot</th>
-                                                    <th scope="col">Kriteria Penilaian</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-
-
-                                            </tbody>
-                                            {{-- <tfoot class="table-light">
-                                                <tr>
-                                                    <td colspan="6">Total</td>
-                                                    <td>$947.55</td>
-                                                </tr>
-                                            </tfoot> --}}
-                                        </table>
-                                        <!-- end table -->
-                                    </div>
-                                    <!-- end table responsive -->
-                                </div>
-                            </div><!-- end card-body -->
-                        </div><!-- end card -->
-                    </div><!-- end col -->
-
+            <div class="col-xxl-12">
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Nav tabs -->
+                        <ul class="nav nav-pills nav-justified gap-2" role="tablist">
+                            @foreach ($this->komponenOptions as $komponen)
+                                <li wire:key="{{ $komponen->id }}" class="nav-item">
+                                    <a class="nav-link waves-effect waves-light py-3"
+                                        :class="{ 'active': isKomponenSelected({{ $komponen->id }}) }"
+                                        @click.prevent="selectKomponen({{ $komponen->id }})" href="#"
+                                        role="tab">
+                                        {{ $komponen->nama }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div><!-- end card-body -->
                 </div>
-            </div> <!-- end col-->
-        </div> <!-- end row-->
+            </div>
+            <!--end col-->
+        </div>
+
+        <div class="row">
+            @foreach ($this->subKomponenOptions as $sub_komponen)
+                <div wire:key="{{ $sub_komponen->id}}" class="col-xxl-4 col-lg-4" x-show="isKomponenSelected({{ $sub_komponen->komponen_id }})"
+                    x-cloak>
+                    <div class="card card-body text-center">
+                        <div class="avatar-sm mx-auto mb-3">
+                            <div class="avatar-title bg-soft-primary text-primary fs-17 rounded">
+                                <i class="ri-folder-2-line"></i>
+                            </div>
+                        </div>
+                        <h4 class="card-title">{{ $sub_komponen->nama }}</h4>
+                        <p class="card-text text-muted">{{ $sub_komponen->kode }}</p>
+                        <p class="text-muted">Jumlah Kriteria: {{ $sub_komponen->kriteria_komponen->count() }}</p>
+                        <a href="{{ route('lembar-kerja.kriteria-komponen', ['sub_komponen_id' => $sub_komponen->id]) }}"
+                            class="btn btn-primary">Pilih</a>
+                    </div>
+                </div><!-- end col -->
+            @endforeach
+        </div>
 
     </div>
     <!-- container-fluid -->

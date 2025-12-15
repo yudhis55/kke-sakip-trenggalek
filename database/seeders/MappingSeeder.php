@@ -19,6 +19,14 @@ class MappingSeeder extends Seeder
             return;
         }
 
+        // Mapping role_id untuk setiap komponen
+        $roleMapping = [
+            'AREN01' => 2, // Perencanaan Kinerja
+            'BKUR01' => 2, // Pengukuran Kinerja
+            'CLAP01' => 3, // Pelaporan Kinerja
+            'DVAL01' => 4, // Evaluasi Akuntabilitas Kinerja Internal
+        ];
+
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
         $data = [
             [
@@ -742,6 +750,7 @@ class MappingSeeder extends Seeder
                         'nama' => $kom['nama'],
                         'bobot' => $this->parseBobot($kom['bobot'] ?? null),
                         'tahun_id' => $tahun_id,
+                        'role_id' => $roleMapping[$kom['kode']] ?? null,
                     ]);
                 }
 

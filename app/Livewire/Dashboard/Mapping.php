@@ -13,12 +13,16 @@ use App\Models\BuktiDukung;
 
 class Mapping extends Component
 {
-    public $max_nilai = 100;
     public $kd_komponen, $nama_komponen, $bobot_komponen;
     public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id;
     public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id;
-    public $tahun_id = 1;
+    public $tahun_id;
+
+    public function mount()
+    {
+        $this->tahun_id = session('tahun_session') ?? Tahun::where('is_active', true)->first()->id;
+    }
 
 
     #[Computed]
@@ -36,7 +40,7 @@ class Mapping extends Component
     #[Computed]
     public function fullMapping()
     {
-        return Komponen::with('sub_komponen', 'kriteria_komponen', 'bukti_dukung')->where('tahun_id', '1')->get();
+        return Komponen::with('sub_komponen', 'kriteria_komponen', 'bukti_dukung')->where('tahun_id', $this->tahun_id)->get();
     }
 
     public function addKomponen()
