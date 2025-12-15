@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('nama');
             $table->float('bobot');
             $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
+            $table->foreignId('role_id')->constrained('role')->restrictOnDelete();
             $table->timestamps();
         });
     }

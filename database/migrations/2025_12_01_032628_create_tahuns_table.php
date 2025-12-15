@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('tahun', function (Blueprint $table) {
             $table->id();
             $table->integer('tahun');
+            $table->boolean('is_active')->default(false);
             $table->timestamps();
         });
     }
