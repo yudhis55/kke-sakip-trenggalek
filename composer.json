@@ -10,7 +10,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.7",
-        "php-flasher/flasher-laravel": "^2.3"
+        "php-flasher/flasher-laravel": "^2.3",
+        "spatie/livewire-filepond": "^1.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
