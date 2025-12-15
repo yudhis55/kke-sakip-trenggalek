@@ -12,6 +12,11 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/logo-trenggalek-mini.png') }}">
 
+    <!-- Filepond css -->
+    <link rel="stylesheet" href="{{ asset('assets/libs/filepond/filepond.min.css') }}" type="text/css" />
+    <link rel="stylesheet"
+        href="{{ asset('assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.css') }}">
+
     <!-- plugin css -->
     <link href="{{ asset('assets/libs/jsvectormap/css/jsvectormap.min.css') }}" rel="stylesheet" type="text/css" />
 
@@ -25,8 +30,7 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
-
-
+    @filepondScripts
 </head>
 
 <body>
@@ -75,28 +79,7 @@
                     </div>
 
                     <div class="d-flex align-items-center">
-
-                        <div class="dropdown d-md-none topbar-head-dropdown header-item">
-                            <button type="button"
-                                class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle shadow-none"
-                                id="page-header-search-dropdown" data-bs-toggle="dropdown" aria-haspopup="true"
-                                aria-expanded="false">
-                                <i class="bx bx-search fs-22"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
-                                aria-labelledby="page-header-search-dropdown">
-                                <form class="p-3">
-                                    <div class="form-group m-0">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Search ..."
-                                                aria-label="Recipient's username">
-                                            <button class="btn btn-primary" type="submit"><i
-                                                    class="mdi mdi-magnify"></i></button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                        <livewire:dashboard.tahun-dropdown />
 
                         {{-- <div class="ms-1 header-item d-none d-sm-flex">
                             <button type="button"
@@ -122,22 +105,19 @@
                                         alt="Header Avatar">
                                     <span class="text-start ms-xl-2">
                                         <span
-                                            class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">Admin</span>
+                                            class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{{ Auth::user()->name }}</span>
                                         <span
-                                            class="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">Admin</span>
+                                            class="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text text-capitalize">{{ Auth::user()->role->nama }}</span>
                                     </span>
                                 </span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
                                 <!-- item-->
-                                <h6 class="dropdown-header">Welcome Dinas Pendidikan dan Kebudayaan Kabupaten
-                                    Trenggalek!</h6>
+                                <h6 class="dropdown-header">Welcome {{ Auth::user()->name }}</h6>
                                 <a class="dropdown-item" href="pages-profile.html"><i
                                         class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span
                                         class="align-middle">Profile</span></a>
-                                <a class="dropdown-item" href="auth-logout-basic.html"><i
-                                        class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span
-                                        class="align-middle" data-key="t-logout">Logout</span></a>
+                                <livewire:auth.logout />
                             </div>
                         </div>
                     </div>
@@ -211,33 +191,33 @@
                     <ul class="navbar-nav" id="navbar-nav">
                         <li class="menu-title"><span data-key="t-menu">Menu</span></li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="/dashboard" role="button" aria-expanded="true"
-                                aria-controls="sidebarDashboards">
+                            <a wire:current="active" class="nav-link menu-link" href="/dashboard" role="button"
+                                aria-expanded="true" aria-controls="sidebarDashboards">
                                 <i class="mdi mdi-speedometer"></i> <span data-key="t-dashboards">Dashboards</span>
                             </a>
                         </li> <!-- end Dashboard Menu -->
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="/mapping" role="button" aria-expanded="true"
-                                aria-controls="sidebarApps">
+                            <a wire:current="active" class="nav-link menu-link" href="/mapping" role="button"
+                                aria-expanded="true" aria-controls="sidebarApps">
                                 <i class="mdi mdi-view-grid-plus-outline"></i> <span data-key="t-apps">Mapping</span>
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="/lembar-kerja" role="button" aria-expanded="false"
-                                aria-controls="sidebarLayouts">
+                            <a wire:current="active" class="nav-link menu-link" href="/lembar-kerja" role="button"
+                                aria-expanded="false" aria-controls="sidebarLayouts">
                                 <i class="mdi mdi-view-carousel-outline"></i> <span data-key="t-layouts">Lembar
                                     Kerja</span> <span class="badge badge-pill bg-danger" data-key="t-hot">Hot</span>
                             </a>
                         </li> <!-- end Dashboard Menu -->
 
-                        <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Pages</span>
-                        </li>
+                        {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Pages</span>
+                        </li> --}}
 
                         <li class="nav-item">
-                            <a class="nav-link menu-link" href="/pengaturan" role="button" aria-expanded="false"
-                                aria-controls="sidebarAuth">
-                                <i class="mdi mdi-account-circle-outline"></i> <span
+                            <a wire:current="active" class="nav-link menu-link" href="{{ route('pengaturan') }}"
+                                role="button" aria-expanded="false" aria-controls="sidebarAuth">
+                                <i class="mdi mdi-cog-outline"></i> <span
                                     data-key="t-authentication">Pengaturan</span>
                             </a>
                         </li>
@@ -311,6 +291,20 @@
     <!-- Vector map-->
     <script src="{{ asset('assets/libs/jsvectormap/js/jsvectormap.min.js') }}"></script>
     <script src="{{ asset('assets/libs/jsvectormap/maps/world-merc.js') }}"></script>
+
+    <!-- dropzone min -->
+    <script src="{{ asset('assets/libs/dropzone/dropzone-min.js') }}"></script>
+
+    <!-- filepond js -->
+    <script src="{{ asset('assets/libs/filepond/filepond.min.js') }}"></script>
+    <script src="{{ asset('assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js') }}"></script>
+    <script src="{{ asset('assets/libs/filepond-plugin-file-validate-size/filepond-plugin-file-validate-size.min.js') }}">
+    </script>
+    <script
+        src="{{ asset('assets/libs/filepond-plugin-image-exif-orientation/filepond-plugin-image-exif-orientation.min.js') }}">
+    </script>
+    <script src="{{ asset('assets/libs/filepond-plugin-file-encode/filepond-plugin-file-encode.min.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/form-file-upload.init.js') }}"></script>
     <!-- Dashboard init -->
     <script src="{{ asset('assets/js/pages/dashboard-analytics.init.js') }}"></script>
     <script src="{{ asset('assets/js/pages/apexcharts-column.init.js') }}"></script>
@@ -318,8 +312,6 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
-
-    @stack('scripts')
 </body>
 
 </html>

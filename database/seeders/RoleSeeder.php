@@ -15,7 +15,11 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             'admin',
-            'verifikator',
+            'verifikator_bappeda',
+            'verifikator_bag_organisasi',
+            'verifikator_inspektorat',
+            'penjamin',
+            'penilai',
             'opd',
         ];
 

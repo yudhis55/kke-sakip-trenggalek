@@ -24,9 +24,41 @@ class UserSeeder extends Seeder
         // User Verifikator
         DB::table('users')->insert([
             'name' => 'Verifikator',
-            'email' => 'verifikator@sakip.com',
+            'email' => 'verifikator@bappeda.com',
             'password' => Hash::make('password'),
             'role_id' => 2,   // verifikator
+            'opd_id' => null,
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Verifikator',
+            'email' => 'verifikator@organisasi.com',
+            'password' => Hash::make('password'),
+            'role_id' => 3,   // verifikator
+            'opd_id' => null,
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Verifikator',
+            'email' => 'verifikator@inspektorat.com',
+            'password' => Hash::make('password'),
+            'role_id' => 4,   // verifikator
+            'opd_id' => null,
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Penjamin Kualitas',
+            'email' => 'penjamin@inspektorat.com',
+            'password' => Hash::make(value: 'password'),
+            'role_id' => 5,   // penjamin
+            'opd_id' => null,
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Penilai Final',
+            'email' => 'penilai@inspektorat.com',
+            'password' => Hash::make('password'),
+            'role_id' => 6,   // penilai
             'opd_id' => null,
         ]);
 
@@ -84,7 +116,7 @@ class UserSeeder extends Seeder
                 'name' => $opd->nama,
                 'email' => $username . '@opd.com',
                 'password' => Hash::make('password'),
-                'role_id' => 3,       // role OPD
+                'role_id' => 7,       // role OPD
                 'opd_id' => $opd->id  // sesuai OPD
             ]);
 
