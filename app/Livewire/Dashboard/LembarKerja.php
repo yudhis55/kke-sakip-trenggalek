@@ -7,6 +7,7 @@ use Livewire\Component;
 use App\Models\Komponen;
 use App\Models\SubKomponen;
 use App\Models\Tahun;
+use Illuminate\Support\Facades\Auth;
 
 class LembarKerja extends Component
 {
@@ -20,7 +21,14 @@ class LembarKerja extends Component
     #[Computed]
     public function komponenOptions()
     {
-        return Komponen::where('tahun_id', $this->tahun_id)->get();
+        $query = Komponen::where('tahun_id', $this->tahun_id);
+
+        // Jika role bukan OPD (role_id != 7), filter berdasarkan role_id
+        if (Auth::user()->role->jenis != 'opd' && Auth::user()->role->jenis != 'penjamin' && Auth::user()->role->jenis != 'penilai' && Auth::user()->role->jenis != 'admin') {
+            $query->where('role_id', Auth::user()->role_id);
+        }
+
+        return $query->get();
     }
 
     #[Computed]

@@ -3,9 +3,11 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\Tahun;
+use Illuminate\Http\Request;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Session;
 use Livewire\Component;
+use RalphJSmit\Livewire\Urls\Facades\Url;
 
 class TahunDropdown extends Component
 {
@@ -29,6 +31,12 @@ class TahunDropdown extends Component
 
     public function updatedTahunSession()
     {
+        $currentRoute = Url::currentRoute();
+
+        if (str_starts_with($currentRoute, 'lembar-kerja')) {
+            return $this->redirectRoute('lembar-kerja'); // redirect ke route dasar
+        }
+
         $this->js('window.location.reload()');
     }
 

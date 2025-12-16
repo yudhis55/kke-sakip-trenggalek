@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('file_bukti_dukung', function (Blueprint $table) {
+        Schema::create('penilaian_penjamin', function (Blueprint $table) {
             $table->id();
-            $table->string('link_file');
-            $table->foreignId('bukti_dukung_id')->constrained('bukti_dukung')->restrictOnDelete();
-            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
-            $table->boolean('is_perubahan');
+            $table->foreignId('tingkatan_nilai_id')->constrained('tingkatan_nilai')->restrictOnDelete();
+            $table->foreignId('kriteria_komponen_id')->constrained('kriteria_komponen')->restrictOnDelete();
             $table->timestamps();
         });
     }
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('file_bukti_dukung');
+        Schema::dropIfExists('penilaian_penjamin');
     }
 };

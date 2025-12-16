@@ -14,4 +14,14 @@ class Role extends Model
     {
         return $this->hasMany(User::class, 'role_id');
     }
+
+    public function komponen()
+    {
+        return $this->hasMany(Komponen::class, 'role_id');
+    }
+
+    public function penilaian_verifikator()
+    {
+        return $this->hasMany(PenilaianVerifikator::class, 'role_id');
+    }
 }

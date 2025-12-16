@@ -34,4 +34,9 @@ class Komponen extends Model
     {
         return $this->hasMany(BuktiDukung::class, 'komponen_id');
     }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
 }

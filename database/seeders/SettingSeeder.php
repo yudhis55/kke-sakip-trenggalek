@@ -18,6 +18,10 @@ class SettingSeeder extends Seeder
             'tutup_penilaian_mandiri'      => '2025-12-31 23:59:59',
             'buka_penilaian_verifikator'   => '2025-01-01 00:00:00',
             'tutup_penilaian_verifikator'  => '2025-12-31 23:59:59',
+            'buka_penilaian_penjamin'      => '2025-01-01 00:00:00',
+            'tutup_penilaian_penjamin'     => '2025-12-31 23:59:59',
+            'buka_penilaian_penilai'       => '2025-01-01 00:00:00',
+            'tutup_penilaian_penilai'      => '2025-12-31 23:59:59',
             'tahun_id'                     => 1,   // asumsi tahun 2025 id=1
         ]);
     }

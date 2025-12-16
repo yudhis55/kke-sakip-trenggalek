@@ -17,6 +17,10 @@ return new class extends Migration
             $table->dateTime('tutup_penilaian_mandiri')->nullable();
             $table->dateTime('buka_penilaian_verifikator')->nullable();
             $table->dateTime('tutup_penilaian_verifikator')->nullable();
+            $table->dateTime('buka_penilaian_penjamin')->nullable();
+            $table->dateTime('tutup_penilaian_penjamin')->nullable();
+            $table->dateTime('buka_penilaian_penilai')->nullable();
+            $table->dateTime('tutup_penilaian_penilai')->nullable();
             $table->foreignId('tahun_id')->nullable()->constrained('tahun')->nullOnDelete();
             $table->timestamps();
         });

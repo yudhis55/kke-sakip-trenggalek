@@ -14,19 +14,17 @@ class RoleSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            'admin',
-            'verifikator_bappeda',
-            'verifikator_bag_organisasi',
-            'verifikator_inspektorat',
-            'penjamin',
-            'penilai',
-            'opd',
+            ['nama' => 'admin', 'jenis' => 'admin'],
+            ['nama' => 'verifikator_bappeda', 'jenis' => 'verifikator'],
+            ['nama' => 'verifikator_bag_organisasi', 'jenis' => 'verifikator'],
+            ['nama' => 'verifikator_inspektorat', 'jenis' => 'verifikator'],
+            ['nama' => 'penjamin', 'jenis' => 'penjamin'],
+            ['nama' => 'penilai', 'jenis' => 'penilai'],
+            ['nama' => 'opd', 'jenis' => 'opd'],
         ];
 
         foreach ($roles as $role) {
-            DB::table('role')->insert([
-                'nama' => $role,
-            ]);
+            DB::table('role')->insert($role);
         }
     }
 }

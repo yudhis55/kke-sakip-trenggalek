@@ -1,5 +1,5 @@
 <div class="page-content">
-    <div class="container-fluid">
+    <div x-data="{ tab: 'bukti_dukung', menu: 'dokumen' }" class="container-fluid" x-cloak>
 
         <!-- start page title -->
         <div class="row">
@@ -7,11 +7,11 @@
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Bukti Dukung</h4>
 
+                    <div x-text="tab + ', ' + menu + ', ' + $wire.bukti_dukung_id"></div>
+                    {{-- @dump($bukti_dukung_id) --}}
+
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            {{-- <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboards</a></li> --}}
-                            {{-- <li class="breadcrumb-item"><a href="{{ route('lembar-kerja') }}">Lembar Kerja</a></li>
-                            <li class="breadcrumb-item">Kriteria Komponen</li> --}}
                             <li class="breadcrumb-item">...</li>
                             <li class="breadcrumb-item">Kriteria Komponen</li>
                             <li class="breadcrumb-item active">Bukti Dukung</li>
@@ -23,36 +23,25 @@
         </div>
         <!-- end page title -->
 
-        {{-- <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <p class="mb-sm-0 text-primary fw-semibold">Kriteria Komponen: {{ $this->kriteriaKomponen->kode }} -
-                            {{ $this->kriteriaKomponen->nama }}
-                        </p>
+        @if (Auth::user()->role->jenis != 'opd')
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <label for="opdSelectedId" class="form-label">Pilih OPD</label>
+                            <select wire:model.live="opd_id" class="form-select" aria-label="Pilih OPD"
+                                id="opdSelectedId">
+                                <option value="">-- Pilih OPD yang akan dievaluasi --</option>
+                                @foreach ($this->opdList as $opd)
+                                    <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div> --}}
+        @endif
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <label for="opdSelectedId" class="form-label">Pilih OPD</label>
-                        <select wire:model.live="opd_selected_id" class="form-select" aria-label="Pilih OPD"
-                            id="opdSelectedId">
-                            <option value="">-- Pilih OPD yang akan diverifikasi atau dinilai --</option>
-                            @foreach ($this->opdList as $opd)
-                                <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    {{-- @dump($opd_id) --}}
-                    {{-- @dump($opd_selected_id) --}}
-                </div>
-            </div>
-        </div>
 
         <div class="row">
             <div class="col-12">
@@ -60,17 +49,20 @@
                     <div class="card-body">
                         <ul class="nav nav-tabs nav-justified nav-border-top nav-border-top-primary" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active py-3" data-bs-toggle="tab" href="#nav-border-justified-home"
-                                    role="tab" aria-selected="false">
-                                    <i class="ri-home-5-line align-middle me-1"></i> Bukti Dukung
+                                <a @click="tab = 'bukti_dukung'" :class="tab === 'bukti_dukung' ? 'active' : ''"
+                                    href="javascript:void(0);" class="nav-link py-3">
+                                    <i class="ri-home-5-line align-middle me-1"></i>
+                                    Bukti Dukung
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link py-3" data-bs-toggle="tab" href="#nav-border-justified-profile"
-                                    role="tab" aria-selected="false">
+                                <a :class="tab === 'penilaian' ? 'active' : ''" href="javascript:void(0);"
+                                    class="nav-link py-3">
                                     <i class="ri-user-line me-1 align-middle"></i>
-                                    @if (Auth::user()->role->id != 7)
+                                    @if (Auth::user()->role->jenis == 'penjamin' || Auth::user()->role->jenis == 'penilai')
                                         Lembar Penilaian
+                                    @elseif (Auth::user()->role->jenis == 'verifikator')
+                                        Lembar Verifikasi
                                     @else
                                         Penilaian Mandiri
                                     @endif
@@ -82,7 +74,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div x-show="tab == 'bukti_dukung'" class="row">
             <div class="col-12">
                 <div class="card">
                     {{-- <div class="card-header align-items-center d-flex">
@@ -113,20 +105,40 @@
                                                 <th scope="row"><a class="fw-medium">{{ $index + 1 }}</a></th>
                                                 <td> {{ $bukti_dukung->nama }} </td>
                                                 <td>
-                                                    @if ($bukti_dukung->file_bukti_dukung->isNotEmpty())
-                                                        <button wire:click="setBuktiDukungId({{ $bukti_dukung->id }})" class="btn btn-sm btn-primary waves-effect waves-light"
-                                                            data-bs-toggle="modal" data-bs-target="#viewBuktiDukung""><i
-                                                                class="ri-file-line align-bottom me-1"></i>Lihat</button>
+                                                    @if ($bukti_dukung->file_bukti_dukung->isNotEmpty() && Auth::user()->opd_id)
+                                                        <button wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
+                                                            class="btn btn-sm btn-primary waves-effect waves-light"
+                                                            data-bs-toggle="modal" data-bs-target="#viewBuktiDukung">
+                                                            <i class="ri-file-line align-bottom me-1"></i>Lihat
+                                                        </button>
+                                                    @elseif ($bukti_dukung->file_bukti_dukung->isNotEmpty() && !Auth::user()->opd_id)
+                                                        {{-- <button type="button" class="btn btn-sm btn-success btn-icon waves-effect waves-light"><i class="ri-check-line"></i></button> --}}
+                                                        <button type="button" class="btn btn-sm btn-primary add-btn"><i
+                                                                class="ri-check-line align-bottom me-1"></i>Tersedia</button>
                                                     @else
                                                         <span class="fst-italic text-muted">Belum diunggah</span>
                                                     @endif
-
-                                                    {{-- <button type="button"
-                                                        class="btn btn-sm btn-primary btn-icon waves-effect waves-light" data-bs-toggle="modal" data-bs-target="#viewBuktiDukung"><i
-                                                            class="ri-file-line"></i></button> --}}
                                                 </td>
-                                                <td><button class="btn btn-sm btn-light add-btn"><i
-                                                            class="ri-upload-2-line align-bottom me-1"></i>Unggah</button>
+                                                <td>
+                                                    @if (Auth::user()->role->jenis == 'opd' || Auth::user()->role->jenis == 'admin')
+                                                        <button @click="tab = 'penilaian'; menu = 'dokumen'"
+                                                            wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
+                                                            class="btn btn-sm btn-light add-btn">
+                                                            <i class="ri-upload-2-line align-bottom me-1"></i>Unggah
+                                                        </button>
+                                                    @elseif ($bukti_dukung->file_bukti_dukung->isEmpty())
+                                                        <span class="fst-italic text-muted">-</span>
+                                                    @elseif (Auth::user()->role->jenis == 'verifikator' || Auth::user()->role->jenis == 'admin')
+                                                        <button @click="tab = 'penilaian'; menu = 'dokumen'"
+                                                            wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
+                                                            class="btn btn-sm btn-light add-btn"><i
+                                                                class="ri-file-edit-line align-bottom me-1"></i>Evaluasi</button>
+                                                    @elseif (Auth::user()->role->jenis == 'penilai' || Auth::user()->role->jenis == 'admin')
+                                                        <button @click="tab = 'penilaian'; menu = 'dokumen'"
+                                                            wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
+                                                            class="btn btn-sm btn-light add-btn"><i
+                                                                class="ri-file-edit-line align-bottom me-1"></i>Penilaian</button>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -141,12 +153,13 @@
             </div>
         </div>
 
-        <div class="row">
+        <div x-show="tab == 'penilaian'" class="row">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header align-items-center d-flex">
-                        <p class="mb-sm-0 text-dark fw-semibold">Bukti Dukung: Terdapat dokumen perencanaan kinerja
-                            jangka menengah
+                        <p class="mb-sm-0 text-dark fw-semibold">
+                            Bukti Dukung:
+                            {{ $this->selectedBuktiDukung?->nama ?? 'Pilih bukti dukung terlebih dahulu' }}
                         </p>
                     </div>
                     <div class="card-body">
@@ -161,140 +174,231 @@
                             <div class="col-md-2">
                                 <div class="nav flex-column nav-pills text-center" id="v-pills-tab" role="tablist"
                                     aria-orientation="vertical">
-                                    <a class="nav-link mb-2" id="v-pills-home-tab" data-bs-toggle="pill"
-                                        href="#v-pills-home" role="tab" aria-controls="v-pills-home"
-                                        aria-selected="false"><i class="ri-file-line me-1 align-middle"></i>Dokumen</a>
-                                    <a class="nav-link mb-2" id="v-pills-profile-tab" data-bs-toggle="pill"
-                                        href="#v-pills-profile" role="tab" aria-controls="v-pills-profile"
-                                        aria-selected="false"><i class="ri-upload-line me-1 align-middle"></i>Unggah</a>
-                                    <a class="nav-link mb-2 " id="button-penilaian-mandiri" data-bs-toggle="pill"
-                                        href="#tab-penilaian-mandiri" role="tab"
-                                        aria-controls="tab-penilaian-mandiri" aria-selected="false"><i
-                                            class="ri-file-edit-line me-1 align-middle"></i>Penilaian</a>
-                                    <a class="nav-link mb-2" id="button-verifikasi" data-bs-toggle="pill"
-                                        href="#tab-verifikasi" role="tab" aria-controls="tab-verifikasi"
-                                        aria-selected="true"><i
-                                            class="ri-check-double-line me-1 align-middle"></i>Verifikasi</a>
+                                    {{-- Menu Dokumen: Semua role bisa lihat --}}
+                                    <a @click="menu = 'dokumen'" :class="menu === 'dokumen' ? 'active' : ''"
+                                        href="javascript:void(0)" class="nav-link mb-2"><i
+                                            class="ri-file-line me-1 align-middle"></i>Dokumen</a>
+
+                                    {{-- Menu Unggah: Hanya admin dan opd --}}
+                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']))
+                                        <a @click="menu = 'unggah'" :class="menu === 'unggah' ? 'active' : ''"
+                                            href="javascript:void(0)" class="nav-link mb-2"><i
+                                                class="ri-upload-line me-1 align-middle"></i>Unggah</a>
+                                    @endif
+
+                                    {{-- Menu Penilaian: Admin, verifikator, dan opd --}}
+                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd']))
+                                        <a @click="menu = 'penilaian'" :class="menu === 'penilaian' ? 'active' : ''"
+                                            href="javascript:void(0)" class="nav-link mb-2"><i
+                                                class="ri-file-edit-line me-1 align-middle"></i>Penilaian</a>
+                                    @endif
+
+                                    {{-- Menu Verifikasi: Admin dan penilai --}}
+                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator']))
+                                        <a @click="menu = 'verifikasi'" :class="menu === 'verifikasi' ? 'active' : ''"
+                                            href="javascript:void(0)" class="nav-link mb-2"><i
+                                                class="ri-check-double-line me-1 align-middle"></i>Verifikasi</a>
+                                    @endif
                                 </div>
                             </div><!-- end col -->
                             <div class="col-md-10">
-                                <div class="tab-content mt-4 mt-md-0" id="v-pills-tabContent">
-                                    <div class="tab-pane fade" id="v-pills-home" role="tabpanel"
-                                        aria-labelledby="v-pills-home-tab">
-                                        <div class="d-flex mb-2">
-                                            <div class="flex-shrink-0">
-                                                <img src="assets/images/small/img-4.jpg" alt=""
-                                                    width="150" class="rounded">
+                                <div class="tab-content mt-4 mt-md-0">
+                                    <div x-show="menu === 'dokumen'" aria-labelledby="v-pills-home-tab">
+                                        @if ($this->selectedFileBuktiDukung)
+                                            @if (count($this->selectedFileBuktiDukung) > 1)
+                                                {{-- Multiple files: show tabs --}}
+                                                <ul class="nav nav-tabs nav-bordered mb-3" role="tablist">
+                                                    @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                                        <li class="nav-item" role="presentation">
+                                                            <a href="#dokumen-file-{{ $index }}"
+                                                                data-bs-toggle="tab"
+                                                                aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                                                class="nav-link {{ $index === 0 ? 'active' : '' }}"
+                                                                role="tab">
+                                                                <i
+                                                                    class="ri-file-line me-1"></i>{{ $file['original_name'] ?? 'Dokumen ' . ($index + 1) }}
+                                                            </a>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                                <div class="tab-content">
+                                                    @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                                        <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
+                                                            id="dokumen-file-{{ $index }}" role="tabpanel">
+                                                            @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                                                <embed src="{{ asset('storage/' . $file['path']) }}"
+                                                                    type="application/pdf" width="100%"
+                                                                    height="600" />
+                                                            @else
+                                                                <img src="{{ asset('storage/' . $file['path']) }}"
+                                                                    class="img-fluid"
+                                                                    alt="{{ $file['original_name'] }}" />
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                {{-- Single file --}}
+                                                @php $file = $this->selectedFileBuktiDukung[0]; @endphp
+                                                @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                                    <embed src="{{ asset('storage/' . $file['path']) }}"
+                                                        type="application/pdf" width="100%" height="600" />
+                                                @else
+                                                    <img src="{{ asset('storage/' . $file['path']) }}"
+                                                        class="img-fluid" alt="{{ $file['original_name'] }}" />
+                                                @endif
+                                            @endif
+                                        @else
+                                            <div class="alert alert-warning text-center">
+                                                <i class="ri-alert-line fs-3"></i>
+                                                <p class="mb-0">Tidak ada dokumen yang tersedia. Silakan unggah
+                                                    dokumen terlebih dahulu.</p>
                                             </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <embed src="{{ asset('assets/Form Surat Pernyataan.pdf') }}"
-                                                    width="100%" height="500" alt="pdf" />
+                                        @endif
+                                    </div>
+                                    <div x-show="menu === 'unggah'" aria-labelledby="v-pills-profile-tab">
+                                        <div class="mb-2">
+                                            <div class="ms-3">
+                                                <x-filepond::upload wire:model="file_bukti_dukung" multiple />
+                                                <button wire:click="uploadBuktiDukung"
+                                                    class="btn btn-primary mt-2">Simpan</button>
+                                                @if ($errors->any())
+                                                    <div class="alert alert-danger">
+                                                        <ul>
+                                                            @foreach ($errors->all() as $error)
+                                                                <li>{{ $error }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div x-show="menu === 'penilaian'" aria-labelledby="tombol-penilaian-mandiri">
+                                        <div class="mb-3">
+                                            <h6 class="mb-3">Pilih Tingkatan Nilai</h6>
+                                            @if ($this->tingkatanNilaiList()->isNotEmpty())
+                                                <div class="row">
+                                                    @foreach ($this->tingkatanNilaiList() as $tingkatan)
+                                                        <div class="col-xxl-3 col-lg-4 col-md-6 mb-3">
+                                                            <div class="card card-body text-center
+                                                                {{ $tingkatan_nilai_id == $tingkatan->id ? 'border-primary' : '' }}"
+                                                                style="cursor: pointer;"
+                                                                wire:click="$set('tingkatan_nilai_id', {{ $tingkatan->id }})">
+                                                                <div class="avatar-sm mx-auto mb-3">
+                                                                    <div class="avatar-title
+                                                                        {{ $tingkatan_nilai_id == $tingkatan->id ? 'bg-primary text-white' : 'bg-soft-primary text-primary' }}
+                                                                        fs-17 rounded">
+                                                                        {{ $tingkatan->kode_nilai }}
+                                                                    </div>
+                                                                </div>
+                                                                {{-- <h5 class="card-title">{{ $tingkatan->kode_nilai }}</h5> --}}
+                                                                <p class="card-text text-muted mb-0">Bobot: {{ $tingkatan->bobot }}%</p>
+                                                                @if ($tingkatan->deskripsi)
+                                                                    <p class="card-text text-muted small">{{ Str::limit($tingkatan->deskripsi, 50) }}</p>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
 
-                                            </div>
+                                                <div class="mt-3">
+                                                    <button type="button"
+                                                        class="btn btn-primary"
+                                                        wire:click="simpanPenilaian"
+                                                        {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
+                                                        Simpan Penilaian
+                                                    </button>
+                                                </div>
+                                            @else
+                                                <div class="alert alert-warning">
+                                                    Tidak ada tingkatan nilai yang tersedia untuk kriteria ini.
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
-                                    <div class="tab-pane fade" id="v-pills-profile" role="tabpanel"
-                                        aria-labelledby="v-pills-profile-tab">
+                                    <div x-show="menu === 'verifikasi'" aria-labelledby="v-pills-profile-tab">
                                         <div class="mb-2">
                                             <div class="ms-3">
-                                                <x-filepond::upload wire:model="file" multiple />
-                                                <button class="btn btn-primary">Simpan</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="tab-penilaian-mandiri" role="tabpanel"
-                                        aria-labelledby="tombol-penilaian-mandiri">
-                                        <div class="d-flex mb-2">
-                                            <div class="col-xxl-4 col-lg-6">
-                                                <div class="card card-body text-center">
-                                                    <div class="avatar-sm mx-auto mb-3">
-                                                        <div
-                                                            class="avatar-title bg-soft-primary text-primary fs-17 rounded">
-                                                            A
+                                                {{-- Riwayat Verifikasi --}}
+                                                @if ($this->riwayatVerifikasi->isNotEmpty())
+                                                    <div class="live-preview mb-4">
+                                                        <h6 class="mb-3">Riwayat Verifikasi</h6>
+                                                        <div class="table-responsive">
+                                                            <table class="table align-middle table-nowrap mb-0">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th scope="col">Status Verifikasi</th>
+                                                                        <th scope="col">Keterangan</th>
+                                                                        <th scope="col">Oleh</th>
+                                                                        <th scope="col">Tanggal</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach ($this->riwayatVerifikasi as $verifikasi)
+                                                                        <tr>
+                                                                            <td>
+                                                                                @if ($verifikasi->is_verified)
+                                                                                    <span class="badge bg-success">
+                                                                                        <i
+                                                                                            class="ri-check-line me-1"></i>Terverifikasi
+                                                                                    </span>
+                                                                                @else
+                                                                                    <span class="badge bg-danger">
+                                                                                        <i
+                                                                                            class="ri-close-line me-1"></i>Tidak
+                                                                                        Sesuai
+                                                                                    </span>
+                                                                                @endif
+                                                                            </td>
+                                                                            <td>{{ $verifikasi->keterangan ?? '-' }}
+                                                                            </td>
+                                                                            <td>{{ $verifikasi->role->nama ?? '-' }}
+                                                                            </td>
+                                                                            <td>{{ $verifikasi->created_at->format('d M Y H:i') }}
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
+                                                                </tbody>
+                                                            </table>
                                                         </div>
                                                     </div>
-                                                    <h4 class="card-title">Nilai A</h4>
-                                                    <p class="card-text text-muted">Bobot: 70%</p>
-                                                    <a href="javascript:void(0);" class="btn btn-primary">Klaim</a>
-                                                </div>
-                                            </div><!-- end col -->
-                                            <div class="col-xxl-4 col-lg-6">
-                                                <div class="card card-body text-center">
-                                                    <div class="avatar-sm mx-auto mb-3">
-                                                        <div
-                                                            class="avatar-title bg-soft-primary text-primary fs-17 rounded">
-                                                            A
-                                                        </div>
-                                                    </div>
-                                                    <h4 class="card-title">Nilai A</h4>
-                                                    <p class="card-text text-muted">Bobot: 70%</p>
-                                                    <a href="javascript:void(0);" class="btn btn-primary">Klaim</a>
-                                                </div>
-                                            </div><!-- end col -->
-                                            <div class="col-xxl-4 col-lg-6">
-                                                <div class="card card-body text-center">
-                                                    <div class="avatar-sm mx-auto mb-3">
-                                                        <div
-                                                            class="avatar-title bg-soft-primary text-primary fs-17 rounded">
-                                                            A
-                                                        </div>
-                                                    </div>
-                                                    <h4 class="card-title">Nilai A</h4>
-                                                    <p class="card-text text-muted">Bobot: 70%</p>
-                                                    <a href="javascript:void(0);" class="btn btn-primary">Klaim</a>
-                                                </div>
-                                            </div><!-- end col -->
-                                        </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="tab-verifikasi" role="tabpanel"
-                                        aria-labelledby="v-pills-profile-tab">
-                                        <div class="mb-2">
-                                            <div class="ms-3">
-                                                <div class="live-preview">
-                                                    <div class="table-responsive">
-                                                        <table class="table align-middle table-nowrap mb-0">
-                                                            <thead class="table-light">
-                                                                <tr>
-                                                                    {{-- <th></th> --}}
-                                                                    <th scope="col">Status Verifikasi</th>
-                                                                    <th scope="col">Keterangan</th>
-                                                                    <th scope="col">Oleh</th>
-                                                                    <th scope="col">Tanggal</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr>
-                                                                    {{-- <th scope="row"></th> --}}
-                                                                    <td>OK</td>
-                                                                    <td>ABCD</td>
-                                                                    <td>Bappeda</td>
-                                                                    <td>12 Juni 2024</td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                        <!-- end table -->
-                                                    </div>
-                                                    <!-- end table responsive -->
-                                                </div>
-                                                <!-- Base Switchs -->
+                                                @endif
+
+                                                {{-- Form Verifikasi Baru --}}
+                                                <h6 class="mb-3">Form Verifikasi</h6>
                                                 <div class="form-check form-switch mt-3">
-                                                    <input class="form-check-input" type="checkbox" role="switch"
-                                                        id="flexSwitchCheckDefault">
-                                                    <label class="form-check-label" for="flexSwitchCheckDefault">Ya,
-                                                        sudah diperiksa dan sesuai</label>
+                                                    <input wire:model.live="is_verified" value="1"
+                                                        type="radio" class="form-check-input" role="switch"
+                                                        id="verifikasiSesuai" name="verifikasi_status">
+                                                    <label class="form-check-label" for="verifikasiSesuai">
+                                                        <i class="ri-check-line text-success me-1"></i>Ya, sudah
+                                                        diperiksa dan sesuai
+                                                    </label>
                                                 </div>
                                                 <div class="form-check form-switch mt-3">
-                                                    <input class="form-check-input" type="checkbox" role="switch"
-                                                        id="flexSwitchCheckDefault">
-                                                    <label class="form-check-label"
-                                                        for="flexSwitchCheckDefault">Tidak, belum ada
-                                                        kesesuaian</label>
+                                                    <input wire:model.live="is_verified" value="0"
+                                                        type="radio" class="form-check-input" role="switch"
+                                                        id="verifikasiTidakSesuai" name="verifikasi_status">
+                                                    <label class="form-check-label" for="verifikasiTidakSesuai">
+                                                        <i class="ri-close-line text-danger me-1"></i>Tidak, belum ada
+                                                        kesesuaian
+                                                    </label>
                                                 </div>
                                                 <div class="mb-3 mt-3">
                                                     <label for="keterangan" class="form-label">Keterangan</label>
-                                                    <textarea class="form-control" id="keterangan" rows="3"></textarea>
+                                                    <textarea wire:model="keterangan_verifikasi" class="form-control" id="keterangan" rows="3"
+                                                        placeholder="Tambahkan catatan atau keterangan..."></textarea>
+                                                    @error('keterangan_verifikasi')
+                                                        <span class="text-danger small">{{ $message }}</span>
+                                                    @enderror
                                                 </div>
-                                                <button class="btn btn-primary">Simpan</button>
+                                                <button wire:click="simpanVerifikasi" class="btn btn-primary">
+                                                    <i class="ri-save-line me-1"></i>Simpan
+                                                </button>
+                                                @error('is_verified')
+                                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                         </div>
                                     </div>
@@ -307,23 +411,63 @@
         </div>
     </div>
 
-    <div wire:ignore id="viewBuktiDukung" class="modal fade" tabindex="-1" role="dialog"
+    <div wire:ignore.self id="viewBuktiDukung" class="modal fade" tabindex="-1" role="dialog"
         aria-labelledby="viewBuktiDukungLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Modal Heading</h5>
+                    <h5 class="modal-title" id="myModalLabel">Dokumen Bukti Dukung</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
                 </div>
                 <div class="modal-body">
-                    <embed src="{{ asset('assets/Form Surat Pernyataan.pdf') }}" width="100%" height="600"
-                        alt="pdf" />
+                    @if ($this->selectedFileBuktiDukung)
+                        @if (count($this->selectedFileBuktiDukung) > 1)
+                            {{-- Multiple files: show tabs --}}
+                            <ul class="nav nav-tabs nav-bordered mb-3" role="tablist">
+                                @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                    <li class="nav-item" role="presentation">
+                                        <a href="#file-{{ $index }}" data-bs-toggle="tab"
+                                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                            class="nav-link {{ $index === 0 ? 'active' : '' }}" role="tab">
+                                            <i
+                                                class="ri-file-line me-1"></i>{{ $file['original_name'] ?? 'Dokumen ' . ($index + 1) }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <div class="tab-content">
+                                @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                    <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
+                                        id="file-{{ $index }}" role="tabpanel">
+                                        @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                            <embed src="{{ asset('storage/' . $file['path']) }}"
+                                                type="application/pdf" width="100%" height="600" />
+                                        @else
+                                            <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
+                                                alt="{{ $file['original_name'] }}" />
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            {{-- Single file --}}
+                            @php $file = $this->selectedFileBuktiDukung[0]; @endphp
+                            @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                <embed src="{{ asset('storage/' . $file['path']) }}" type="application/pdf"
+                                    width="100%" height="600" />
+                            @else
+                                <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
+                                    alt="{{ $file['original_name'] }}" />
+                            @endif
+                        @endif
+                    @else
+                        <div class="alert alert-warning text-center">
+                            <i class="ri-alert-line fs-3"></i>
+                            <p class="mb-0">Tidak ada dokumen yang tersedia.</p>
+                        </div>
+                    @endif
                 </div>
-                {{-- <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary ">Save Changes</button>
-                </div> --}}
             </div><!-- /.modal-content -->
         </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->

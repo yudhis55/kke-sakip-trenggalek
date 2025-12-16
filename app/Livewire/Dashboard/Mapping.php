@@ -40,7 +40,7 @@ class Mapping extends Component
     #[Computed]
     public function fullMapping()
     {
-        return Komponen::with('sub_komponen', 'kriteria_komponen', 'bukti_dukung')->where('tahun_id', $this->tahun_id)->get();
+        return Komponen::with('sub_komponen', 'kriteria_komponen', 'bukti_dukung', 'role')->where('tahun_id', $this->tahun_id)->get();
     }
 
     public function addKomponen()

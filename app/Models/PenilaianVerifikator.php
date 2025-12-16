@@ -10,13 +10,13 @@ class PenilaianVerifikator extends Model
 
     protected $guarded = ['id'];
 
-    public function penilaian_mandiri()
+    public function file_bukti_dukung()
     {
-        return $this->belongsTo(PenilaianMandiri::class, 'penilaian_mandiri_id');
+        return $this->belongsTo(FileBuktiDukung::class, 'file_bukti_dukung_id');
     }
 
-    public function opd()
+    public function role()
     {
-        return $this->belongsTo(Opd::class, 'opd_id');
+        return $this->belongsTo(Role::class, 'role_id');
     }
 }

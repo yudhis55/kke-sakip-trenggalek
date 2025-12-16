@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
+        // Jika ada grup 'web', bisa juga append ke grup
+        $middleware->appendToGroup('web', [
+            \RalphJSmit\Livewire\Urls\Middleware\LivewireUrlsMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

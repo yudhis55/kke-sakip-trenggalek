@@ -104,6 +104,32 @@
                                         id="verifikatorTutupInput">
                                 </div>
                             </div>
+                            <div class="row mb-3">
+                                <div class="col-lg-3">
+                                    <label for="nameInput" class="form-label">Penjamin:</label>
+                                </div>
+                                <div class="col-lg-4">
+                                    <input wire:model="buka_penilaian_penjamin" type="date" class="form-control"
+                                        id="penjaminBukaInput">
+                                </div>
+                                <div class="col-lg-4">
+                                    <input wire:model="tutup_penilaian_penjamin" type="date" class="form-control"
+                                        id="penjaminTutupInput">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-lg-3">
+                                    <label for="nameInput" class="form-label">Penilai:</label>
+                                </div>
+                                <div class="col-lg-4">
+                                    <input wire:model="buka_penilaian_penilai" type="date" class="form-control"
+                                        id="penilaiBukaInput">
+                                </div>
+                                <div class="col-lg-4">
+                                    <input wire:model="tutup_penilaian_penilai" type="date" class="form-control"
+                                        id="penilaiTutupInput">
+                                </div>
+                            </div>
                         </div>
                     </div><!-- end card-body -->
                 </div><!-- end card -->
@@ -140,7 +166,7 @@
                                                 @foreach ($this->userList() as $user)
                                                     <tr>
                                                         <td>{{ $user->email }}</td>
-                                                        {{-- <td>{{ $user->opd ? $user->opd->nama : '-' }}</td> --}}
+                                                        <td>{{ $user->opd ? $user->opd->nama : '-' }}</td>
                                                         <td>{{ $user->role ? $user->role->nama : '-' }}</td>
                                                     </tr>
                                                 @endforeach

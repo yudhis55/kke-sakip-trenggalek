@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->boolean('is_verified')->nullable();
             $table->text('keterangan')->nullable();
-            $table->foreignId('penilaian_mandiri_id')->constrained('penilaian_mandiri')->restrictOnDelete();
-            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            // $table->foreignId('penilaian_mandiri_id')->constrained('penilaian_mandiri')->restrictOnDelete();
+            // $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->foreignId('file_bukti_dukung_id')->constrained('file_bukti_dukung')->restrictOnDelete();
+            $table->foreignId('role_id')->constrained('role')->restrictOnDelete();
             $table->boolean('is_perubahan');
             $table->timestamps();
         });

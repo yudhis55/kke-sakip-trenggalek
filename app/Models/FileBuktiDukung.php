@@ -23,4 +23,9 @@ class FileBuktiDukung extends Model
     {
         return $this->belongsTo(Opd::class, 'opd_id');
     }
+
+    public function penilaian_verifikator(): BelongsTo
+    {
+        return $this->belongsTo(PenilaianVerifikator::class, 'id', 'file_bukti_dukung_id');
+    }
 }

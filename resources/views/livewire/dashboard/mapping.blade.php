@@ -8,7 +8,7 @@
     toggleKomponen(id) { this.expandedKomponen[id] = !this.expandedKomponen[id] },
     toggleSub(id) { this.expandedSub[id] = !this.expandedSub[id] },
     toggleKriteria(id) { this.expandedKriteria[id] = !this.expandedKriteria[id] }
-}">
+}" x-cloak>
     <div class="container-fluid">
 
         <!-- start page title -->
@@ -17,7 +17,7 @@
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Mapping</h4>
 
-                    {{-- @dump(session()->all())
+                {{-- @dump(session()->all()
                     @dump($tahun_id) --}}
 
                     <div class="page-title-right">
@@ -72,6 +72,7 @@
                                                         Dukung</th>
                                                     <th scope="col">Bobot</th>
                                                     <th scope="col">Kriteria Penilaian</th>
+                                                    <th scope="col">Verifikator/Penilai</th>
                                                     <th scope="col" style="width: 120px;">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -88,6 +89,7 @@
                                                         <td><strong>{{ $komponen->nama }}</strong></td>
                                                         <td>{{ $komponen->bobot }}</td>
                                                         <td></td>
+                                                        <td>{{ $komponen->role->nama ?? '' }}</td>
                                                         <td>
                                                             <div class="dropdown">
                                                                 <button
@@ -137,6 +139,7 @@
                                                             <td style="padding-left:30px;">{{ $sub_komponen->nama }}
                                                             </td>
                                                             <td>{{ $sub_komponen->bobot }}</td>
+                                                            <td></td>
                                                             <td></td>
                                                             <td>
                                                                 <div class="dropdown">
@@ -188,6 +191,7 @@
                                                                     {{ $kriteria_komponen->nama }}</td>
                                                                 <td>{{ $kriteria_komponen->bobot }}</td>
                                                                 <td>{{ $kriteria_komponen->jenis_nilai->nama }}</td>
+                                                                <td></td>
                                                                 <td>
                                                                     <div class="dropdown">
                                                                         <button
@@ -234,6 +238,7 @@
                                                                         {{ $bukti_dukung->nama }}</td>
                                                                     <td>{{ $bukti_dukung->bobot }}</td>
                                                                     <td>{{ $bukti_dukung->kriteria_penilaian }}</td>
+                                                                    <td></td>
                                                                     <td>
                                                                         <div class="hstack gap-2">
                                                                             <button class="btn btn-sm btn-soft-primary"

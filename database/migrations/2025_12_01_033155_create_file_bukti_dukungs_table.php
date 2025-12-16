@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('role', function (Blueprint $table) {
+        Schema::create('file_bukti_dukung', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->string('jenis');
+            $table->json('link_file');
+            $table->foreignId('bukti_dukung_id')->constrained('bukti_dukung')->restrictOnDelete();
+            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->boolean('is_perubahan');
             $table->timestamps();
         });
     }
@@ -24,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('role');
+        Schema::dropIfExists('file_bukti_dukung');
     }
 };
