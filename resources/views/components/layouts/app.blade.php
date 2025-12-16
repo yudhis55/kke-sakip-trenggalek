@@ -196,12 +196,16 @@
                                 <i class="mdi mdi-speedometer"></i> <span data-key="t-dashboards">Dashboards</span>
                             </a>
                         </li> <!-- end Dashboard Menu -->
-                        <li class="nav-item">
-                            <a wire:current="active" class="nav-link menu-link" href="/mapping" role="button"
-                                aria-expanded="true" aria-controls="sidebarApps">
-                                <i class="mdi mdi-view-grid-plus-outline"></i> <span data-key="t-apps">Mapping</span>
-                            </a>
-                        </li>
+
+                        @if (Auth::user()->role->jenis == 'admin')
+                            <li class="nav-item">
+                                <a wire:current="active" class="nav-link menu-link" href="/mapping" role="button"
+                                    aria-expanded="true" aria-controls="sidebarApps">
+                                    <i class="mdi mdi-view-grid-plus-outline"></i> <span
+                                        data-key="t-apps">Mapping</span>
+                                </a>
+                            </li>
+                        @endif
 
                         <li class="nav-item">
                             <a wire:current="active" class="nav-link menu-link" href="/lembar-kerja" role="button"
