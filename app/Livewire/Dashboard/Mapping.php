@@ -40,7 +40,37 @@ class Mapping extends Component
     #[Computed]
     public function fullMapping()
     {
-        return Komponen::with('sub_komponen', 'kriteria_komponen', 'bukti_dukung', 'role')->where('tahun_id', $this->tahun_id)->get();
+        $komponens = Komponen::with([
+            'sub_komponen.kriteria_komponen.bukti_dukung',
+            'role'
+        ])->where('tahun_id', $this->tahun_id)->get();
+
+        // Calculate bobot for kriteria_komponen and bukti_dukung
+        foreach ($komponens as $komponen) {
+            foreach ($komponen->sub_komponen as $subKomponen) {
+                // Hitung jumlah kriteria komponen untuk sub komponen ini
+                $jumlahKriteria = $subKomponen->kriteria_komponen->count();
+
+                foreach ($subKomponen->kriteria_komponen as $kriteriaKomponen) {
+                    // Bobot kriteria komponen = bobot sub komponen / jumlah kriteria komponen
+                    $kriteriaKomponen->bobot = $jumlahKriteria > 0
+                        ? round($subKomponen->bobot / $jumlahKriteria, 2)
+                        : 0;
+
+                    // Hitung jumlah bukti dukung untuk kriteria komponen ini
+                    $jumlahBukti = $kriteriaKomponen->bukti_dukung->count();
+
+                    foreach ($kriteriaKomponen->bukti_dukung as $buktiDukung) {
+                        // Bobot bukti dukung = bobot kriteria komponen / jumlah bukti dukung
+                        $buktiDukung->bobot = $jumlahBukti > 0
+                            ? round($kriteriaKomponen->bobot / $jumlahBukti, 2)
+                            : 0;
+                    }
+                }
+            }
+        }
+
+        return $komponens;
     }
 
     public function addKomponen()

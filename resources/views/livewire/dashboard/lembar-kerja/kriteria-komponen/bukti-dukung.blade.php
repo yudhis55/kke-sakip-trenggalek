@@ -7,7 +7,7 @@
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Bukti Dukung</h4>
 
-                    <div x-text="tab + ', ' + menu + ', ' + $wire.bukti_dukung_id"></div>
+                    {{-- <div x-text="tab + ', ' + menu + ', ' + $wire.bukti_dukung_id"></div> --}}
                     {{-- @dump($bukti_dukung_id) --}}
 
                     <div class="page-title-right">
