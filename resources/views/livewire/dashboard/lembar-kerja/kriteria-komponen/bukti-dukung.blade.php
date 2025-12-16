@@ -286,16 +286,19 @@
                                                                 style="cursor: pointer;"
                                                                 wire:click="$set('tingkatan_nilai_id', {{ $tingkatan->id }})">
                                                                 <div class="avatar-sm mx-auto mb-3">
-                                                                    <div class="avatar-title
+                                                                    <div
+                                                                        class="avatar-title
                                                                         {{ $tingkatan_nilai_id == $tingkatan->id ? 'bg-primary text-white' : 'bg-soft-primary text-primary' }}
                                                                         fs-17 rounded">
                                                                         {{ $tingkatan->kode_nilai }}
                                                                     </div>
                                                                 </div>
                                                                 {{-- <h5 class="card-title">{{ $tingkatan->kode_nilai }}</h5> --}}
-                                                                <p class="card-text text-muted mb-0">Bobot: {{ $tingkatan->bobot }}%</p>
+                                                                <p class="card-text text-muted mb-0">Bobot:
+                                                                    {{ $tingkatan->bobot }}%</p>
                                                                 @if ($tingkatan->deskripsi)
-                                                                    <p class="card-text text-muted small">{{ Str::limit($tingkatan->deskripsi, 50) }}</p>
+                                                                    <p class="card-text text-muted small">
+                                                                        {{ Str::limit($tingkatan->deskripsi, 50) }}</p>
                                                                 @endif
                                                             </div>
                                                         </div>
@@ -303,8 +306,7 @@
                                                 </div>
 
                                                 <div class="mt-3">
-                                                    <button type="button"
-                                                        class="btn btn-primary"
+                                                    <button type="button" class="btn btn-primary"
                                                         wire:click="simpanPenilaian"
                                                         {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
                                                         Simpan Penilaian
