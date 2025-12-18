@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('file_bukti_dukung', function (Blueprint $table) {
             $table->id();
             $table->json('link_file');
+            $table->text('keterangan')->nullable();
             $table->foreignId('bukti_dukung_id')->constrained('bukti_dukung')->restrictOnDelete();
             $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
             $table->boolean('is_perubahan');
