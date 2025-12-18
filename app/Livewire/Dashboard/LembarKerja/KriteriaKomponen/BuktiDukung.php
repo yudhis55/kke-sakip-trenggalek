@@ -26,12 +26,18 @@ class BuktiDukung extends Component
     public $opd_id;
     public $bukti_dukung_id;
 
+    // Upload properties
+    public $keterangan_upload = '';
+    public $is_perubahan = false;
+    public $ganti_semua_dokumen = false;
+
     // Verifikasi properties
     public $is_verified = null;
     public $keterangan_verifikasi = '';
 
     // Penilaian properties
     public $tingkatan_nilai_id = null;
+    public $is_editing_penilaian = false;
     // public $current_tab = 'bukti_dukung';
 
     public function mount()
@@ -52,6 +58,33 @@ class BuktiDukung extends Component
     public function kriteriaKomponen()
     {
         return KriteriaKomponen::find($this->kriteria_komponen_id);
+    }
+
+    #[Computed]
+    public function penilaianTersimpan()
+    {
+        if (!$this->kriteria_komponen_id) {
+            return null;
+        }
+
+        $jenis = Auth::user()->role->jenis;
+
+        if ($jenis == 'opd' && $this->opd_id) {
+            return PenilaianMandiri::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('opd_id', $this->opd_id)
+                ->latest()
+                ->first();
+        } elseif ($jenis == 'penjamin') {
+            return PenilaianPenjamin::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->latest()
+                ->first();
+        } elseif ($jenis == 'penilai') {
+            return PenilaianPenilai::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->latest()
+                ->first();
+        }
+
+        return null;
     }
 
     #[Computed]
@@ -132,6 +165,7 @@ class BuktiDukung extends Component
             'file_bukti_dukung.*' => 'file|max:10240', // Max 10MB per file
             'bukti_dukung_id' => 'required|exists:bukti_dukung,id',
             'opd_id' => 'required|exists:opd,id',
+            'keterangan_upload' => 'nullable|string|max:1000',
         ]);
 
         $uploadedFiles = [];
@@ -150,26 +184,95 @@ class BuktiDukung extends Component
             ];
         }
 
-        // Simpan ke database sebagai JSON
-        FileBuktiDukung::create([
-            'bukti_dukung_id' => $this->bukti_dukung_id,
-            'opd_id' => $this->opd_id,
-            'link_file' => json_encode($uploadedFiles),
-            'is_perubahan' => false,
-        ]);
+        // Cek apakah sudah ada file sebelumnya
+        $existingFile = FileBuktiDukung::where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_id)
+            ->first();
+
+        if ($existingFile) {
+            if ($this->ganti_semua_dokumen) {
+                // Mode REPLACE: Hapus file lama dari storage
+                $oldFiles = json_decode($existingFile->link_file, true);
+                if ($oldFiles) {
+                    foreach ($oldFiles as $oldFile) {
+                        if (isset($oldFile['path'])) {
+                            \Storage::disk('public')->delete($oldFile['path']);
+                        }
+                    }
+                }
+
+                // Update dengan file baru saja (replace)
+                $existingFile->update([
+                    'link_file' => json_encode($uploadedFiles),
+                    'keterangan' => $this->keterangan_upload,
+                    'is_perubahan' => $this->is_perubahan,
+                ]);
+            } else {
+                // Mode APPEND: Gabungkan file lama + file baru
+                $oldFiles = json_decode($existingFile->link_file, true) ?? [];
+                $mergedFiles = array_merge($oldFiles, $uploadedFiles);
+
+                // Update dengan gabungan file lama + baru
+                $existingFile->update([
+                    'link_file' => json_encode($mergedFiles),
+                    'keterangan' => $this->keterangan_upload,
+                    'is_perubahan' => $this->is_perubahan,
+                ]);
+            }
+        } else {
+            // Simpan ke database sebagai JSON (record baru)
+            FileBuktiDukung::create([
+                'bukti_dukung_id' => $this->bukti_dukung_id,
+                'opd_id' => $this->opd_id,
+                'link_file' => json_encode($uploadedFiles),
+                'keterangan' => $this->keterangan_upload,
+                'is_perubahan' => $this->is_perubahan,
+            ]);
+        }
 
         // Reset the file input
         $this->file_bukti_dukung = [];
+        $this->keterangan_upload = '';
+        $this->is_perubahan = false;
+        $this->ganti_semua_dokumen = false;
         $this->js('window.location.reload()');
-
-        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Berhasil upload bukti dukung.');
-
-        // flasher()->addSuccess('File berhasil diunggah!');
+        $message = $this->ganti_semua_dokumen
+            ? 'Berhasil mengganti semua dokumen.'
+            : 'Berhasil menambahkan dokumen.';
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success($message);
     }
 
     public function setBuktiDukungId($bukti_dukung_id)
     {
         $this->bukti_dukung_id = $bukti_dukung_id;
+    }
+
+    public function deleteFileBuktiDukung()
+    {
+        if (!$this->selectedFileBuktiDukungId) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File bukti dukung tidak ditemukan.');
+            return;
+        }
+
+        $fileBuktiDukung = FileBuktiDukung::find($this->selectedFileBuktiDukungId);
+
+        if ($fileBuktiDukung) {
+            // Hapus file dari storage
+            $files = json_decode($fileBuktiDukung->link_file, true);
+            if ($files) {
+                foreach ($files as $file) {
+                    if (isset($file['path'])) {
+                        \Storage::disk('public')->delete($file['path']);
+                    }
+                }
+            }
+
+            // Hapus record dari database
+            $fileBuktiDukung->delete();
+
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File berhasil dihapus.');
+            $this->js('window.location.reload()');
+        }
     }
 
     public function simpanVerifikasi()
@@ -215,6 +318,20 @@ class BuktiDukung extends Component
             ->get();
     }
 
+    public function editPenilaian()
+    {
+        $this->is_editing_penilaian = true;
+        if ($this->penilaianTersimpan) {
+            $this->tingkatan_nilai_id = $this->penilaianTersimpan->tingkatan_nilai_id;
+        }
+    }
+
+    public function batalEditPenilaian()
+    {
+        $this->is_editing_penilaian = false;
+        $this->tingkatan_nilai_id = null;
+    }
+
     public function simpanPenilaian()
     {
         $this->validate([
@@ -236,31 +353,44 @@ class BuktiDukung extends Component
                     return;
                 }
 
-                PenilaianMandiri::create([
-                    'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
-                    'kriteria_komponen_id' => $this->kriteria_komponen_id,
-                    'opd_id' => $this->opd_id,
-                    'is_perubahan' => false,
-                ]);
+                PenilaianMandiri::updateOrCreate(
+                    [
+                        'kriteria_komponen_id' => $this->kriteria_komponen_id,
+                        'opd_id' => $this->opd_id,
+                    ],
+                    [
+                        'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
+                        'is_perubahan' => false,
+                    ]
+                );
             } elseif ($jenis == 'penjamin') {
-                PenilaianPenjamin::create([
-                    'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
-                    'kriteria_komponen_id' => $this->kriteria_komponen_id,
-                ]);
+                PenilaianPenjamin::updateOrCreate(
+                    [
+                        'kriteria_komponen_id' => $this->kriteria_komponen_id,
+                    ],
+                    [
+                        'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
+                    ]
+                );
             } elseif ($jenis == 'penilai') {
-                PenilaianPenilai::create([
-                    'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
-                    'kriteria_komponen_id' => $this->kriteria_komponen_id,
-                ]);
+                PenilaianPenilai::updateOrCreate(
+                    [
+                        'kriteria_komponen_id' => $this->kriteria_komponen_id,
+                    ],
+                    [
+                        'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
+                    ]
+                );
             } else {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Role tidak memiliki akses untuk melakukan penilaian.');
                 return;
             }
 
-            // Reset form
-            $this->tingkatan_nilai_id = null;
-
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Penilaian berhasil disimpan.');
+
+            // Reset mode edit
+            $this->is_editing_penilaian = false;
+            $this->tingkatan_nilai_id = null;
         } catch (\Exception $e) {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menyimpan penilaian: ' . $e->getMessage());
         }
