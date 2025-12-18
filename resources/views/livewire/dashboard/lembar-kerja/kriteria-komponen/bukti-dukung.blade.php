@@ -133,6 +133,11 @@
                                                             wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
                                                             class="btn btn-sm btn-light add-btn"><i
                                                                 class="ri-file-edit-line align-bottom me-1"></i>Evaluasi</button>
+                                                    @elseif (Auth::user()->role->jenis == 'penjamin' || Auth::user()->role->jenis == 'admin')
+                                                        <button @click="tab = 'penilaian'; menu = 'dokumen'"
+                                                            wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
+                                                            class="btn btn-sm btn-light add-btn"><i
+                                                                class="ri-file-edit-line align-bottom me-1"></i>Penilaian</button>
                                                     @elseif (Auth::user()->role->jenis == 'penilai' || Auth::user()->role->jenis == 'admin')
                                                         <button @click="tab = 'penilaian'; menu = 'dokumen'"
                                                             wire:click="setBuktiDukungId({{ $bukti_dukung->id }})"
@@ -187,14 +192,14 @@
                                     @endif
 
                                     {{-- Menu Penilaian: Admin, verifikator, dan opd --}}
-                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd']))
+                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd', 'penjamin']))
                                         <a @click="menu = 'penilaian'" :class="menu === 'penilaian' ? 'active' : ''"
                                             href="javascript:void(0)" class="nav-link mb-2"><i
                                                 class="ri-file-edit-line me-1 align-middle"></i>Penilaian</a>
                                     @endif
 
                                     {{-- Menu Verifikasi: Admin dan penilai --}}
-                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator']))
+                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']))
                                         <a @click="menu = 'verifikasi'" :class="menu === 'verifikasi' ? 'active' : ''"
                                             href="javascript:void(0)" class="nav-link mb-2"><i
                                                 class="ri-check-double-line me-1 align-middle"></i>Verifikasi</a>

@@ -17,7 +17,7 @@
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Mapping</h4>
 
-                {{-- @dump(session()->all()
+                    {{-- @dump(session()->all()
                     @dump($tahun_id) --}}
 
                     <div class="page-title-right">
@@ -50,6 +50,15 @@
                             </div><!-- end card header --> --}}
 
                             <div class="card-body">
+                                @if ($errors->any())
+                                    <div class="alert alert-danger">
+                                        <ul class="mb-0">
+                                            @foreach ($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <div>
                                         {{-- <p class="text-muted mb-0">Kelola struktur mapping komponen penilaian</p> --}}
@@ -105,7 +114,10 @@
                                                                             data-bs-target="#addSubKomponenModal"><i
                                                                                 class="ri-add-line align-middle me-2 text-success"></i>Tambah
                                                                             Sub</a></li>
-                                                                    <li><a class="dropdown-item" href="#"><i
+                                                                    <li><a class="dropdown-item" href="#"
+                                                                            wire:click="editKomponen({{ $komponen->id }})"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#editKomponenModal"><i
                                                                                 class="ri-edit-line align-middle me-2 text-primary"></i>Edit</a>
                                                                     </li>
                                                                     <li>
@@ -125,8 +137,7 @@
                                                     @foreach ($komponen['sub_komponen'] as $sub_komponen)
                                                         {{-- Sub Komponen (child of komponen) --}}
                                                         <tr class="row-sub"
-                                                            x-show="expandedKomponen[{{ $komponen->id }}]"
-                                                            x-transition
+                                                            x-show="expandedKomponen[{{ $komponen->id }}]" x-transition
                                                             data-parent="komponen-{{ $komponen->id }}"
                                                             data-id="sub-{{ $sub_komponen->id }}">
                                                             <td>
@@ -156,7 +167,10 @@
                                                                                 data-bs-target="#addKriteriaModal"><i
                                                                                     class="ri-add-line align-middle me-2 text-success"></i>Tambah
                                                                                 Kriteria</a></li>
-                                                                        <li><a class="dropdown-item" href="#"><i
+                                                                        <li><a class="dropdown-item" href="#"
+                                                                                wire:click="editSubKomponen({{ $sub_komponen->id }})"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#editSubKomponenModal"><i
                                                                                     class="ri-edit-line align-middle me-2 text-primary"></i>Edit</a>
                                                                         </li>
                                                                         <li>
@@ -177,12 +191,12 @@
                                                             {{-- Kriteria Komponen (child of sub) --}}
                                                             <tr class="row-kriteria"
                                                                 x-show="expandedKomponen[{{ $komponen->id }}] && expandedSub[{{ $sub_komponen->id }}]"
-                                                                x-transition
-                                                                data-parent="sub-{{ $sub_komponen->id }}"
+                                                                x-transition data-parent="sub-{{ $sub_komponen->id }}"
                                                                 data-id="kriteria-{{ $kriteria_komponen->id }}">
                                                                 <td>
                                                                     <span style="padding-left:40px;"></span>
-                                                                    <span @click="toggleKriteria({{ $kriteria_komponen->id }})"
+                                                                    <span
+                                                                        @click="toggleKriteria({{ $kriteria_komponen->id }})"
                                                                         style="cursor:pointer; user-select:none; color:#f06548; font-weight:bold;"
                                                                         x-text="expandedKriteria[{{ $kriteria_komponen->id }}] ? '−' : '+'">+</span>
                                                                     {{ $kriteria_komponen->kode }}
@@ -209,7 +223,10 @@
                                                                                         class="ri-add-line align-middle me-2 text-success"></i>Tambah
                                                                                     Bukti</a></li>
                                                                             <li><a class="dropdown-item"
-                                                                                    href="#"><i
+                                                                                    href="#"
+                                                                                    wire:click="editKriteriaKomponen({{ $kriteria_komponen->id }})"
+                                                                                    data-bs-toggle="modal"
+                                                                                    data-bs-target="#editKriteriaModal"><i
                                                                                         class="ri-edit-line align-middle me-2 text-primary"></i>Edit</a>
                                                                             </li>
                                                                             <li>
@@ -242,6 +259,9 @@
                                                                     <td>
                                                                         <div class="hstack gap-2">
                                                                             <button class="btn btn-sm btn-soft-primary"
+                                                                                wire:click="editBuktiDukung({{ $bukti_dukung->id }})"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#editBuktiModal"
                                                                                 title="Edit"><i
                                                                                     class="ri-edit-line"></i></button>
                                                                             <button class="btn btn-sm btn-soft-danger"
@@ -306,6 +326,15 @@
                                     class="text-danger">*</span></label>
                             <input wire:model="bobot_komponen" type="number" step="0.01" class="form-control"
                                 id="komponenBobot" placeholder="Contoh: 25.00">
+                        </div>
+                        <div class="mb-3">
+                            <label for="komponenEvaluator" class="form-label">Evaluator/Verifikator</label>
+                            <select wire:model="role_id" class="form-select" id="komponenEvaluator">
+                                <option value="">Pilih Role</option>
+                                @foreach ($this->roleoptions as $role)
+                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label for="komponenTahun" class="form-label">Tahun <span
@@ -466,6 +495,11 @@
                             <textarea wire:model="nama_bukti" class="form-control" id="buktiNama" rows="3"
                                 placeholder="Masukkan nama bukti dukung"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="buktiKriteria" class="form-label">Kriteria Penilaian</label>
+                            <textarea wire:model="kriteria_penilaian" class="form-control" id="buktiKriteria" rows="2"
+                                placeholder="Masukkan kriteria penilaian"></textarea>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -473,6 +507,211 @@
                     <button
                         x-on:click="$wire.set('kriteria_komponen_id', kriteriaKomponenId).then(() => { $wire.addBuktiDukung() })"
                         type="button" class="btn btn-warning" data-bs-dismiss="modal">Simpan</button>
+                </div>
+                @if ($errors->all())
+                    <div class="alert alert-danger m-3">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Komponen -->
+    <div wire:ignore.self class="modal fade" id="editKomponenModal" tabindex="-1"
+        aria-labelledby="editKomponenModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title text-white" id="editKomponenModalLabel">Edit Komponen</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close" wire:click="resetFormKomponen"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="editKomponenKode" class="form-label">Kode Komponen <span
+                                    class="text-danger">*</span></label>
+                            <input wire:model="kd_komponen" type="text" class="form-control"
+                                id="editKomponenKode" placeholder="Contoh: K1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editKomponenNama" class="form-label">Nama Komponen <span
+                                    class="text-danger">*</span></label>
+                            <textarea wire:model="nama_komponen" class="form-control" id="editKomponenNama" rows="2"
+                                placeholder="Masukkan nama komponen"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editKomponenBobot" class="form-label">Bobot <span
+                                    class="text-danger">*</span></label>
+                            <input wire:model="bobot_komponen" type="number" step="0.01" class="form-control"
+                                id="editKomponenBobot" placeholder="Contoh: 25.00">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editKomponenEvaluator" class="form-label">Evaluator/Verifikator</label>
+                            <select wire:model="role_id" class="form-select" id="editKomponenEvaluator">
+                                <option value="">Pilih Role</option>
+                                @foreach ($this->roleoptions as $role)
+                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @if ($errors->all())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        wire:click="resetFormKomponen">Batal</button>
+                    <button wire:click="updateKomponen" type="button" class="btn btn-primary"
+                        data-bs-dismiss="modal">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Sub Komponen -->
+    <div wire:ignore.self class="modal fade" id="editSubKomponenModal" tabindex="-1"
+        aria-labelledby="editSubKomponenModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title text-white" id="editSubKomponenModalLabel">Edit Sub Komponen</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close" wire:click="resetFormSubKomponen"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="editSubKode" class="form-label">Kode Sub Komponen <span
+                                    class="text-danger">*</span></label>
+                            <input wire:model="kd_sub_komponen" type="text" class="form-control" id="editSubKode"
+                                placeholder="Contoh: K1.1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSubNama" class="form-label">Nama Sub Komponen <span
+                                    class="text-danger">*</span></label>
+                            <textarea wire:model="nama_sub_komponen" class="form-control" id="editSubNama" rows="2"
+                                placeholder="Masukkan nama sub komponen"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSubBobot" class="form-label">Bobot <span
+                                    class="text-danger">*</span></label>
+                            <input wire:model="bobot_sub_komponen" type="number" step="0.01"
+                                class="form-control" id="editSubBobot" placeholder="Contoh: 10.00">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        wire:click="resetFormSubKomponen">Batal</button>
+                    <button wire:click="updateSubKomponen" type="button" class="btn btn-success"
+                        data-bs-dismiss="modal">Update</button>
+                </div>
+                @if ($errors->all())
+                    <div class="alert alert-danger m-3">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Kriteria Komponen -->
+    <div wire:ignore.self class="modal fade" id="editKriteriaModal" tabindex="-1"
+        aria-labelledby="editKriteriaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info">
+                    <h5 class="modal-title text-white" id="editKriteriaModalLabel">Edit Kriteria Komponen</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close" wire:click="resetFormKriteriaKomponen"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="editKriteriaKode" class="form-label">Kode Kriteria <span
+                                    class="text-danger">*</span></label>
+                            <input wire:model="kd_kriteria" type="text" class="form-control"
+                                id="editKriteriaKode" placeholder="Contoh: K1.1.1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editKriteriaNama" class="form-label">Nama Kriteria <span
+                                    class="text-danger">*</span></label>
+                            <textarea wire:model="nama_kriteria" class="form-control" id="editKriteriaNama" rows="3"
+                                placeholder="Masukkan nama kriteria"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editKriteriaJenisNilai" class="form-label">Jenis Nilai <span
+                                    class="text-danger">*</span></label>
+                            <select wire:model="jenis_nilai_id" class="form-select" id="editKriteriaJenisNilai">
+                                <option selected disabled>Pilih Jenis Nilai</option>
+                                @foreach ($this->jenisnilaioptions() as $jenisnilai)
+                                    <option value="{{ $jenisnilai->id }}">{{ $jenisnilai->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        wire:click="resetFormKriteriaKomponen">Batal</button>
+                    <button wire:click="updateKriteriaKomponen" type="button" class="btn btn-info"
+                        data-bs-dismiss="modal">Update</button>
+                </div>
+                @if ($errors->all())
+                    <div class="alert alert-danger m-3">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Bukti Dukung -->
+    <div wire:ignore.self class="modal fade" id="editBuktiModal" tabindex="-1"
+        aria-labelledby="editBuktiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white" id="editBuktiModalLabel">Edit Bukti Dukung</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close" wire:click="resetFormBuktiDukung"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="editBuktiNama" class="form-label">Nama Bukti Dukung <span
+                                    class="text-danger">*</span></label>
+                            <textarea wire:model="nama_bukti" class="form-control" id="editBuktiNama" rows="3"
+                                placeholder="Masukkan nama bukti dukung"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        wire:click="resetFormBuktiDukung">Batal</button>
+                    <button wire:click="updateBuktiDukung" type="button" class="btn btn-warning"
+                        data-bs-dismiss="modal">Update</button>
                 </div>
                 @if ($errors->all())
                     <div class="alert alert-danger m-3">

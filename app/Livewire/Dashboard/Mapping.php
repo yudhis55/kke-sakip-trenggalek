@@ -10,14 +10,19 @@ use App\Models\SubKomponen;
 use App\Models\JenisNilai;
 use App\Models\KriteriaKomponen;
 use App\Models\BuktiDukung;
+use App\Models\Role;
 
 class Mapping extends Component
 {
-    public $kd_komponen, $nama_komponen, $bobot_komponen;
+    public $kd_komponen, $nama_komponen, $bobot_komponen, $role_id;
     public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id;
-    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id;
+    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian;
     public $tahun_id;
+
+    // Edit mode properties
+    public $editKomponenId, $editSubKomponenId, $editKriteriaKomponenId, $editBuktiDukungId;
+    public $isEditMode = false;
 
     public function mount()
     {
@@ -35,6 +40,12 @@ class Mapping extends Component
     public function jenisnilaioptions()
     {
         return JenisNilai::all();
+    }
+
+    #[Computed]
+    public function roleoptions()
+    {
+        return Role::all();
     }
 
     #[Computed]
@@ -79,6 +90,7 @@ class Mapping extends Component
             'kd_komponen' => 'required|unique:komponen,kode',
             'nama_komponen' => 'required',
             'bobot_komponen' => 'required|numeric|min:0',
+            'role_id' => 'nullable|exists:role,id',
         ]);
 
         // Calculate total existing bobot for the same tahun_id
@@ -96,12 +108,14 @@ class Mapping extends Component
             'nama' => $this->nama_komponen,
             'bobot' => $this->bobot_komponen,
             'tahun_id' => $this->tahun_id,
+            'role_id' => $this->role_id,
         ]);
 
         // Reset form fields
         $this->kd_komponen = '';
         $this->nama_komponen = '';
         $this->bobot_komponen = '';
+        $this->role_id = null;
 
         unset($this->fullMapping);
     }
@@ -177,11 +191,13 @@ class Mapping extends Component
     {
         $this->validate([
             'nama_bukti' => 'required',
+            'kriteria_penilaian' => 'nullable|string',
         ]);
 
         // Create Bukti Dukung
         BuktiDukung::create([
             'nama' => $this->nama_bukti,
+            'kriteria_penilaian' => $this->kriteria_penilaian,
             'kriteria_komponen_id' => $this->kriteria_komponen_id,
             'sub_komponen_id' => KriteriaKomponen::find($this->kriteria_komponen_id)->sub_komponen_id,
             'komponen_id' => KriteriaKomponen::find($this->kriteria_komponen_id)->komponen_id,
@@ -192,8 +208,211 @@ class Mapping extends Component
         $this->kd_bukti = '';
         $this->nama_bukti = '';
         $this->bobot_bukti = '';
+        $this->kriteria_penilaian = '';
         $this->kriteria_komponen_id = '';
 
+        unset($this->fullMapping);
+    }
+
+    // Edit functions
+    public function editKomponen($id)
+    {
+        $komponen = Komponen::find($id);
+        if ($komponen) {
+            $this->editKomponenId = $id;
+            $this->kd_komponen = $komponen->kode;
+            $this->nama_komponen = $komponen->nama;
+            $this->bobot_komponen = $komponen->bobot;
+            $this->role_id = $komponen->role_id;
+            $this->isEditMode = true;
+        }
+    }
+
+    public function updateKomponen()
+    {
+        $this->validate([
+            'kd_komponen' => 'required',
+            'nama_komponen' => 'required',
+            'bobot_komponen' => 'required|numeric|min:0',
+            'role_id' => 'nullable|exists:role,id',
+        ]);
+
+        $komponen = Komponen::find($this->editKomponenId);
+        if ($komponen) {
+            // Calculate total bobot excluding current komponen
+            $totalBobotExisting = Komponen::where('tahun_id', $this->tahun_id)
+                ->where('id', '!=', $this->editKomponenId)
+                ->sum('bobot');
+
+            if (($totalBobotExisting + $this->bobot_komponen) > 100) {
+                $sisaBobot = 100 - $totalBobotExisting;
+                $this->addError('bobot_komponen', "Total bobot komponen tidak boleh melebihi 100. Sisa bobot yang tersedia: {$sisaBobot}");
+                return;
+            }
+
+            $komponen->update([
+                'kode' => $this->kd_komponen,
+                'nama' => $this->nama_komponen,
+                'bobot' => $this->bobot_komponen,
+                'role_id' => $this->role_id,
+            ]);
+
+            $this->resetFormKomponen();
+        }
+    }
+
+    public function editSubKomponen($id)
+    {
+        $subKomponen = SubKomponen::find($id);
+        if ($subKomponen) {
+            $this->editSubKomponenId = $id;
+            $this->kd_sub_komponen = $subKomponen->kode;
+            $this->nama_sub_komponen = $subKomponen->nama;
+            $this->bobot_sub_komponen = $subKomponen->bobot;
+            $this->komponen_id = $subKomponen->komponen_id;
+            $this->isEditMode = true;
+        }
+    }
+
+    public function updateSubKomponen()
+    {
+        $this->validate([
+            'kd_sub_komponen' => 'required',
+            'nama_sub_komponen' => 'required',
+            'bobot_sub_komponen' => 'required|numeric|min:0',
+        ]);
+
+        $subKomponen = SubKomponen::find($this->editSubKomponenId);
+        if ($subKomponen) {
+            $komponen = Komponen::find($subKomponen->komponen_id);
+
+            // Calculate total bobot excluding current sub komponen
+            $totalBobotExisting = SubKomponen::where('komponen_id', $subKomponen->komponen_id)
+                ->where('id', '!=', $this->editSubKomponenId)
+                ->sum('bobot');
+
+            if (($totalBobotExisting + $this->bobot_sub_komponen) > $komponen->bobot) {
+                $sisaBobot = $komponen->bobot - $totalBobotExisting;
+                $this->addError('bobot_sub_komponen', "Total bobot sub komponen tidak boleh melebihi bobot komponen induk ({$komponen->bobot}). Sisa bobot yang tersedia: {$sisaBobot}");
+                return;
+            }
+
+            $subKomponen->update([
+                'kode' => $this->kd_sub_komponen,
+                'nama' => $this->nama_sub_komponen,
+                'bobot' => $this->bobot_sub_komponen,
+            ]);
+
+            $this->resetFormSubKomponen();
+        }
+    }
+
+    public function editKriteriaKomponen($id)
+    {
+        $kriteria = KriteriaKomponen::find($id);
+        if ($kriteria) {
+            $this->editKriteriaKomponenId = $id;
+            $this->kd_kriteria = $kriteria->kode;
+            $this->nama_kriteria = $kriteria->nama;
+            $this->jenis_nilai_id = $kriteria->jenis_nilai_id;
+            $this->sub_komponen_id = $kriteria->sub_komponen_id;
+            $this->isEditMode = true;
+        }
+    }
+
+    public function updateKriteriaKomponen()
+    {
+        $this->validate([
+            'kd_kriteria' => 'required',
+            'nama_kriteria' => 'required',
+            'jenis_nilai_id' => 'required|exists:jenis_nilai,id',
+        ]);
+
+        $kriteria = KriteriaKomponen::find($this->editKriteriaKomponenId);
+        if ($kriteria) {
+            $kriteria->update([
+                'kode' => $this->kd_kriteria,
+                'nama' => $this->nama_kriteria,
+                'jenis_nilai_id' => $this->jenis_nilai_id,
+            ]);
+
+            $this->resetFormKriteriaKomponen();
+        }
+    }
+
+    public function editBuktiDukung($id)
+    {
+        $bukti = BuktiDukung::find($id);
+        if ($bukti) {
+            $this->editBuktiDukungId = $id;
+            $this->kd_bukti = $bukti->kode;
+            $this->nama_bukti = $bukti->nama;
+            $this->kriteria_penilaian = $bukti->kriteria_penilaian;
+            $this->kriteria_komponen_id = $bukti->kriteria_komponen_id;
+            $this->isEditMode = true;
+        }
+    }
+
+    public function updateBuktiDukung()
+    {
+        $this->validate([
+            'nama_bukti' => 'required',
+            'kriteria_penilaian' => 'nullable|string',
+        ]);
+
+        $bukti = BuktiDukung::find($this->editBuktiDukungId);
+        if ($bukti) {
+            $bukti->update([
+                'nama' => $this->nama_bukti,
+                'kriteria_penilaian' => $this->kriteria_penilaian,
+            ]);
+
+            $this->resetFormBuktiDukung();
+        }
+    }
+
+    // Reset functions
+    public function resetFormKomponen()
+    {
+        $this->kd_komponen = '';
+        $this->nama_komponen = '';
+        $this->bobot_komponen = '';
+        $this->role_id = null;
+        $this->editKomponenId = null;
+        $this->isEditMode = false;
+        unset($this->fullMapping);
+    }
+
+    public function resetFormSubKomponen()
+    {
+        $this->kd_sub_komponen = '';
+        $this->nama_sub_komponen = '';
+        $this->bobot_sub_komponen = '';
+        $this->komponen_id = '';
+        $this->editSubKomponenId = null;
+        $this->isEditMode = false;
+        unset($this->fullMapping);
+    }
+
+    public function resetFormKriteriaKomponen()
+    {
+        $this->kd_kriteria = '';
+        $this->nama_kriteria = '';
+        $this->jenis_nilai_id = '';
+        $this->sub_komponen_id = '';
+        $this->editKriteriaKomponenId = null;
+        $this->isEditMode = false;
+        unset($this->fullMapping);
+    }
+
+    public function resetFormBuktiDukung()
+    {
+        $this->kd_bukti = '';
+        $this->nama_bukti = '';
+        $this->kriteria_penilaian = '';
+        $this->kriteria_komponen_id = '';
+        $this->editBuktiDukungId = null;
+        $this->isEditMode = false;
         unset($this->fullMapping);
     }
 
