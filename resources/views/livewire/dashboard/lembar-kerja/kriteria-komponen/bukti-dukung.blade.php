@@ -376,7 +376,8 @@
                                                                         @if ($fileRecord->keterangan)
                                                                             <p class="mb-1">
                                                                                 <strong>Keterangan:</strong>
-                                                                                {{ $fileRecord->keterangan }}</p>
+                                                                                {{ $fileRecord->keterangan }}
+                                                                            </p>
                                                                         @endif
                                                                         <p class="mb-0 small text-muted">
                                                                             <i class="ri-time-line me-1"></i>
@@ -753,327 +754,344 @@
                                                             </div>
                                                         @endif
                                                     @endif
+                                                </div>
                                             @endif
                                         </div>
                                     </div>
-                                </div>
-                                <div x-show="menu === 'verifikasi'" aria-labelledby="v-pills-profile-tab">
-                                    <div>
-                                        @php $canDoPenilaian = $this->canDoPenilaian; @endphp
-                                        @if (!$canDoPenilaian['allowed'])
-                                            <div class="alert alert-warning" role="alert">
-                                                <i class="ri-alert-line me-2"></i>
-                                                <strong>Upload Bukti Dukung Diperlukan</strong>
-                                                <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
-                                            </div>
-                                        @else
-                                            <div class="mb-2">
-                                                <div class="ms-3">
-                                                    {{-- Riwayat Verifikasi --}}
-                                                    @if ($this->riwayatVerifikasi->isNotEmpty())
-                                                        <div class="live-preview mb-4">
-                                                            <h6 class="mb-3">Riwayat Verifikasi</h6>
-                                                            <div class="table-responsive">
-                                                                <table class="table align-middle table-nowrap mb-0">
-                                                                    <thead class="table-light">
-                                                                        <tr>
-                                                                            <th scope="col">Status Verifikasi</th>
-                                                                            <th scope="col">Keterangan</th>
-                                                                            <th scope="col">Oleh</th>
-                                                                            <th scope="col">Tanggal</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        @foreach ($this->riwayatVerifikasi as $verifikasi)
+                                    <div x-show="menu === 'verifikasi'" aria-labelledby="v-pills-profile-tab">
+                                        <div>
+                                            @php $canDoPenilaian = $this->canDoPenilaian; @endphp
+                                            @if (!$canDoPenilaian['allowed'])
+                                                <div class="alert alert-warning" role="alert">
+                                                    <i class="ri-alert-line me-2"></i>
+                                                    <strong>Upload Bukti Dukung Diperlukan</strong>
+                                                    <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
+                                                </div>
+                                            @else
+                                                <div class="mb-2">
+                                                    <div class="ms-3">
+                                                        {{-- Riwayat Verifikasi --}}
+                                                        @if ($this->riwayatVerifikasi->isNotEmpty())
+                                                            <div class="live-preview mb-4">
+                                                                <h6 class="mb-3">Riwayat Verifikasi</h6>
+                                                                <div class="table-responsive">
+                                                                    <table
+                                                                        class="table align-middle table-nowrap mb-0">
+                                                                        <thead class="table-light">
                                                                             <tr>
-                                                                                <td>
-                                                                                    @if ($verifikasi->is_verified)
-                                                                                        <span class="badge bg-success">
-                                                                                            <i
-                                                                                                class="ri-check-line me-1"></i>Terverifikasi
-                                                                                        </span>
-                                                                                    @else
-                                                                                        <span class="badge bg-danger">
-                                                                                            <i
-                                                                                                class="ri-close-line me-1"></i>Tidak
-                                                                                            Sesuai
-                                                                                        </span>
-                                                                                    @endif
-                                                                                </td>
-                                                                                <td>{{ $verifikasi->keterangan ?? '-' }}
-                                                                                </td>
-                                                                                <td>{{ $verifikasi->role->nama ?? '-' }}
-                                                                                </td>
-                                                                                <td>{{ $verifikasi->created_at->format('d M Y H:i') }}
-                                                                                </td>
+                                                                                <th scope="col">Status Verifikasi
+                                                                                </th>
+                                                                                <th scope="col">Keterangan</th>
+                                                                                <th scope="col">Oleh</th>
+                                                                                <th scope="col">Tanggal</th>
                                                                             </tr>
-                                                                        @endforeach
-                                                                    </tbody>
-                                                                </table>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @foreach ($this->riwayatVerifikasi as $verifikasi)
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        @if ($verifikasi->is_verified)
+                                                                                            <span
+                                                                                                class="badge bg-success">
+                                                                                                <i
+                                                                                                    class="ri-check-line me-1"></i>Terverifikasi
+                                                                                            </span>
+                                                                                        @else
+                                                                                            <span
+                                                                                                class="badge bg-danger">
+                                                                                                <i
+                                                                                                    class="ri-close-line me-1"></i>Tidak
+                                                                                                Sesuai
+                                                                                            </span>
+                                                                                        @endif
+                                                                                    </td>
+                                                                                    <td>{{ $verifikasi->keterangan ?? '-' }}
+                                                                                    </td>
+                                                                                    <td>{{ $verifikasi->role->nama ?? '-' }}
+                                                                                    </td>
+                                                                                    <td>{{ $verifikasi->created_at->format('d M Y H:i') }}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            @endforeach
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    @endif
+                                                        @endif
 
-                                                    {{-- Form Verifikasi Baru --}}
-                                                    <h6 class="mb-3">Form Verifikasi</h6>
-                                                    <div class="form-check form-switch mt-3">
-                                                        <input wire:model.live="is_verified" value="1"
-                                                            type="radio" class="form-check-input" role="switch"
-                                                            id="verifikasiSesuai" name="verifikasi_status">
-                                                        <label class="form-check-label" for="verifikasiSesuai">
-                                                            <i class="ri-check-line text-success me-1"></i>Ya, sudah
-                                                            diperiksa dan sesuai
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check form-switch mt-3">
-                                                        <input wire:model.live="is_verified" value="0"
-                                                            type="radio" class="form-check-input" role="switch"
-                                                            id="verifikasiTidakSesuai" name="verifikasi_status">
-                                                        <label class="form-check-label" for="verifikasiTidakSesuai">
-                                                            <i class="ri-close-line text-danger me-1"></i>Tidak, belum
-                                                            ada
-                                                            kesesuaian
-                                                        </label>
-                                                    </div>
-                                                    <div class="mb-3 mt-3">
-                                                        <label for="keterangan" class="form-label">Keterangan</label>
-                                                        <textarea wire:model="keterangan_verifikasi" class="form-control" id="keterangan" rows="3"
-                                                            placeholder="Tambahkan catatan atau keterangan..."></textarea>
-                                                        @error('keterangan_verifikasi')
-                                                            <span class="text-danger small">{{ $message }}</span>
+                                                        {{-- Form Verifikasi Baru --}}
+                                                        <h6 class="mb-3">Form Verifikasi</h6>
+                                                        <div class="form-check form-switch mt-3">
+                                                            <input wire:model.live="is_verified" value="1"
+                                                                type="radio" class="form-check-input"
+                                                                role="switch" id="verifikasiSesuai"
+                                                                name="verifikasi_status">
+                                                            <label class="form-check-label" for="verifikasiSesuai">
+                                                                <i class="ri-check-line text-success me-1"></i>Ya,
+                                                                sudah
+                                                                diperiksa dan sesuai
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check form-switch mt-3">
+                                                            <input wire:model.live="is_verified" value="0"
+                                                                type="radio" class="form-check-input"
+                                                                role="switch" id="verifikasiTidakSesuai"
+                                                                name="verifikasi_status">
+                                                            <label class="form-check-label"
+                                                                for="verifikasiTidakSesuai">
+                                                                <i class="ri-close-line text-danger me-1"></i>Tidak,
+                                                                belum
+                                                                ada
+                                                                kesesuaian
+                                                            </label>
+                                                        </div>
+                                                        <div class="mb-3 mt-3">
+                                                            <label for="keterangan"
+                                                                class="form-label">Keterangan</label>
+                                                            <textarea wire:model="keterangan_verifikasi" class="form-control" id="keterangan" rows="3"
+                                                                placeholder="Tambahkan catatan atau keterangan..."></textarea>
+                                                            @error('keterangan_verifikasi')
+                                                                <span class="text-danger small">{{ $message }}</span>
+                                                            @enderror
+                                                        </div>
+                                                        <button wire:click="simpanVerifikasi" class="btn btn-primary">
+                                                            <i class="ri-save-line me-1"></i>Simpan
+                                                        </button>
+                                                        @error('is_verified')
+                                                            <div class="text-danger small mt-2">{{ $message }}</div>
                                                         @enderror
                                                     </div>
-                                                    <button wire:click="simpanVerifikasi" class="btn btn-primary">
-                                                        <i class="ri-save-line me-1"></i>Simpan
-                                                    </button>
-                                                    @error('is_verified')
-                                                        <div class="text-danger small mt-2">{{ $message }}</div>
-                                                    @enderror
                                                 </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!--  end col -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                                            @endif
+                                        </div>
+                                    </div><!-- end menu verifikasi -->
+                                </div><!-- end tab-content -->
+                            </div><!-- end col-md-10 -->
+                        </div><!--  end row -->
+                    </div><!-- end card-body -->
+                </div><!-- end card -->
+            </div><!-- end col -->
+        </div><!-- end row (tab penilaian) -->
 
-    <div wire:ignore.self id="viewBuktiDukung" class="modal fade" tabindex="-1" role="dialog"
-        aria-labelledby="viewBuktiDukungLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Dokumen Bukti Dukung</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <div class="modal-body">
-                    @if ($this->selectedFileBuktiDukung)
-                        @if (count($this->selectedFileBuktiDukung) > 1)
-                            {{-- Multiple files: show tabs --}}
-                            <ul class="nav nav-tabs nav-bordered mb-3" role="tablist">
-                                @foreach ($this->selectedFileBuktiDukung as $index => $file)
-                                    <li class="nav-item" role="presentation">
-                                        <a href="#file-{{ $index }}" data-bs-toggle="tab"
-                                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
-                                            class="nav-link {{ $index === 0 ? 'active' : '' }}" role="tab">
-                                            <i
-                                                class="ri-file-line me-1"></i>{{ $file['original_name'] ?? 'Dokumen ' . ($index + 1) }}
-                                        </a>
-                                    </li>
-                                @endforeach
-                            </ul>
-                            <div class="tab-content">
-                                @foreach ($this->selectedFileBuktiDukung as $index => $file)
-                                    <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
-                                        id="file-{{ $index }}" role="tabpanel">
-                                        @if (str_ends_with(strtolower($file['path']), '.pdf'))
-                                            <embed src="{{ asset('storage/' . $file['path']) }}"
-                                                type="application/pdf" width="100%" height="600" />
-                                        @else
-                                            <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
-                                                alt="{{ $file['original_name'] }}" />
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            {{-- Single file --}}
-                            @php $file = $this->selectedFileBuktiDukung[0]; @endphp
-                            @if (str_ends_with(strtolower($file['path']), '.pdf'))
-                                <embed src="{{ asset('storage/' . $file['path']) }}" type="application/pdf"
-                                    width="100%" height="600" />
+        <div wire:ignore.self id="viewBuktiDukung" class="modal fade" tabindex="-1" role="dialog"
+            aria-labelledby="viewBuktiDukungLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="myModalLabel">Dokumen Bukti Dukung</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @if ($this->selectedFileBuktiDukung)
+                            @if (count($this->selectedFileBuktiDukung) > 1)
+                                {{-- Multiple files: show tabs --}}
+                                <ul class="nav nav-tabs nav-bordered mb-3" role="tablist">
+                                    @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                        <li class="nav-item" role="presentation">
+                                            <a href="#file-{{ $index }}" data-bs-toggle="tab"
+                                                aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                                class="nav-link {{ $index === 0 ? 'active' : '' }}" role="tab">
+                                                <i
+                                                    class="ri-file-line me-1"></i>{{ $file['original_name'] ?? 'Dokumen ' . ($index + 1) }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <div class="tab-content">
+                                    @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                        <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
+                                            id="file-{{ $index }}" role="tabpanel">
+                                            @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                                <embed src="{{ asset('storage/' . $file['path']) }}"
+                                                    type="application/pdf" width="100%" height="600" />
+                                            @else
+                                                <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
+                                                    alt="{{ $file['original_name'] }}" />
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
                             @else
-                                <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
-                                    alt="{{ $file['original_name'] }}" />
+                                {{-- Single file --}}
+                                @php $file = $this->selectedFileBuktiDukung[0]; @endphp
+                                @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                    <embed src="{{ asset('storage/' . $file['path']) }}" type="application/pdf"
+                                        width="100%" height="600" />
+                                @else
+                                    <img src="{{ asset('storage/' . $file['path']) }}" class="img-fluid"
+                                        alt="{{ $file['original_name'] }}" />
+                                @endif
                             @endif
+                        @else
+                            <div class="alert alert-warning text-center">
+                                <i class="ri-alert-line fs-3"></i>
+                                <p class="mb-0">Tidak ada dokumen yang tersedia.</p>
+                            </div>
                         @endif
-                    @else
-                        <div class="alert alert-warning text-center">
-                            <i class="ri-alert-line fs-3"></i>
-                            <p class="mb-0">Tidak ada dokumen yang tersedia.</p>
-                        </div>
-                    @endif
-                </div>
-            </div><!-- /.modal-content -->
-        </div><!-- /.modal-dialog -->
-    </div><!-- /.modal -->
-
-    <!-- Default Modals -->
-    <div id="trackingModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
-        style="display: none;">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Tracking Status Evaluasi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <div class="px-4 py-3">
-                        <style>
-                            .tracking-timeline {
-                                position: relative;
-                                padding-left: 0;
-                                list-style: none;
-                            }
-
-                            .tracking-item {
-                                position: relative;
-                                padding-bottom: 2.5rem;
-                                padding-left: 4rem;
-                            }
-
-                            .tracking-item:last-child {
-                                padding-bottom: 0;
-                            }
-
-                            .tracking-item::before {
-                                content: '';
-                                position: absolute;
-                                left: 1.125rem;
-                                top: 2.5rem;
-                                bottom: -0.5rem;
-                                width: 2px;
-                                background: #e9ecef;
-                            }
-
-                            .tracking-item:last-child::before {
-                                display: none;
-                            }
-
-                            .tracking-icon {
-                                position: absolute;
-                                left: 0;
-                                top: 0;
-                                width: 2.5rem;
-                                height: 2.5rem;
-                                border-radius: 50%;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                font-size: 1.2rem;
-                                font-weight: 600;
-                                z-index: 1;
-                            }
-
-                            .tracking-icon.success {
-                                background: #198754;
-                                color: white;
-                            }
-
-                            .tracking-icon.danger {
-                                background: #dc3545;
-                                color: white;
-                            }
-
-                            .tracking-icon.warning {
-                                background: #ffc107;
-                                color: white;
-                            }
-
-                            .tracking-date {
-                                color: #ff9800;
-                                font-size: 0.875rem;
-                                font-weight: 500;
-                                margin-bottom: 0.5rem;
-                            }
-
-                            .tracking-status {
-                                font-size: 1.125rem;
-                                font-weight: 600;
-                                margin-bottom: 0.5rem;
-                            }
-
-                            .tracking-desc {
-                                color: #6c757d;
-                                margin-bottom: 0.25rem;
-                            }
-                        </style>
-
-                        <ul class="tracking-timeline">
-                            <!-- Item 1 - Delivered -->
-                            <li class="tracking-item">
-                                <div class="tracking-icon success">
-                                    <i class="ri-check-line"></i>
-                                </div>
-                                <div class="tracking-date">
-                                    <i class="ri-calendar-line me-1"></i>Sab, 01 Apr 2023 | 15:04
-                                </div>
-                                <div class="tracking-status">DISETUJUI - Penjamin Kualitas</div>
-                                <div class="tracking-desc">
-                                    <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
-                                    elit. Fugit eaque repellat, voluptatem tempora illo, nam voluptatibus recusandae
-                                    quas laudantium dolore deserunt quia doloremque culpa vero temporibus accusantium
-                                    enim. Eos, consectetur.
-                                </div>
-                            </li>
-
-                            <!-- Item 2 - Delivery Runsheet -->
-                            <li class="tracking-item">
-                                <div class="tracking-icon danger">
-                                    <i class="ri-close-line"></i>
-                                </div>
-                                <div class="tracking-date">
-                                    <i class="ri-calendar-line me-1"></i>Sab, 01 Apr 2023 | 09:05
-                                </div>
-                                <div class="tracking-status">DITOLAK - Penjamin Kualitas</div>
-                                <div class="tracking-desc">
-                                    <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
-                                    elit. Corporis quaerat ipsa itaque id quae quis atque veritatis laudantium eaque
-                                    eveniet, et corrupti quibusdam explicabo ipsam tempore nostrum odit. Expedita,
-                                    nulla.
-                                </div>
-                            </li>
-
-                            <!-- Item 3 - inBAG -->
-                            <li class="tracking-item">
-                                <div class="tracking-icon success">
-                                    <i class="ri-check-line"></i>
-                                </div>
-                                <div class="tracking-date">
-                                    <i class="ri-calendar-line me-1"></i>Thu, 30 Mar 2023 | 17:16
-                                </div>
-                                <div class="tracking-status">DISETUJUI - Verifikator Bappeda</div>
-                                <div class="tracking-desc">
-                                    <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
-                                    elit. Impedit quisquam distinctio labore provident, facilis, error eaque nemo,
-                                    officia molestias quidem rerum similique dolorem adipisci? Explicabo doloremque at
-                                    expedita tempora fugiat?
-                                </div>
-                            </li>
-                        </ul>
                     </div>
-                </div>
-                {{-- <div class="modal-footer">
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        <!-- Tracking Modal -->
+        <div wire:ignore id="trackingModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
+            aria-hidden="true" style="display: none;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="myModalLabel">Tracking Status Evaluasi</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="px-4 py-3">
+                            <style>
+                                .tracking-timeline {
+                                    position: relative;
+                                    padding-left: 0;
+                                    list-style: none;
+                                }
+
+                                .tracking-item {
+                                    position: relative;
+                                    padding-bottom: 2.5rem;
+                                    padding-left: 4rem;
+                                }
+
+                                .tracking-item:last-child {
+                                    padding-bottom: 0;
+                                }
+
+                                .tracking-item::before {
+                                    content: '';
+                                    position: absolute;
+                                    left: 1.125rem;
+                                    top: 2.5rem;
+                                    bottom: -0.5rem;
+                                    width: 2px;
+                                    background: #e9ecef;
+                                }
+
+                                .tracking-item:last-child::before {
+                                    display: none;
+                                }
+
+                                .tracking-icon {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    width: 2.5rem;
+                                    height: 2.5rem;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 1.2rem;
+                                    font-weight: 600;
+                                    z-index: 1;
+                                }
+
+                                .tracking-icon.success {
+                                    background: #198754;
+                                    color: white;
+                                }
+
+                                .tracking-icon.danger {
+                                    background: #dc3545;
+                                    color: white;
+                                }
+
+                                .tracking-icon.warning {
+                                    background: #ffc107;
+                                    color: white;
+                                }
+
+                                .tracking-date {
+                                    color: #ff9800;
+                                    font-size: 0.875rem;
+                                    font-weight: 500;
+                                    margin-bottom: 0.5rem;
+                                }
+
+                                .tracking-status {
+                                    font-size: 1.125rem;
+                                    font-weight: 600;
+                                    margin-bottom: 0.5rem;
+                                }
+
+                                .tracking-desc {
+                                    color: #6c757d;
+                                    margin-bottom: 0.25rem;
+                                }
+                            </style>
+
+                            <ul class="tracking-timeline">
+                                <!-- Item 1 - Delivered -->
+                                <li class="tracking-item">
+                                    <div class="tracking-icon success">
+                                        <i class="ri-check-line"></i>
+                                    </div>
+                                    <div class="tracking-date">
+                                        <i class="ri-calendar-line me-1"></i>Sab, 01 Apr 2023 | 15:04
+                                    </div>
+                                    <div class="tracking-status">DISETUJUI - Penjamin Kualitas</div>
+                                    <div class="tracking-desc">
+                                        <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
+                                        elit. Fugit eaque repellat, voluptatem tempora illo, nam voluptatibus recusandae
+                                        quas laudantium dolore deserunt quia doloremque culpa vero temporibus
+                                        accusantium
+                                        enim. Eos, consectetur.
+                                    </div>
+                                </li>
+
+                                <!-- Item 2 - Delivery Runsheet -->
+                                <li class="tracking-item">
+                                    <div class="tracking-icon danger">
+                                        <i class="ri-close-line"></i>
+                                    </div>
+                                    <div class="tracking-date">
+                                        <i class="ri-calendar-line me-1"></i>Sab, 01 Apr 2023 | 09:05
+                                    </div>
+                                    <div class="tracking-status">DITOLAK - Penjamin Kualitas</div>
+                                    <div class="tracking-desc">
+                                        <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
+                                        elit. Corporis quaerat ipsa itaque id quae quis atque veritatis laudantium eaque
+                                        eveniet, et corrupti quibusdam explicabo ipsam tempore nostrum odit. Expedita,
+                                        nulla.
+                                    </div>
+                                </li>
+
+                                <!-- Item 3 - inBAG -->
+                                <li class="tracking-item">
+                                    <div class="tracking-icon success">
+                                        <i class="ri-check-line"></i>
+                                    </div>
+                                    <div class="tracking-date">
+                                        <i class="ri-calendar-line me-1"></i>Thu, 30 Mar 2023 | 17:16
+                                    </div>
+                                    <div class="tracking-status">DISETUJUI - Verifikator Bappeda</div>
+                                    <div class="tracking-desc">
+                                        <strong>Keterangan:</strong> Lorem ipsum dolor sit amet consectetur adipisicing
+                                        elit. Impedit quisquam distinctio labore provident, facilis, error eaque nemo,
+                                        officia molestias quidem rerum similique dolorem adipisci? Explicabo doloremque
+                                        at
+                                        expedita tempora fugiat?
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    {{-- <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary ">Save Changes</button>
                 </div> --}}
 
-            </div><!-- /.modal-content -->
-        </div><!-- /.modal-dialog -->
-    </div><!-- /.modal -->
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+    </div>
+    <!-- container-fluid -->
 </div>
-<!-- container-fluid -->
+<!-- page-content -->
