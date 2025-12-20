@@ -79,6 +79,9 @@
                     </div>
 
                     <div class="d-flex align-items-center">
+                        @if (Auth::user()->role->jenis != 'admin')
+                            <livewire:dashboard.countdown-timer />
+                        @endif
                         <livewire:dashboard.tahun-dropdown />
 
                         {{-- <div class="ms-1 header-item d-none d-sm-flex">
