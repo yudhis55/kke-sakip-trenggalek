@@ -43,7 +43,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN001.1',
                                 'nama' => 'Terdapat dokumen perencanaan kinerja jangka menengah',
                                 'bukti' => [
-                                    'Terdapat dokumen perencanaan kinerja jangka menengah',
                                     'RPJMD',
                                     'Renstra PD',
                                     'Pokin PD',
@@ -53,7 +52,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN001.2',
                                 'nama' => 'Terdapat dokumen perencanaan kinerja jangka pendek',
                                 'bukti' => [
-                                    'Terdapat dokumen perencanaan kinerja jangka pendek',
                                     'Renja Tahun n-1',
                                     'Renja Tahun n',
                                     'IKU',
@@ -64,7 +62,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN001.3',
                                 'nama' => 'Terdapat dokumen perencanaan aktivitas yang mendukung kinerja',
                                 'bukti' => [
-                                    'Terdapat dokumen perencanaan aktivitas yang mendukung kinerja',
                                     'Rencana Aksi tahun n',
                                     'Dialog Kinerja (Peran & Hasil)',
                                     'DPA tahun n',
@@ -76,7 +73,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN001.4',
                                 'nama' => 'Terdapat dokumen perencanaan anggaran yang mendukung kinerja',
                                 'bukti' => [
-                                    'Terdapat dokumen perencanaan anggaran yang mendukung kinerja',
                                     'DPA tahun n',
                                     'KAK',
                                     'RAB (Jika Ada)',
@@ -94,7 +90,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN002.1',
                                 'nama' => 'Dokumen Perencanaan Kinerja telah diformalkan.',
                                 'bukti' => [
-                                    'Dokumen Perencanaan Kinerja telah diformalkan.',
                                     'Renstra',
                                     'Renja',
                                     'Pokin',
@@ -105,7 +100,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN002.2',
                                 'nama' => 'Dokumen Perencanaan Kinerja telah dipublikasikan tepat waktu.',
                                 'bukti' => [
-                                    'Dokumen Perencanaan Kinerja telah dipublikasikan tepat waktu.',
                                     'Renstra',
                                     'Renja',
                                     'Pokin',
@@ -116,7 +110,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN002.3',
                                 'nama' => 'Dokumen Perencanaan Kinerja telah menggambarkan Kebutuhan atas Kinerja sebenarnya yang perlu dicapai.',
                                 'bukti' => [
-                                    'Dokumen Perencanaan Kinerja telah menggambarkan Kebutuhan atas Kinerja sebenarnya yang perlu dicapai.',
                                     'Renja',
                                     'PK',
                                     'IKU',
@@ -128,25 +121,22 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN002.5',
                                 'nama' => 'Ukuran Keberhasilan (Indikator Kinerja) telah memenuhi kriteria SMART.',
                                 'bukti' => [
-                                    'Ukuran Keberhasilan (Indikator Kinerja) telah memenuhi kriteria SMART.',
                                     'Pokin',
                                     'IKU Tahun n',
                                 ],
                             ],
                             [
                                 'kode' => 'AREN002.6',
-                                'nama' => 'Indikator Kinerja Utama (IKU) ... tertuang secara berkelanjutan',
+                                'nama' => 'Indikator Kinerja Utama (IKU) telah menggambarkan kondisi Kinerja Utama yang harus dicapai, tertuang secara berkelanjutan (sustainable - tidak sering diganti dalam 1 periode Perencanaan Strategis).',
                                 'bukti' => [
-                                    'Indikator Kinerja Utama (IKU) telah menggambarkan kondisi Kinerja Utama ...',
                                     'IKU Tahun n-1',
                                     'IKU Tahun n',
                                 ],
                             ],
                             [
                                 'kode' => 'AREN002.7',
-                                'nama' => 'Target yang ditetapkan dapat dicapai (achievable).',
+                                'nama' => 'Target yang ditetapkan dalam Perencanaan Kinerja dapat dicapai (achievable), menantang, dan realistis.',
                                 'bukti' => [
-                                    'Target yang ditetapkan ...',
                                     'PK Tahun n-1',
                                     'PK Tahun n',
                                     'LKJiP Tahun n-1',
@@ -156,7 +146,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'AREN002.8',
-                                'nama' => 'Dokumen Perencanaan Kinerja menggambarkan hubungan yang berkesinambungan (Cascading).',
+                                'nama' => 'Setiap Dokumen Perencanaan Kinerja menggambarkan hubungan yang berkesinambungan, serta selaras antara Kondisi/Hasil yang akan dicapai di setiap level jabatan (Cascading).',
                                 'bukti' => [
                                     'PK Seluruh Pegawai Tahun n',
                                     'Cascading',
@@ -165,7 +155,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'AREN002.9',
-                                'nama' => 'Perencanaan kinerja dapat memberikan informasi ... Crosscutting',
+                                'nama' => 'Perencanaan kinerja dapat memberikan informasi tentang hubungan kinerja antar perangkat daerah (Crosscutting)',
                                 'bukti' => [
                                     'Matrik RPJMD',
                                     'Lampiran Crosscutting',
@@ -192,7 +182,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'AREN003.1',
                                 'nama' => 'Anggaran yang ditetapkan telah mengacu pada dokumen perencanaan perangkat daerah.',
                                 'bukti' => [
-                                    'Anggaran yang ditetapkan telah mengacu pada dokumen perencanaan perangkat daerah.',
                                     'Renstra',
                                     'Renja Tahun n',
                                     'Perjanjian Kinerja JPT/Kepala Perangkat Daerah (Eselon II) Tahun n',
@@ -209,7 +198,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'AREN003.3',
-                                'nama' => 'Target kinerja yang diperjanjikan ... on the track.',
+                                'nama' => 'Target kinerja yang diperjanjikan pada Perjanjian Kinerja telah dicapai dengan baik, atau setidaknya masih on the track.',
                                 'bukti' => [
                                     'Perjanjian Kinerja berjenjang Tahun n',
                                     'Evaluasi rencana aksi secara berjenjang',
@@ -217,7 +206,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'AREN003.4',
-                                'nama' => 'Rencana aksi kinerja dipantau secara berkala.',
+                                'nama' => 'Rencana aksi kinerja dapat berjalan dinamis karena capaian kinerja selalu dipantau secara berkala.',
                                 'bukti' => [
                                     'Form E.81',
                                     'Laporan Monev Rencana Aksi',
@@ -233,16 +222,16 @@ class MappingSeeder extends Seeder
                             [
                                 'kode' => 'AREN003.6',
                                 'nama' => 'Setiap unit/satuan kerja memahami dan peduli serta berkomitmen.',
-                                'bukti' => [
-                                    'Setiap unit/satuan kerja memahami dan peduli serta berkomitmen'
-                                ],
+                                // 'bukti' => [
+                                //     'Setiap unit/satuan kerja memahami dan peduli serta berkomitmen'
+                                // ],
                             ],
                             [
                                 'kode' => 'AREN003.7',
                                 'nama' => 'Setiap Pegawai memahami dan peduli serta berkomitmen.',
-                                'bukti' => [
-                                    'Setiap Pegawai memahami dan peduli serta berkomitmen'
-                                ],
+                                // 'bukti' => [
+                                //     'Setiap Pegawai memahami dan peduli serta berkomitmen'
+                                // ],
                             ],
                         ],
                     ],
@@ -264,7 +253,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'BKUR001.1',
                                 'nama' => 'Terdapat pedoman teknis pengukuran kinerja dan pengumpulan data kinerja',
                                 'bukti' => [
-                                    'Terdapat pedoman teknis pengukuran kinerja dan pengumpulan data kinerja',
                                     'Renstra',
                                 ],
                             ],
@@ -272,16 +260,14 @@ class MappingSeeder extends Seeder
                                 'kode' => 'BKUR001.2',
                                 'nama' => 'Terdapat Definisi Operasional yang jelas atas kinerja dan cara mengukur indikator kinerja.',
                                 'bukti' => [
-                                    'Terdapat Definisi Operasional yang jelas atas kinerja dan cara mengukur indikator kinerja.',
                                     'IKU',
                                     'Manual IKU',
                                 ],
                             ],
                             [
                                 'kode' => 'BKUR001.3',
-                                'nama' => 'Terdapat mekanisme pengumpulan data kinerja yang dapat diandalkan.',
+                                'nama' => 'Terdapat mekanisme yang jelas terhadap pengumpulan data kinerja yang dapat diandalkan.',
                                 'bukti' => [
-                                    'Terdapat mekanisme yang jelas terhadap pengumpulan data kinerja yang dapat diandalkan.',
                                     'SOP Pengumpulan Data Kinerja',
                                 ],
                             ],
@@ -295,22 +281,22 @@ class MappingSeeder extends Seeder
                         'children' => [
                             [
                                 'kode' => 'BKUR002.1',
-                                'nama' => 'Pimpinan selalu terlibat sebagai pengambil keputusan',
+                                'nama' => 'Pimpinan selalu teribat sebagai pengambil keputusan (Decision Maker) dalam mengukur capaian kinerja.',
                                 'bukti' => [
-                                    'Laporan Capaian Kinerja Bulanan (Organisasi) /Dialog Kinerja evaluasi renaksi yang memuat capaian',
-                                    'SKP seluruh pegawai (periode Tahun n-1 s.d Tahun n)',
+                                    'Laporan Capaian Kinerja Bulanan (Organisasi) /Dialog Kinerja evaluasi renaksi yang didalamnya memuat capaian, catatan dan rekomendasi pimpinan',
+                                    'SKP seluruh pegawai (periode Tahun n-1 s.d Tahun n).',
                                 ],
                             ],
                             [
                                 'kode' => 'BKUR002.2',
-                                'nama' => 'Data kinerja relevan untuk mengukur capaian kinerja',
+                                'nama' => 'Data kinerja yang dikumpulkan telah relevan untuk mengukur capaian kinerja yang diharapkan.',
                                 'bukti' => [
-                                    'dokumen evaluasi yang dilaksanakan secara berjenjang berdasarkan renaksi yang telah ditetapkan',
+                                    'Dokumen evaluasi yang dilaksanakan secara berjenjang berdasarkan renaksi yang telah ditetapkan',
                                 ],
                             ],
                             [
                                 'kode' => 'BKUR002.3',
-                                'nama' => 'Data kinerja mendukung capaian kinerja',
+                                'nama' => 'Data kinerja yang dikumpulkan telah mendukung capaian kinerja yang diharapkan.',
                                 'bukti' => [
                                     'Berita Acara Evaluasi Renja per Triwulan (dari Bappedalitbang)',
                                     'Tindaklanjut Hasil Evaluasi Renja per Triwulan',
@@ -326,7 +312,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR002.5',
-                                'nama' => 'Pemantauan pengukuran capaian kinerja berjenjang',
+                                'nama' => 'Setiap level organisasi melakukan pemantauan atas pengukuran capaian kinerja unit dibawahnya secara berjenjang.',
                                 'bukti' => [
                                     'Laporan capaian Kinerja Triwulanan',
                                     'SKP seluruh pegawai (periode Tahun n-1 s.d Tahun n)',
@@ -334,14 +320,14 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR002.6',
-                                'nama' => 'Pengumpulan data memanfaatkan TI (Aplikasi).',
+                                'nama' => 'Pengumpulan data kinerja telah memanfaatkan Teknologi Informasi (Aplikasi).',
                                 'bukti' => [
                                     'Screenshot Aplikasi',
                                 ],
                             ],
                             [
                                 'kode' => 'BKUR002.7',
-                                'nama' => 'Pengukuran memanfaatkan TI (Aplikasi).',
+                                'nama' => 'Pengukuran capaian kinerja telah memanfaatkan Teknologi Informasi (Aplikasi).',
                                 'bukti' => [
                                     'Screenshot Aplikasi',
                                 ],
@@ -356,7 +342,7 @@ class MappingSeeder extends Seeder
                         'children' => [
                             [
                                 'kode' => 'BKUR003.1',
-                                'nama' => 'Pengukuran Kinerja menjadi dasar penyesuaian tunjangan/penghasilan.',
+                                'nama' => 'Pengukuran Kinerja telah menjadi dasar dalam penyesuaian (pemberian/pengurangan) tunjangan kinerja/penghasilan.',
                                 'bukti' => [
                                     'SKP',
                                     'Rekapitulasi Kinerja ASN (Daftar Nominatif)',
@@ -372,7 +358,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR003.3',
-                                'nama' => 'Pengukuran mempengaruhi penyesuaian strategi.',
+                                'nama' => 'Pengukuran kinerja telah mempengaruhi penyesuaian Strategi dalam mencapai kinerja.',
                                 'bukti' => [
                                     'Evaluasi Kinerja Semester I',
                                     'Berita Acara/ Hasil Dialog Kinerja secara berjenjang',
@@ -380,7 +366,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR003.4',
-                                'nama' => 'Pengukuran mempengaruhi penyesuaian kebijakan.',
+                                'nama' => 'Pengukuran kinerja telah mempengaruhi penyesuaian Kebijakan dalam mencapai kinerja.',
                                 'bukti' => [
                                     'Evaluasi Kinerja Semester I',
                                     'Berita Acara/ Hasil Dialog Kinerja secara berjenjang',
@@ -388,14 +374,15 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR003.5',
-                                'nama' => 'Pengukuran mempengaruhi penyesuaian aktivitas.',
+                                'nama' => 'Pengukuran kinerja telah mempengaruhi penyesuaian Aktivitas dalam mencapai kinerja.',
                                 'bukti' => [
                                     'Evaluasi Kinerja Semester I',
+                                    'Berita Acara/ Hasil Dialog Kinerja secara berjenjang',
                                 ],
                             ],
                             [
                                 'kode' => 'BKUR003.6',
-                                'nama' => 'Pengukuran mempengaruhi penyesuaian anggaran.',
+                                'nama' => 'Pengukuran kinerja telah mempengaruhi penyesuaian Anggaran dalam mencapai kinerja.',
                                 'bukti' => [
                                     'LKjIP Tahun n-1',
                                     'Realisasi Kinerja Semester I Tahun n',
@@ -404,7 +391,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR003.7',
-                                'nama' => 'Terdapat efisiensi atas penggunaan anggaran.',
+                                'nama' => 'Terdapat efisiensi atas penggunaan anggaran dalam mencapai kinerja.',
                                 'bukti' => [
                                     'LKjIP Tahun n-1 BAB III (yang menguraikan catatan adanya efisiensi)',
                                     'Realisasi Kinerja Semester I Tahun n yang menguraikan catatan adanya efisiensi',
@@ -412,7 +399,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'BKUR003.8',
-                                'nama' => 'Unit kerja memahami dan peduli atas hasil pengukuran kinerja.',
+                                'nama' => 'Setiap unit kerja (Sekretariat/Bidang/Subbidang/Seksi/UPT) memahami dan peduli atas hasil pengukuran kinerja.',
                                 'bukti' => [
                                     'Tindak Lanjut Evaluasi (SKP)',
                                     'Tindak Lanjut atas rekomendasi Dialog Kinerja secara berjenjang',
@@ -445,7 +432,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'CLAP001.1',
                                 'nama' => 'Dokumen Laporan Kinerja telah disusun.',
                                 'bukti' => [
-                                    'Dokumen Laporan Kinerja telah disusun.',
                                     'LKjIP Tahun n-1',
                                 ],
                             ],
@@ -453,7 +439,6 @@ class MappingSeeder extends Seeder
                                 'kode' => 'CLAP001.2',
                                 'nama' => 'Dokumen Laporan Kinerja disusun berkala.',
                                 'bukti' => [
-                                    'Dokumen Laporan Kinerja telah disusun secara berkala.',
                                     'LKjIP Tahun n-1',
                                     'Laporan Capaian Kinerja Triwulan (TW I - TW IV Tahun n-1)',
                                     'Dokumen Laporan Kinerja Semester 1 dan 2 Tahun n',
@@ -504,42 +489,42 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'CLAP002.2',
-                                'nama' => 'Dokumen Laporan Kinerja mengungkap seluruh informasi pencapaian kinerja.',
+                                'nama' => 'Dokumen Laporan Kinerja telah mengungkap seluruh informasi tentang pencapaian kinerja.',
                                 'bukti' => ['PK', 'LKjIP'],
                             ],
                             [
                                 'kode' => 'CLAP002.3',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan analisis dan evaluasi realisasi kinerja dengan target tahunan.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan analisis dan evaluasi realisasi kinerja dengan target tahunan.',
                                 'bukti' => ['LKjIP', 'PK', 'Renja'],
                             ],
                             [
                                 'kode' => 'CLAP002.4',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan analisis realisasi kinerja jangka menengah.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan analisis dan evaluasi realisasi kinerja dengan target jangka menengah.',
                                 'bukti' => ['LKjIP', 'Renstra/IKU'],
                             ],
                             [
                                 'kode' => 'CLAP002.5',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan realisasi tahun-tahun sebelumnya.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan analisis dan evaluasi realisasi kinerja dengan realisasi kinerja tahun-tahun sebelumnya.',
                                 'bukti' => ['LKjIP'],
                             ],
                             [
                                 'kode' => 'CLAP002.6',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan benchmark (nasional/internasional).',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan analisis dan evaluasi realisasi kinerja dengan realiasi kinerja di level nasional/internasional (Benchmark Kinerja).',
                                 'bukti' => ['LKjIP'],
                             ],
                             [
                                 'kode' => 'CLAP002.7',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan kualitas keberhasilan/kegagalan.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan kualitas atas keberhasilan/kegagalan mencapai target kinerja beserta upaya nyata dan/atau hambatannya.',
                                 'bukti' => ['LKjIP'],
                             ],
                             [
                                 'kode' => 'CLAP002.8',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan efisiensi penggunaan sumber daya.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan efisiensi atas penggunaan sumber daya dalam mencapai kinerja.',
                                 'bukti' => ['LKjIP (Efisiensi)'],
                             ],
                             [
                                 'kode' => 'CLAP002.9',
-                                'nama' => 'Dokumen Laporan Kinerja menginformasikan rekomendasi perbaikan kinerja.',
+                                'nama' => 'Dokumen Laporan Kinerja telah menginfokan upaya perbaikan dan penyempurnaan kinerja ke depan (Rekomendasi perbaikan kinerja).',
                                 'bukti' => ['LKjIP'],
                             ],
                         ],
@@ -552,39 +537,39 @@ class MappingSeeder extends Seeder
                         'children' => [
                             [
                                 'kode' => 'CLAP003.1',
-                                'nama' => 'Informasi dalam laporan kinerja menjadi perhatian utama pimpinan.',
+                                'nama' => 'Informasi dalam laporan kinerja selalu menjadi perhatian utama pimpinan (Bertanggung Jawab).',
                                 'bukti' => [
-                                    'Dokumen bukti kegiatan Evaluasi Kinerja (FGD, Rapat Koordinasi, Presensi, Foto, Notulensi)'
+                                    'Dokumen bukti kegiatan Evaluasi Kinerja dalam bentuk FGD, Rapat Koordinasi (Presensi, Foto, Notulensi, Arahan Pimpinan dsb)'
                                 ],
                             ],
                             [
                                 'kode' => 'CLAP003.2',
-                                'nama' => 'Penyajian informasi menjadi kepedulian seluruh pegawai.',
+                                'nama' => 'Penyajian informasi dalam laporan kinerja menjadi kepedulian seluruh pegawai.',
                                 'bukti' => ['Tindak Lanjut Hasil Rekomendasi dari Evaluasi Kinerja'],
                             ],
                             [
                                 'kode' => 'CLAP003.3',
-                                'nama' => 'Informasi digunakan untuk penyesuaian aktivitas.',
-                                'bukti' => ['DPA Perubahan (aktivitas kinerja)'],
+                                'nama' => 'Informasi dalam laporan kinerja berkala telah digunakan dalam penyesuaian aktivitas untuk mencapai kinerja.',
+                                'bukti' => ['DPA Perubahan (aktivitas kinerja (kegiatan/subkegiatan))'],
                             ],
                             [
                                 'kode' => 'CLAP003.4',
-                                'nama' => 'Informasi digunakan untuk penyesuaian anggaran.',
+                                'nama' => 'Informasi dalam laporan kinerja berkala telah digunakan dalam penyesuaian penggunaan anggaran untuk mencapai kinerja.',
                                 'bukti' => ['DPA Perubahan (anggaran)'],
                             ],
                             [
                                 'kode' => 'CLAP003.5',
-                                'nama' => 'Informasi digunakan dalam evaluasi pencapaian keberhasilan kinerja.',
-                                'bukti' => ['Dokumen Evaluasi Kinerja (Tribulan/Semester/Tahunan)'],
+                                'nama' => 'Informasi dalam laporan kinerja telah digunakan dalam evaluasi pencapaian keberhasilan kinerja.',
+                                'bukti' => ['Dokumen Evaluasi Kinerja secara berkala (Tribulan/Semester/Tahunan)'],
                             ],
                             [
                                 'kode' => 'CLAP003.6',
-                                'nama' => 'Informasi digunakan untuk penyesuaian perencanaan kinerja berikutnya.',
+                                'nama' => 'Informasi dalam laporan kinerja telah digunakan dalam penyesuaian perencanaan kinerja yang akan dihadapi berikutnya.',
                                 'bukti' => ['DPA Induk', 'DPA Perubahan'],
                             ],
                             [
                                 'kode' => 'CLAP003.7',
-                                'nama' => 'Informasi mempengaruhi perubahan budaya kinerja organisasi.',
+                                'nama' => 'Informasi dalam laporan kinerja selalu mempengaruhi perubahan budaya kinerja organisasi.',
                                 'bukti' => ['SK Budaya Kinerja', 'Implementasi budaya kerja di lingkungan Perangkat Daerah'],
                             ],
                         ],
@@ -605,16 +590,22 @@ class MappingSeeder extends Seeder
                         'children' => [
                             [
                                 'kode' => 'DVAL001.1',
-                                'nama' => 'Evaluasi AKIP Internal telah dilaksanakan pada seluruh unit kerja.',
+                                'nama' => 'Terdapat pedoman teknis Evaluasi AKIP Internal',
                                 'bukti' => [
-                                    'Evaluasi AKIP Internal telah dilaksanakan pada seluruh unit kerja/ perangkat daerah',
+                                    'SK',
+                                ],
+                            ],
+                            [
+                                'kode' => 'DVAL001.2',
+                                'nama' => 'Evaluasi AKIP Internal telah dilaksanakan pada seluruh unit kerja/ perangkat daerah',
+                                'bukti' => [
                                     'LHE AKIP seluruh OPD',
                                     'Rekapitulasi Nilai AKIP seluruh OPD',
                                     'TL LHE AKIP seluruh OPD',
                                 ],
                             ],
                             [
-                                'kode' => 'DVAL001.2',
+                                'kode' => 'DVAL001.3',
                                 'nama' => 'Evaluasi AKIP Internal telah dilaksanakan secara berjenjang',
                                 'bukti' => [
                                     'Rekapitulasi Jumlah Data Karyawan tiap Perangkat Daerah',
@@ -645,15 +636,16 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'DVAL002.3',
-                                'nama' => 'Evaluasi AKIP sesuai pedoman teknis yang berlaku.',
+                                'nama' => 'Evaluasi Akuntabilitas Kinerja telah dilaksanakan sesuai dengan pedoman teknis yang berlaku.',
                                 'bukti' => ['LKE dan LHE AKIP Tahun n.'],
                             ],
                             [
                                 'kode' => 'DVAL002.4',
-                                'nama' => 'Evaluasi AKIP menggunakan Teknologi Informasi (Aplikasi).',
+                                'nama' => 'Evaluasi Akuntabilitas Kinerja telah dilaksanakan menggunakan Teknologi Informasi (Aplikasi).',
                                 'bukti' => [
                                     'Screenshot Aplikasi SIMONEV Kab. Trenggalek',
                                     'Screenshot Aplikasi E-SAKIP REVIU KEMENPAN RB',
+                                    'aplikasi lainnya apabila ada.'
                                 ],
                             ],
                         ],
@@ -674,7 +666,7 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'DVAL003.2',
-                                'nama' => 'Peningkatan implementasi SAKIP melalui tindak lanjut rekomendasi.',
+                                'nama' => 'Telah terjadi peningkatan implementasi SAKIP dengan melaksanakan tindak lanjut atas rekomendasi hasil evaluasi akuntabilitas kinerja.',
                                 'bukti' => [
                                     'Dokumen hasil evaluasi AKIP tahun n-1 dan tahun n',
                                     'Bukti Tindaklanjut Rekomendasi Hasil Evaluasi AKIP',
@@ -682,20 +674,20 @@ class MappingSeeder extends Seeder
                             ],
                             [
                                 'kode' => 'DVAL003.3',
-                                'nama' => 'Hasil Evaluasi AKIP dimanfaatkan untuk perbaikan.',
+                                'nama' => 'Hasil Evaluasi Akuntabilitas Kinerja telah dimanfaatkan untuk perbaikan dan peningkatan akuntabilitas kinerja.',
                                 'bukti' => ['Nilai Akip N-2 dan N-1 (Tahun 2024 dan Tahun 2025)'],
                             ],
                             [
                                 'kode' => 'DVAL003.4',
-                                'nama' => 'Hasil Evaluasi AKIP mendukung efektivitas dan efisiensi kinerja.',
+                                'nama' => 'Hasil dari Evaluasi Akuntabilitas Kinerja telah dimanfaatkan dalam mendukung efektivitas dan efisiensi kinerja.',
                                 'bukti' => [
-                                    'Realisasi Kinerja n-1 BAB III',
+                                    'Realisasi Kinerja n-1 BAB III dibuktikan dengan adanya uraian efektivitas dan efisiensi kinerja',
                                     'Laporan Kinerja Tahun n Semester 1',
                                 ],
                             ],
                             [
                                 'kode' => 'DVAL003.5',
-                                'nama' => 'Telah terjadi perbaikan dan peningkatan kinerja menggunakan hasil evaluasi.',
+                                'nama' => 'Telah terjadi perbaikan dan peningkatan kinerja dengan memanfaatkan hasil evaluasi akuntablitas kinerja.',
                                 'bukti' => ['Bukti dokumen nilai evaluasi tahun n-1 dan tahun n'],
                             ],
                         ],
@@ -709,7 +701,7 @@ class MappingSeeder extends Seeder
                             [
                                 'kode' => 'DVAL004.1',
                                 'nama' => 'Target dapat dicapai',
-                                'bukti' => ['Dokumen LKjIP (perbandingan target kinerja tahun n-1 dengan tahun n)'],
+                                'bukti' => ['Dokumen LKjIP (perbandingan target kinerja tahun n-1 dengan tahun n) sesuai dengan renaksi yang telah ditetapkan'],
                             ],
                             [
                                 'kode' => 'DVAL004.2',
@@ -720,8 +712,8 @@ class MappingSeeder extends Seeder
                                 'kode' => 'DVAL004.3',
                                 'nama' => 'Informasi mengenai kinerja dapat diandalkan',
                                 'bukti' => [
-                                    'LKjiP memuat target dan realisasi kinerja disertai analisa formulasi perhitungan capaian kinerja',
-                                    'Laporan Kinerja Tahun n Semester I (BAB III)',
+                                    'LKjiP telah memuat target dan realisasi kinerja yang disertai dengan analisa formulasi perhitungan capaian kinerja berikut penjelasan secara rinci',
+                                    'Laporan Kinerja Tahun n Semester I (BAB III) telah memuat Informasi kinerja berikut dengan uraian proses sampai menghasilkan outcome.',
                                 ],
                             ],
                         ],
@@ -766,12 +758,16 @@ class MappingSeeder extends Seeder
                         if ($existingSub) {
                             $subId = $existingSub->id;
                         } else {
+                            // Tentukan penilaian_di berdasarkan kode sub_komponen
+                            $penilaianDi = in_array($sub['kode'], ['AREN001', 'AREN002']) ? 'bukti' : 'kriteria';
+
                             $subId = DB::table('sub_komponen')->insertGetId([
                                 'kode' => $sub['kode'],
                                 'nama' => $sub['nama'] ?? '—',
                                 'bobot' => $this->parseBobot($sub['bobot'] ?? null),
                                 'komponen_id' => $komponenId,
                                 'tahun_id' => $tahun_id,
+                                'penilaian_di' => $penilaianDi,
                             ]);
                         }
 
