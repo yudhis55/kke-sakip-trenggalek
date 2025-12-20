@@ -15,7 +15,7 @@ use App\Models\Role;
 class Mapping extends Component
 {
     public $kd_komponen, $nama_komponen, $bobot_komponen, $role_id;
-    public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
+    public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $penilaian_di_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id;
     public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian;
     public $tahun_id;
@@ -126,6 +126,7 @@ class Mapping extends Component
             'kd_sub_komponen' => 'required|unique:sub_komponen,kode',
             'nama_sub_komponen' => 'required',
             'bobot_sub_komponen' => 'required|numeric|min:0',
+            'penilaian_di_sub_komponen' => 'required|in:kriteria,bukti',
             'komponen_id' => 'required|exists:komponen,id',
         ]);
 
@@ -146,6 +147,7 @@ class Mapping extends Component
             'kode' => $this->kd_sub_komponen,
             'nama' => $this->nama_sub_komponen,
             'bobot' => $this->bobot_sub_komponen,
+            'penilaian_di' => $this->penilaian_di_sub_komponen,
             'komponen_id' => $this->komponen_id,
             'tahun_id' => $this->tahun_id,
         ]);
@@ -154,6 +156,7 @@ class Mapping extends Component
         $this->kd_sub_komponen = '';
         $this->nama_sub_komponen = '';
         $this->bobot_sub_komponen = '';
+        $this->penilaian_di_sub_komponen = '';
         $this->komponen_id = '';
 
         unset($this->fullMapping);
@@ -269,6 +272,7 @@ class Mapping extends Component
             $this->kd_sub_komponen = $subKomponen->kode;
             $this->nama_sub_komponen = $subKomponen->nama;
             $this->bobot_sub_komponen = $subKomponen->bobot;
+            $this->penilaian_di_sub_komponen = $subKomponen->penilaian_di;
             $this->komponen_id = $subKomponen->komponen_id;
             $this->isEditMode = true;
         }
@@ -280,6 +284,7 @@ class Mapping extends Component
             'kd_sub_komponen' => 'required',
             'nama_sub_komponen' => 'required',
             'bobot_sub_komponen' => 'required|numeric|min:0',
+            'penilaian_di_sub_komponen' => 'required|in:kriteria,bukti',
         ]);
 
         $subKomponen = SubKomponen::find($this->editSubKomponenId);
@@ -301,6 +306,7 @@ class Mapping extends Component
                 'kode' => $this->kd_sub_komponen,
                 'nama' => $this->nama_sub_komponen,
                 'bobot' => $this->bobot_sub_komponen,
+                'penilaian_di' => $this->penilaian_di_sub_komponen,
             ]);
 
             $this->resetFormSubKomponen();

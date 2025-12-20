@@ -82,6 +82,7 @@
                                                     <th scope="col">Bobot</th>
                                                     <th scope="col">Kriteria Penilaian</th>
                                                     <th scope="col">Verifikator/Penilai</th>
+                                                    <th scope="col">Penilaian Di</th>
                                                     <th scope="col" style="width: 120px;">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -96,9 +97,10 @@
                                                             {{ $komponen->kode }}
                                                         </td>
                                                         <td><strong>{{ $komponen->nama }}</strong></td>
-                                                        <td>{{ $komponen->bobot }}</td>
+                                                        <td>{{ $komponen->bobot }}%</td>
                                                         <td></td>
                                                         <td>{{ $komponen->role->nama ?? '' }}</td>
+                                                        <td></td>
                                                         <td>
                                                             <div class="dropdown">
                                                                 <button
@@ -149,9 +151,10 @@
                                                             </td>
                                                             <td style="padding-left:30px;">{{ $sub_komponen->nama }}
                                                             </td>
-                                                            <td>{{ $sub_komponen->bobot }}</td>
+                                                            <td>{{ $sub_komponen->bobot }}%</td>
                                                             <td></td>
                                                             <td></td>
+                                                            <td>{{ $sub_komponen->penilaian_di }}</td>
                                                             <td>
                                                                 <div class="dropdown">
                                                                     <button
@@ -203,8 +206,9 @@
                                                                 </td>
                                                                 <td style="padding-left:60px;">
                                                                     {{ $kriteria_komponen->nama }}</td>
-                                                                <td>{{ $kriteria_komponen->bobot }}</td>
+                                                                <td>{{ $kriteria_komponen->bobot }}%</td>
                                                                 <td>{{ $kriteria_komponen->jenis_nilai->nama }}</td>
+                                                                <td></td>
                                                                 <td></td>
                                                                 <td>
                                                                     <div class="dropdown">
@@ -253,8 +257,9 @@
                                                                         {{ $bukti_dukung->kode }}</td>
                                                                     <td style="padding-left:90px;">
                                                                         {{ $bukti_dukung->nama }}</td>
-                                                                    <td>{{ $bukti_dukung->bobot }}</td>
+                                                                    <td>{{ $bukti_dukung->bobot }}%</td>
                                                                     <td>{{ $bukti_dukung->kriteria_penilaian }}</td>
+                                                                    <td></td>
                                                                     <td></td>
                                                                     <td>
                                                                         <div class="hstack gap-2">
@@ -390,6 +395,18 @@
                                     class="text-danger">*</span></label>
                             <textarea wire:model="nama_sub_komponen" class="form-control" id="subNama" rows="2"
                                 placeholder="Masukkan nama sub komponen"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="penilaianDiAdd" class="form-label">Penilaian Di <span
+                                    class="text-danger">*</span></label>
+                            <select wire:model="penilaian_di_sub_komponen" class="form-select" id="penilaianDiAdd">
+                                <option value="">-- Pilih --</option>
+                                <option value="kriteria">Kriteria Komponen</option>
+                                <option value="bukti">Bukti Dukung</option>
+                            </select>
+                            @error('penilaian_di_sub_komponen')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
                         </div>
                         <div class="mb-3">
                             <label for="subBobot" class="form-label">Bobot <span class="text-danger">*</span></label>
@@ -604,6 +621,18 @@
                                     class="text-danger">*</span></label>
                             <textarea wire:model="nama_sub_komponen" class="form-control" id="editSubNama" rows="2"
                                 placeholder="Masukkan nama sub komponen"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPenilaianDi" class="form-label">Penilaian Di <span
+                                    class="text-danger">*</span></label>
+                            <select wire:model="penilaian_di_sub_komponen" class="form-select" id="editPenilaianDi">
+                                <option value="">-- Pilih --</option>
+                                <option value="kriteria">Kriteria Komponen</option>
+                                <option value="bukti">Bukti Dukung</option>
+                            </select>
+                            @error('penilaian_di_sub_komponen')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
                         </div>
                         <div class="mb-3">
                             <label for="editSubBobot" class="form-label">Bobot <span

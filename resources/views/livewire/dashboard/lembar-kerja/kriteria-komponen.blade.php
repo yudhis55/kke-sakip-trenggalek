@@ -41,7 +41,7 @@
                                             <th scope="col">Bobot</th>
                                             <th scope="col">Bukti Dukung</th>
                                             <th scope="col">Persentase</th>
-                                            <th scope="col">Verifikasi Bappeda</th>
+                                            <th scope="col">Status</th>
                                             <th scope="col">Skor</th>
                                         </tr>
                                     </thead>
