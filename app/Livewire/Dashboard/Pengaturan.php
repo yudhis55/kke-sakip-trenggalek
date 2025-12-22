@@ -21,6 +21,7 @@ class Pengaturan extends Component
 
     public $buka_penilaian_mandiri, $tutup_penilaian_mandiri, $buka_penilaian_verifikator, $tutup_penilaian_verifikator, $buka_penilaian_penjamin, $tutup_penilaian_penjamin, $buka_penilaian_penilai, $tutup_penilaian_penilai;
     public $tahun_id;
+    public $maks_bobot_komponen;
 
     // Tahun properties
     public $tahun_input;
@@ -32,6 +33,14 @@ class Pengaturan extends Component
 
     // Role properties
     public $role_nama, $role_jenis;
+
+    // Jenis Nilai properties
+    public $jenis_nilai_id, $jenis_nilai_nama;
+    public $jenis_nilai_id_to_delete;
+
+    // Tingkatan Nilai properties
+    public $tingkatan_nilai_id, $tingkatan_nilai_jenis_nilai_id, $tingkatan_nilai_kode_nilai, $tingkatan_nilai_bobot;
+    public $tingkatan_nilai_id_to_delete;
 
     public function mount()
     {
@@ -56,6 +65,7 @@ class Pengaturan extends Component
             $this->tutup_penilaian_penjamin = $setting->tutup_penilaian_penjamin ? date('Y-m-d', strtotime($setting->tutup_penilaian_penjamin)) : null;
             $this->buka_penilaian_penilai = $setting->buka_penilaian_penilai ? date('Y-m-d', strtotime($setting->buka_penilaian_penilai)) : null;
             $this->tutup_penilaian_penilai = $setting->tutup_penilaian_penilai ? date('Y-m-d', strtotime($setting->tutup_penilaian_penilai)) : null;
+            $this->maks_bobot_komponen = $setting->maks_bobot_komponen ?? 100;
         } else {
             // Reset jika tidak ada setting untuk tahun ini
             $this->buka_penilaian_mandiri = null;
@@ -106,11 +116,11 @@ class Pengaturan extends Component
                 'tutup_penilaian_penjamin' => $this->tutup_penilaian_penjamin,
                 'buka_penilaian_penilai' => $this->buka_penilaian_penilai,
                 'tutup_penilaian_penilai' => $this->tutup_penilaian_penilai,
+                'maks_bobot_komponen' => $this->maks_bobot_komponen,
             ]
         );
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Pengaturan berhasil disimpan.');
-
     }
 
     #[Computed]
@@ -141,6 +151,38 @@ class Pengaturan extends Component
     public function opdList()
     {
         return Opd::all();
+    }
+
+    #[Computed]
+    public function jenisNilaiList()
+    {
+        return \App\Models\JenisNilai::all();
+    }
+
+    #[Computed]
+    public function tingkatanNilaiList()
+    {
+        return \App\Models\TingkatanNilai::with('jenis_nilai')->get();
+    }
+
+    // ========== MAKS BOBOT KOMPONEN ==========
+    public function saveMaksBobotKomponen()
+    {
+        $this->validate([
+            'maks_bobot_komponen' => 'required|numeric|min:0|max:100',
+        ], [
+            'maks_bobot_komponen.required' => 'Batas bobot harus diisi',
+            'maks_bobot_komponen.numeric' => 'Batas bobot harus berupa angka',
+            'maks_bobot_komponen.min' => 'Batas bobot minimal 0',
+            'maks_bobot_komponen.max' => 'Batas bobot maksimal 100',
+        ]);
+
+        Setting::updateOrCreate(
+            ['tahun_id' => $this->tahun_id],
+            ['maks_bobot_komponen' => $this->maks_bobot_komponen]
+        );
+
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Batas bobot komponen berhasil disimpan.');
     }
 
     // ========== TAHUN CRUD ==========
@@ -317,6 +359,124 @@ class Pengaturan extends Component
         $this->role_jenis = '';
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Role berhasil ditambahkan.');
         $this->dispatch('close-modal', 'addRoleModal');
+    }
+
+    // ========== JENIS NILAI CRUD ==========
+    public function resetJenisNilaiForm()
+    {
+        $this->jenis_nilai_id = null;
+        $this->jenis_nilai_nama = '';
+    }
+
+    public function editJenisNilai($id)
+    {
+        $jenisNilai = \App\Models\JenisNilai::find($id);
+        $this->jenis_nilai_id = $jenisNilai->id;
+        $this->jenis_nilai_nama = $jenisNilai->nama;
+    }
+
+    public function saveJenisNilai()
+    {
+        $this->validate([
+            'jenis_nilai_nama' => 'required|string|max:255',
+        ], [
+            'jenis_nilai_nama.required' => 'Nama jenis nilai harus diisi',
+        ]);
+
+        if ($this->jenis_nilai_id) {
+            \App\Models\JenisNilai::find($this->jenis_nilai_id)->update([
+                'nama' => $this->jenis_nilai_nama,
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Jenis nilai berhasil diupdate.');
+        } else {
+            \App\Models\JenisNilai::create([
+                'nama' => $this->jenis_nilai_nama,
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Jenis nilai berhasil ditambahkan.');
+        }
+
+        $this->resetJenisNilaiForm();
+        $this->dispatch('close-modal', 'addJenisNilaiModal');
+    }
+
+    public function setJenisNilaiToDelete($id)
+    {
+        $this->jenis_nilai_id_to_delete = $id;
+    }
+
+    public function deleteJenisNilai()
+    {
+        if ($this->jenis_nilai_id_to_delete) {
+            \App\Models\JenisNilai::find($this->jenis_nilai_id_to_delete)->delete();
+            $this->jenis_nilai_id_to_delete = null;
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Jenis nilai berhasil dihapus.');
+        }
+    }
+
+    // ========== TINGKATAN NILAI CRUD ==========
+    public function resetTingkatanNilaiForm()
+    {
+        $this->tingkatan_nilai_id = null;
+        $this->tingkatan_nilai_jenis_nilai_id = null;
+        $this->tingkatan_nilai_kode_nilai = '';
+        $this->tingkatan_nilai_bobot = '';
+    }
+
+    public function editTingkatanNilai($id)
+    {
+        $tingkatanNilai = \App\Models\TingkatanNilai::find($id);
+        $this->tingkatan_nilai_id = $tingkatanNilai->id;
+        $this->tingkatan_nilai_jenis_nilai_id = $tingkatanNilai->jenis_nilai_id;
+        $this->tingkatan_nilai_kode_nilai = $tingkatanNilai->kode_nilai;
+        $this->tingkatan_nilai_bobot = $tingkatanNilai->bobot;
+    }
+
+    public function saveTingkatanNilai()
+    {
+        $this->validate([
+            'tingkatan_nilai_jenis_nilai_id' => 'required|exists:jenis_nilai,id',
+            'tingkatan_nilai_kode_nilai' => 'required|string|max:255',
+            'tingkatan_nilai_bobot' => 'required|numeric|min:0',
+        ], [
+            'tingkatan_nilai_jenis_nilai_id.required' => 'Jenis nilai harus dipilih',
+            'tingkatan_nilai_kode_nilai.required' => 'Kode nilai harus diisi',
+            'tingkatan_nilai_bobot.required' => 'Bobot harus diisi',
+            'tingkatan_nilai_bobot.numeric' => 'Bobot harus berupa angka',
+            'tingkatan_nilai_bobot.min' => 'Bobot minimal 0',
+        ]);
+
+        if ($this->tingkatan_nilai_id) {
+            \App\Models\TingkatanNilai::find($this->tingkatan_nilai_id)->update([
+                'jenis_nilai_id' => $this->tingkatan_nilai_jenis_nilai_id,
+                'kode_nilai' => $this->tingkatan_nilai_kode_nilai,
+                'bobot' => $this->tingkatan_nilai_bobot,
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tingkatan nilai berhasil diupdate.');
+        } else {
+            \App\Models\TingkatanNilai::create([
+                'jenis_nilai_id' => $this->tingkatan_nilai_jenis_nilai_id,
+                'kode_nilai' => $this->tingkatan_nilai_kode_nilai,
+                'bobot' => $this->tingkatan_nilai_bobot,
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tingkatan nilai berhasil ditambahkan.');
+        }
+
+        $this->resetTingkatanNilaiForm();
+        $this->dispatch('close-modal', 'addTingkatanNilaiModal');
+    }
+
+    public function setTingkatanNilaiToDelete($id)
+    {
+        $this->tingkatan_nilai_id_to_delete = $id;
+    }
+
+    public function deleteTingkatanNilai()
+    {
+        if ($this->tingkatan_nilai_id_to_delete) {
+            \App\Models\TingkatanNilai::find($this->tingkatan_nilai_id_to_delete)->delete();
+            $this->tingkatan_nilai_id_to_delete = null;
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tingkatan nilai berhasil dihapus.');
+        }
     }
 
     public function render()

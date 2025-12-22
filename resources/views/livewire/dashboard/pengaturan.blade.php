@@ -266,30 +266,24 @@
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Batas Bobot Komponen</h4>
-                                <a href="" type="button" class="btn btn-primary add-btn"><i
-                                        class="ri-save-3-line align-bottom me-1"></i>Simpan</a>
+                                <button wire:click="saveMaksBobotKomponen" type="button"
+                                    class="btn btn-primary add-btn"><i
+                                        class="ri-save-3-line align-bottom me-1"></i>Simpan</button>
                             </div>
 
                             <div class="card-body">
-                                <form action="">
-                                    {{-- <div class="row mb-3">
-                                        <div class="col-lg-3">
-                                            <label for="nameInput" class="form-label">Name</label>
-                                        </div>
-                                        <div class="col-lg-9">
-                                            <input type="text" class="form-control" id="nameInput"
-                                                placeholder="Enter your name">
-                                        </div>
-                                    </div> --}}
-                                    {{-- <input type="number" class="form-control" id="nameInput"
-                                        placeholder="Batas Bobot Komponen (%)"> --}}
-                                    <!-- Input with Icon -->
+                                <form>
                                     <!-- Input with Icon Right -->
                                     <div class="form-icon right">
-                                        <input type="email" class="form-control form-control-icon"
-                                            id="iconrightInput" placeholder="Masukkan rentang 0-100">
+                                        <input wire:model="maks_bobot_komponen" type="number"
+                                            class="form-control form-control-icon" id="iconrightInput"
+                                            placeholder="Masukkan rentang 0-100" min="0" max="100"
+                                            step="0.01">
                                         <i class="ri-percent-line"></i>
                                     </div>
+                                    @error('maks_bobot_komponen')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </form>
                             </div>
                         </div>
@@ -303,11 +297,118 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Daftar Tipe Penilaian</h4>
-                                <a href="" type="button" class="btn btn-primary add-btn"><i
-                                        class="ri-add-line align-bottom me-1"></i>Tambah</a>
+                                <h4 class="card-title mb-0 flex-grow-1">Jenis Nilai</h4>
+                                <button wire:click="resetJenisNilaiForm" type="button"
+                                    class="btn btn-primary add-btn" data-bs-toggle="modal"
+                                    data-bs-target="#addJenisNilaiModal">
+                                    <i class="ri-add-line align-bottom me-1"></i>Tambah
+                                </button>
                             </div>
                             <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-nowrap mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">No</th>
+                                                <th scope="col">Nama</th>
+                                                <th scope="col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ($this->jenisNilaiList() as $index => $jenisNilai)
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+                                                    <td>{{ $jenisNilai->nama }}</td>
+                                                    <td>
+                                                        <button wire:click="editJenisNilai({{ $jenisNilai->id }})"
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary btn-icon waves-effect waves-light"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#addJenisNilaiModal">
+                                                            <i class="ri-edit-line"></i>
+                                                        </button>
+                                                        <button
+                                                            wire:click="setJenisNilaiToDelete({{ $jenisNilai->id }})"
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-danger btn-icon waves-effect waves-light"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteJenisNilaiModal">
+                                                            <i class="ri-delete-bin-5-line"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="3" class="text-center">Tidak ada data jenis nilai
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header align-items-center d-flex">
+                                <h4 class="card-title mb-0 flex-grow-1">Tingkatan Nilai</h4>
+                                <button wire:click="resetTingkatanNilaiForm" type="button"
+                                    class="btn btn-primary add-btn" data-bs-toggle="modal"
+                                    data-bs-target="#addTingkatanNilaiModal">
+                                    <i class="ri-add-line align-bottom me-1"></i>Tambah
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-nowrap mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">No</th>
+                                                <th scope="col">Jenis Nilai</th>
+                                                <th scope="col">Kode Nilai</th>
+                                                <th scope="col">Bobot</th>
+                                                <th scope="col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ($this->tingkatanNilaiList() as $index => $tingkatanNilai)
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+                                                    <td>{{ $tingkatanNilai->jenis_nilai->nama ?? '-' }}</td>
+                                                    <td>{{ $tingkatanNilai->kode_nilai }}</td>
+                                                    <td>{{ number_format($tingkatanNilai->bobot, 2) }}</td>
+                                                    <td>
+                                                        <button
+                                                            wire:click="editTingkatanNilai({{ $tingkatanNilai->id }})"
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary btn-icon waves-effect waves-light"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#addTingkatanNilaiModal">
+                                                            <i class="ri-edit-line"></i>
+                                                        </button>
+                                                        <button
+                                                            wire:click="setTingkatanNilaiToDelete({{ $tingkatanNilai->id }})"
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-danger btn-icon waves-effect waves-light"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteTingkatanNilaiModal">
+                                                            <i class="ri-delete-bin-5-line"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="text-center">Tidak ada data tingkatan
+                                                        nilai</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -512,6 +613,143 @@
                             <button type="submit" class="btn btn-primary">Simpan</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Jenis Nilai -->
+    <div wire:ignore.self class="modal fade" id="addJenisNilaiModal" tabindex="-1"
+        aria-labelledby="addJenisNilaiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addJenisNilaiModalLabel">{{ $jenis_nilai_id ? 'Edit' : 'Tambah' }}
+                        Jenis Nilai</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form wire:submit="saveJenisNilai">
+                        <div class="mb-3">
+                            <label for="jenisNilaiNama" class="form-label">Nama Jenis Nilai</label>
+                            <input wire:model="jenis_nilai_nama" type="text" class="form-control"
+                                id="jenisNilaiNama" placeholder="Contoh: Kualitatif, Kuantitatif">
+                            @error('jenis_nilai_nama')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="hstack gap-2 justify-content-end">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete Jenis Nilai -->
+    <div wire:ignore.self class="modal fade zoomIn" id="deleteJenisNilaiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mt-2 text-center">
+                        <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop"
+                            colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
+                        <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                            <h4>Hapus Jenis Nilai</h4>
+                            <p class="text-muted mx-4 mb-0">Apakah anda yakin ingin menghapus jenis nilai ini? Semua
+                                tingkatan nilai terkait akan ikut terhapus.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                        <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button wire:click="deleteJenisNilai" type="button" class="btn w-sm btn-danger"
+                            data-bs-dismiss="modal">Hapus</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Tingkatan Nilai -->
+    <div wire:ignore.self class="modal fade" id="addTingkatanNilaiModal" tabindex="-1"
+        aria-labelledby="addTingkatanNilaiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTingkatanNilaiModalLabel">
+                        {{ $tingkatan_nilai_id ? 'Edit' : 'Tambah' }} Tingkatan Nilai</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form wire:submit="saveTingkatanNilai">
+                        <div class="mb-3">
+                            <label for="tingkatanNilaiJenisNilai" class="form-label">Jenis Nilai</label>
+                            <select wire:model="tingkatan_nilai_jenis_nilai_id" class="form-select"
+                                id="tingkatanNilaiJenisNilai">
+                                <option value="">-- Pilih Jenis Nilai --</option>
+                                @foreach ($this->jenisNilaiList() as $jenisNilai)
+                                    <option value="{{ $jenisNilai->id }}">{{ $jenisNilai->nama }}</option>
+                                @endforeach
+                            </select>
+                            @error('tingkatan_nilai_jenis_nilai_id')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="tingkatanNilaiKodeNilai" class="form-label">Kode Nilai</label>
+                            <input wire:model="tingkatan_nilai_kode_nilai" type="text" class="form-control"
+                                id="tingkatanNilaiKodeNilai"
+                                placeholder="Contoh: A, B, C atau Rendah, Sedang, Tinggi">
+                            @error('tingkatan_nilai_kode_nilai')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="tingkatanNilaiBobot" class="form-label">Bobot</label>
+                            <input wire:model="tingkatan_nilai_bobot" type="number" class="form-control"
+                                id="tingkatanNilaiBobot" placeholder="Contoh: 4.00, 3.00, 2.00" min="0"
+                                step="0.01">
+                            @error('tingkatan_nilai_bobot')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="hstack gap-2 justify-content-end">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete Tingkatan Nilai -->
+    <div wire:ignore.self class="modal fade zoomIn" id="deleteTingkatanNilaiModal" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mt-2 text-center">
+                        <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop"
+                            colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
+                        <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                            <h4>Hapus Tingkatan Nilai</h4>
+                            <p class="text-muted mx-4 mb-0">Apakah anda yakin ingin menghapus tingkatan nilai ini?</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                        <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button wire:click="deleteTingkatanNilai" type="button" class="btn w-sm btn-danger"
+                            data-bs-dismiss="modal">Hapus</button>
+                    </div>
                 </div>
             </div>
         </div>

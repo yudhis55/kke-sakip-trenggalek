@@ -14,8 +14,8 @@ class TahunSeeder extends Seeder
     public function run(): void
     {
         $data = [
-            ['tahun' => 2025],
-            ['tahun' => 2026],
+            ['tahun' => 2025, 'is_active' => true],
+            ['tahun' => 2026, 'is_active' => false],
         ];
 
         DB::table('tahun')->insert($data);

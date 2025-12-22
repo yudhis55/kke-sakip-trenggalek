@@ -30,10 +30,10 @@ class LembarKerja extends Component
         $this->tahun_id = session('tahun_session') ?? Tahun::where('is_active', true)->first()->id;
     }
 
-    // public function render()
-    // {
-    //     return view('livewire.dashboard.lembar-kerja');
-    // }
+    public function render()
+    {
+        return view('livewire.dashboard.lembar-kerja');
+    }
 
     public function selectOpd($opdId)
     {

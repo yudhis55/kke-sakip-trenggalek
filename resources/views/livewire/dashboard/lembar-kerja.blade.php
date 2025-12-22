@@ -83,9 +83,9 @@
         @endif
 
         {{-- ========================================
-             TAMPILAN UNTUK VERIFIKATOR (CARD BASED setelah pilih OPD)
+             TAMPILAN UNTUK ADMIN & VERIFIKATOR (CARD BASED setelah pilih OPD)
              ======================================== --}}
-        @if (Auth::user()->role->jenis == 'verifikator')
+        @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator']))
 
             {{-- TIER 1: TABEL OPD --}}
             @if (!$opd_session)
@@ -138,9 +138,9 @@
                                                     <td>
                                                         @if ($opd->nilai_total > 0)
                                                             <span
-                                                                class="badge bg-success-subtle text-success fs-12">{{ number_format($opd->nilai_total, 2) }}</span>
+                                                                class="badge text-bg-primary">{{ number_format($opd->nilai_total, 2) }}</span>
                                                         @else
-                                                            <span class="badge bg-secondary fs-12">-</span>
+                                                            <span>-</span>
                                                         @endif
                                                     </td>
                                                     <td>
@@ -485,8 +485,7 @@
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
-                                                    <td><span
-                                                            class="badge bg-primary-subtle text-primary">{{ $subKomponen->kode }}</span>
+                                                    <td><span>{{ $subKomponen->kode }}</span>
                                                     </td>
                                                     <td>{{ $subKomponen->nama }}</td>
                                                     <td>
