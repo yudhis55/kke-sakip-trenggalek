@@ -15,6 +15,14 @@ class SubKomponen extends Model
         'bobot' => 'decimal:2',
     ];
 
+    protected $appends = ['bobot_persen'];
+
+    public function getBobotPersenAttribute()
+    {
+        // Bobot sudah dalam persen di database, return as-is
+        return $this->bobot;
+    }
+
     public function komponen(): BelongsTo
     {
         return $this->belongsTo(Komponen::class, 'komponen_id');
@@ -28,5 +36,87 @@ class SubKomponen extends Model
     public function bukti_dukung(): HasMany
     {
         return $this->hasMany(BuktiDukung::class, 'sub_komponen_id');
+    }
+
+    /**
+     * Hitung nilai sub komponen untuk OPD tertentu dan role tertentu
+     * Nilai = SUM nilai semua kriteria komponennya
+     *
+     * @param int $opdId
+     * @param int $roleId
+     * @return float
+     */
+    public function getNilai($opdId, $roleId)
+    {
+        $totalNilai = 0;
+        $kriteriaList = $this->kriteria_komponen;
+
+        foreach ($kriteriaList as $kriteria) {
+            $totalNilai += $kriteria->getNilai($opdId, $roleId);
+        }
+
+        return round($totalNilai, 2);
+    }
+
+    public function getNilaiPerRole($opdId)
+    {
+        $roleList = Penilaian::whereIn('kriteria_komponen_id', $this->kriteria_komponen->pluck('id'))
+            ->where('opd_id', $opdId)
+            ->whereNotNull('tingkatan_nilai_id')
+            ->with('role')
+            ->select('role_id')
+            ->distinct()
+            ->get()
+            ->pluck('role')
+            ->filter();
+
+        $nilaiPerRole = [];
+        foreach ($roleList as $role) {
+            $nilai = $this->getNilai($opdId, $role->id);
+            if ($nilai > 0) {
+                $nilaiPerRole[] = [
+                    'role_id' => $role->id,
+                    'role_nama' => $role->nama,
+                    'role_jenis' => $role->jenis,
+                    'nilai' => $nilai
+                ];
+            }
+        }
+
+        return $nilaiPerRole;
+    }
+
+    public function getNilaiRataRata($opdId)
+    {
+        $nilaiPerRole = $this->getNilaiPerRole($opdId);
+        if (empty($nilaiPerRole)) {
+            return 0;
+        }
+
+        $totalNilai = array_sum(array_column($nilaiPerRole, 'nilai'));
+        // Rata-rata dibagi 3: penilaian mandiri (opd), penilai (evaluator), penjamin
+        return round($totalNilai / 3, 2);
+    }
+
+    /**
+     * Hitung progress evaluasi (berapa % kriteria yang sudah dinilai)
+     */
+    public function getProgress($opdId)
+    {
+        // Optimasi: Gunakan single query dengan join
+        $stats = \App\Models\KriteriaKomponen::selectRaw('COUNT(*) as total, COUNT(DISTINCT penilaian.kriteria_komponen_id) as dinilai')
+            ->leftJoin('penilaian', function ($join) use ($opdId) {
+                $join->on('kriteria_komponen.id', '=', 'penilaian.kriteria_komponen_id')
+                    ->where('penilaian.opd_id', '=', $opdId)
+                    ->whereNotNull('penilaian.tingkatan_nilai_id');
+            })
+            ->where('kriteria_komponen.sub_komponen_id', $this->id)
+            ->first();
+
+        if (!$stats || $stats->total == 0) {
+            return 0;
+        }
+
+        return round(($stats->dinilai / $stats->total) * 100, 2);
     }
 }
