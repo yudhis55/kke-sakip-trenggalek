@@ -27,6 +27,33 @@ class MappingSeeder extends Seeder
             'DVAL01' => 4, // Evaluasi Akuntabilitas Kinerja Internal
         ];
 
+        // Mapping jenis_nilai_id untuk kriteria tertentu (yang jenis_nilai_id = 2)
+        // Default = 1, yang ada di array ini = 2
+        $jenisNilaiKriteriaMapping = [
+            'AREN001.1' => 2,
+            'AREN001.2' => 2,
+            'AREN001.3' => 2,
+            'AREN001.4' => 2,
+            'AREN002.1' => 2,
+            'AREN002.2' => 2,
+            'AREN002.3' => 2,
+            'BKUR001.1' => 2,
+            'BKUR001.2' => 2,
+            'BKUR001.3' => 2,
+            'BKUR002.4' => 2,
+            'BKUR002.6' => 2,
+            'BKUR002.7' => 2,
+            'CLAP001.1' => 2,
+            'CLAP001.2' => 2,
+            'CLAP001.3' => 2,
+            'CLAP001.4' => 2,
+            'CLAP001.5' => 2,
+            'CLAP001.6' => 2,
+            'DVAL001.1' => 2,
+            'DVAL001.2' => 2,
+            'DVAL001.3' => 2,
+        ];
+
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
         $data = [
             [
@@ -783,12 +810,15 @@ class MappingSeeder extends Seeder
                                 if ($existingK) {
                                     $kriteriaId = $existingK->id;
                                 } else {
+                                    // Tentukan jenis_nilai_id berdasarkan mapping atau default ke 1
+                                    $jenisNilaiId = $jenisNilaiKriteriaMapping[$krit['kode']] ?? 1;
+
                                     $kriteriaId = DB::table('kriteria_komponen')->insertGetId([
                                         'kode' => $krit['kode'],
                                         'nama' => $krit['nama'] ?? '—',
                                         'sub_komponen_id' => $subId,
                                         'komponen_id' => $komponenId,
-                                        'jenis_nilai_id' => 1,
+                                        'jenis_nilai_id' => $jenisNilaiId,
                                         'tahun_id' => $tahun_id,
                                     ]);
                                 }
