@@ -5,10 +5,10 @@ namespace App\Livewire\Dashboard\LembarKerja\KriteriaKomponen;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use App\Models\BuktiDukung as BuktiDukungModel;
-use App\Models\FileBuktiDukung;
 use App\Models\KriteriaKomponen;
 use App\Models\Opd;
 use App\Models\Penilaian;
+use App\Models\Role;
 use App\Models\TingkatanNilai;
 use App\Models\Setting;
 use Spatie\LivewireFilepond\WithFilePond;
@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use function Flasher\Prime\flash;
+
 
 
 class BuktiDukung extends Component
@@ -38,14 +39,20 @@ class BuktiDukung extends Component
     // Penilaian properties
     public $tingkatan_nilai_id = null;
     public $is_editing_penilaian = false;
+
+    // Tracking properties
+    public $selected_bukti_dukung_for_tracking = null;
     // public $current_tab = 'bukti_dukung';
+
+    public function resetBuktiDukungId()
+    {
+        $this->bukti_dukung_id = null;
+    }
 
     public function mount()
     {
-        // Set initial opd_id berdasarkan user yang login
-        if (Auth::user()->opd_id) {
-            $this->opd_id = Auth::user()->opd_id;
-        }
+        // Set initial opd_id berdasarkan user yang login atau session
+        $this->opd_id = Auth::user()->opd_id ?? session('opd_session');
     }
 
     #[Computed]
@@ -78,6 +85,36 @@ class BuktiDukung extends Component
         // Jika penilaian_di = 'kriteria', maka true
         // Jika penilaian_di = 'bukti', maka false
         return $kriteria->sub_komponen->penilaian_di === 'kriteria';
+    }
+
+    /**
+     * Hitung bobot kriteria komponen
+     * Bobot = sub_komponen.bobot / jumlah_kriteria
+     */
+    #[Computed]
+    public function bobotKriteria()
+    {
+        $kriteria = $this->kriteriaKomponen;
+        if (!$kriteria || !$kriteria->sub_komponen) {
+            return 0;
+        }
+
+        $subKomponen = $kriteria->sub_komponen;
+        $jumlahKriteria = KriteriaKomponen::where('sub_komponen_id', $subKomponen->id)->count();
+
+        return $jumlahKriteria > 0 ? round($subKomponen->bobot / $jumlahKriteria, 2) : 0;
+    }
+
+    /**
+     * Hitung bobot per bukti dukung
+     * Bobot = bobot_kriteria / jumlah_bukti
+     */
+    #[Computed]
+    public function bobotPerBukti()
+    {
+        $jumlahBukti = BuktiDukungModel::where('kriteria_komponen_id', $this->kriteria_komponen_id)->count();
+
+        return $jumlahBukti > 0 ? round($this->bobotKriteria / $jumlahBukti, 2) : 0;
     }
 
     #[Computed]
@@ -136,20 +173,25 @@ class BuktiDukung extends Component
             ];
         }
 
+        $opdRoleId = \App\Models\Role::where('jenis', 'opd')->first()?->id;
+
         if ($this->penilaianDiKriteria) {
             // Mode Kriteria: SEMUA bukti dukung harus sudah punya file
             $allBuktiDukung = \App\Models\BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_id)->get();
 
+            // Jika tidak ada bukti dukung sama sekali, langsung izinkan penilaian
             if ($allBuktiDukung->isEmpty()) {
-                return [
-                    'allowed' => false,
-                    'message' => 'Belum ada bukti dukung yang terdaftar untuk kriteria ini.'
-                ];
+                return ['allowed' => true];
             }
 
+            // Jika ada bukti dukung, cek apakah semua sudah diupload
             foreach ($allBuktiDukung as $buktiDukung) {
-                $hasFile = FileBuktiDukung::where('bukti_dukung_id', $buktiDukung->id)
+                // Cek apakah ada penilaian OPD dengan file untuk bukti dukung ini
+                $hasFile = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                    ->where('bukti_dukung_id', $buktiDukung->id)
                     ->where('opd_id', $this->opd_id)
+                    ->where('role_id', $opdRoleId)
+                    ->whereNotNull('link_file')
                     ->exists();
 
                 if (!$hasFile) {
@@ -170,8 +212,12 @@ class BuktiDukung extends Component
                 ];
             }
 
-            $hasFile = FileBuktiDukung::where('bukti_dukung_id', $this->bukti_dukung_id)
+            // Cek apakah ada penilaian OPD dengan file untuk bukti dukung ini
+            $hasFile = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $this->bukti_dukung_id)
                 ->where('opd_id', $this->opd_id)
+                ->where('role_id', $opdRoleId)
+                ->whereNotNull('link_file')
                 ->exists();
 
             if (!$hasFile) {
@@ -194,13 +240,28 @@ class BuktiDukung extends Component
             return collect(); // Kosong jika bukan mode kriteria
         }
 
-        return \App\Models\BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_id)
-            ->with(['file_bukti_dukung' => function ($query) {
-                $query->where('opd_id', $this->opd_id)
-                    ->orderBy('created_at', 'desc');
-            }])
+        // Ambil semua bukti dukung dengan penilaian OPD yang memiliki file
+        $buktiDukungList = \App\Models\BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_id)
             ->orderBy('nama')
             ->get();
+
+        // Untuk setiap bukti dukung, ambil penilaian OPD-nya yang punya file
+        $opdRoleId = \App\Models\Role::where('jenis', 'opd')->first()?->id;
+
+        foreach ($buktiDukungList as $bukti) {
+            // Query penilaian OPD untuk bukti dukung ini
+            $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $bukti->id)
+                ->where('opd_id', $this->opd_id)
+                ->where('role_id', $opdRoleId)
+                ->whereNotNull('link_file')
+                ->first();
+
+            // Tambahkan relasi virtual untuk compatibility dengan view
+            $bukti->penilaian_opd = $penilaian;
+        }
+
+        return $buktiDukungList;
     }
 
     /**
@@ -287,19 +348,167 @@ class BuktiDukung extends Component
         ];
     }
 
+    /**
+     * Get tracking data untuk modal tracking
+     * Return array dengan 4 tahap: OPD, Verifikator, Penjamin, Penilai
+     */
+    public function getTrackingData()
+    {
+        if (!$this->selected_bukti_dukung_for_tracking || !$this->opd_id) {
+            return [];
+        }
+
+        // Query penilaian untuk kriteria komponen dan bukti dukung yang dipilih
+        // Jika penilaian di kriteria: bukti_dukung_id = null
+        // Jika penilaian di bukti: bukti_dukung_id = selected_bukti_dukung_for_tracking
+        $buktiDukungId = $this->penilaianDiKriteria ? null : $this->selected_bukti_dukung_for_tracking;
+
+        $penilaianQuery = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('opd_id', $this->opd_id)
+            ->with(['role', 'tingkatan_nilai']);
+
+        if ($this->penilaianDiKriteria) {
+            $penilaianQuery->whereNull('bukti_dukung_id');
+        } else {
+            $penilaianQuery->where('bukti_dukung_id', $buktiDukungId);
+        }
+
+        $penilaianList = $penilaianQuery->orderBy('created_at', 'asc')->get();
+
+        // Pisahkan berdasarkan role
+        $opdPenilaian = $penilaianList->where('role.jenis', 'opd')->first();
+        $verifikatorPenilaian = $penilaianList->where('role.jenis', 'verifikator')->first();
+        $penjaminPenilaian = $penilaianList->where('role.jenis', 'penjamin')->first();
+        $penilaiPenilaian = $penilaianList->where('role.jenis', 'penilai')->first();
+
+        // Build tracking array dengan 4 tahap paten
+        $tracking = [];
+
+        // 1. OPD - Penilaian Mandiri
+        $tracking[] = [
+            'role' => 'OPD',
+            'title' => 'Penilaian Mandiri - OPD',
+            'icon' => $opdPenilaian ? ($opdPenilaian->tingkatan_nilai_id ? 'ri-check-line' : 'ri-subtract-line') : 'ri-subtract-line',
+            'status' => $opdPenilaian ? ($opdPenilaian->tingkatan_nilai_id ? 'success' : 'null') : 'null',
+            'date' => $opdPenilaian ? $opdPenilaian->created_at->format('D, d M Y | H:i') : null,
+            'nilai' => $opdPenilaian && $opdPenilaian->tingkatan_nilai ? $opdPenilaian->tingkatan_nilai->kode_nilai : null,
+            'keterangan' => $opdPenilaian ? $opdPenilaian->keterangan : null,
+        ];
+
+        // 2. Verifikator
+        $tracking[] = [
+            'role' => 'Verifikator',
+            'title' => $verifikatorPenilaian ? ($verifikatorPenilaian->is_verified ? 'DITERIMA - Verifikator' : 'DITOLAK - Verifikator') : 'Verifikator',
+            'icon' => $verifikatorPenilaian ? ($verifikatorPenilaian->is_verified ? 'ri-check-line' : 'ri-close-line') : 'ri-subtract-line',
+            'status' => $verifikatorPenilaian ? ($verifikatorPenilaian->is_verified ? 'success' : 'danger') : 'null',
+            'date' => $verifikatorPenilaian ? $verifikatorPenilaian->updated_at->format('D, d M Y | H:i') : null,
+            'nilai' => null,
+            'keterangan' => $verifikatorPenilaian ? $verifikatorPenilaian->keterangan : null,
+        ];
+
+        // 3. Penjamin - Verifikasi + Penilaian
+        $tracking[] = [
+            'role' => 'Penjamin',
+            'title' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'DITERIMA - Penjamin' : 'DITOLAK - Penjamin') : 'Penjamin Mutu',
+            'icon' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'ri-check-line' : 'ri-close-line') : 'ri-subtract-line',
+            'status' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'success' : 'danger') : 'null',
+            'date' => $penjaminPenilaian ? $penjaminPenilaian->updated_at->format('D, d M Y | H:i') : null,
+            'nilai' => $penjaminPenilaian && $penjaminPenilaian->tingkatan_nilai ? $penjaminPenilaian->tingkatan_nilai->kode_nilai : null,
+            'keterangan' => $penjaminPenilaian ? $penjaminPenilaian->keterangan : null,
+        ];
+
+        // 4. Penilai
+        $tracking[] = [
+            'role' => 'Penilai',
+            'title' => $penilaiPenilaian ? 'DINILAI - Penilai' : 'Penilai',
+            'icon' => $penilaiPenilaian ? 'ri-check-line' : 'ri-subtract-line',
+            'status' => $penilaiPenilaian ? 'success' : 'null',
+            'date' => $penilaiPenilaian ? $penilaiPenilaian->updated_at->format('D, d M Y | H:i') : null,
+            'nilai' => $penilaiPenilaian && $penilaiPenilaian->tingkatan_nilai ? $penilaiPenilaian->tingkatan_nilai->kode_nilai : null,
+            'keterangan' => null,
+        ];
+
+        return $tracking;
+    }
+
+    /**
+     * Set bukti dukung yang dipilih untuk tracking dan buka modal
+     */
+    public function showTracking($buktiDukungId)
+    {
+        $this->selected_bukti_dukung_for_tracking = $buktiDukungId;
+        // Modal akan dibuka via JavaScript dengan Alpine.js atau Bootstrap modal
+        $this->dispatch('openTrackingModal');
+    }
+
+    /**
+     * Get nama bukti dukung untuk tracking modal title
+     */
+    public function getSelectedBuktiDukungName()
+    {
+        if (!$this->selected_bukti_dukung_for_tracking) {
+            return null;
+        }
+
+        $buktiDukung = BuktiDukungModel::find($this->selected_bukti_dukung_for_tracking);
+        return $buktiDukung ? $buktiDukung->nama : null;
+    }
+
     #[Computed]
     public function buktiDukungList()
     {
-        if (Auth::user()->opd_id) {
-            $this->opd_id = Auth::user()->opd_id;
-        }
-        return BuktiDukungModel::with([
-            'file_bukti_dukung' => function ($query) {
-                $query->where('opd_id', $this->opd_id);
-            }
-        ])
-            ->where('kriteria_komponen_id', $this->kriteria_komponen_id)
+        // Set opd_id dari user login atau session
+        $this->opd_id = Auth::user()->opd_id ?? session('opd_session');
+
+        $buktiDukungList = BuktiDukungModel::where('kriteria_komponen_id', $this->kriteria_komponen_id)
             ->get();
+
+        // Get role IDs
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+        $verifikatorRoleId = Role::where('jenis', 'verifikator')->first()?->id;
+        $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
+        $penilaiRoleId = Role::where('jenis', 'penilai')->first()?->id;
+
+        foreach ($buktiDukungList as $bukti) {
+            // Penilaian OPD (upload file + penilaian mandiri)
+            $penilaianOpd = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $bukti->id)
+                ->where('opd_id', $this->opd_id)
+                ->where('role_id', $opdRoleId)
+                ->with('tingkatan_nilai')
+                ->first();
+
+            // Penilaian Verifikator
+            $penilaianVerifikator = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $bukti->id)
+                ->where('opd_id', $this->opd_id)
+                ->where('role_id', $verifikatorRoleId)
+                ->first();
+
+            // Penilaian Penjamin (Evaluator)
+            $penilaianPenjamin = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $bukti->id)
+                ->where('opd_id', $this->opd_id)
+                ->where('role_id', $penjaminRoleId)
+                ->with('tingkatan_nilai')
+                ->first();
+
+            // Penilaian Penilai
+            $penilaianPenilai = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+                ->where('bukti_dukung_id', $bukti->id)
+                ->where('opd_id', $this->opd_id)
+                ->where('role_id', $penilaiRoleId)
+                ->with('tingkatan_nilai')
+                ->first();
+
+            // Attach sebagai virtual properties
+            $bukti->penilaian_opd = $penilaianOpd;
+            $bukti->penilaian_verifikator = $penilaianVerifikator;
+            $bukti->penilaian_penjamin = $penilaianPenjamin;
+            $bukti->penilaian_penilai = $penilaianPenilai;
+        }
+
+        return $buktiDukungList;
     }
 
     #[Computed]
@@ -312,19 +521,12 @@ class BuktiDukung extends Component
         return BuktiDukungModel::find($this->bukti_dukung_id);
     }
 
-    #[Computed]
-    public function selectedFileBuktiDukungId()
-    {
-        if (!$this->bukti_dukung_id || !$this->opd_id) {
-            return null;
-        }
-
-        $fileBuktiDukung = FileBuktiDukung::where('bukti_dukung_id', $this->bukti_dukung_id)
-            ->where('opd_id', $this->opd_id)
-            ->first();
-
-        return $fileBuktiDukung?->id;
-    }
+    // selectedFileBuktiDukungId tidak lagi dibutuhkan karena tidak ada FK ke file_bukti_dukung
+    // #[Computed]
+    // public function selectedFileBuktiDukungId()
+    // {
+    //     ...
+    // }
 
     #[Computed]
     public function selectedFileBuktiDukung()
@@ -333,29 +535,51 @@ class BuktiDukung extends Component
             return null;
         }
 
-        $fileBuktiDukung = FileBuktiDukung::where('bukti_dukung_id', $this->bukti_dukung_id)
+        // Query dari tabel penilaian untuk role OPD
+        $buktiDukungId = $this->penilaianDiKriteria ? null : $this->bukti_dukung_id;
+
+        $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
             ->where('opd_id', $this->opd_id)
+            ->where('role_id', function ($query) {
+                $query->select('id')
+                    ->from('role')
+                    ->where('jenis', 'opd')
+                    ->limit(1);
+            })
+            ->when($this->penilaianDiKriteria, function ($query) {
+                $query->whereNull('bukti_dukung_id');
+            }, function ($query) use ($buktiDukungId) {
+                $query->where('bukti_dukung_id', $buktiDukungId);
+            })
             ->first();
 
-        if (!$fileBuktiDukung) {
+        if (!$penilaian || !$penilaian->link_file) {
             return null;
         }
 
-        // Decode JSON link_file
-        return json_decode($fileBuktiDukung->link_file, true);
+        // link_file sudah auto-decoded dari array cast
+        return $penilaian->link_file;
     }
 
     #[Computed]
     public function riwayatVerifikasi()
     {
-        if (!$this->selectedFileBuktiDukungId) {
+        if (!$this->bukti_dukung_id || !$this->opd_id) {
             return collect([]);
         }
 
         // Query unified penilaian table untuk riwayat verifikasi
         // Filter: role verifikator/penjamin (yang punya is_verified)
+        $buktiDukungId = $this->penilaianDiKriteria ? null : $this->bukti_dukung_id;
+
         return Penilaian::with(['role'])
-            ->where('file_bukti_dukung_id', $this->selectedFileBuktiDukungId)
+            ->where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('opd_id', $this->opd_id)
+            ->when($this->penilaianDiKriteria, function ($query) {
+                $query->whereNull('bukti_dukung_id');
+            }, function ($query) use ($buktiDukungId) {
+                $query->where('bukti_dukung_id', $buktiDukungId);
+            })
             ->whereNotNull('is_verified')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -370,13 +594,19 @@ class BuktiDukung extends Component
             return;
         }
 
-        $this->validate([
-            'file_bukti_dukung' => 'required|array',
+        // Validation rules berbeda untuk mode kriteria vs mode bukti
+        $rules = [
             'file_bukti_dukung.*' => 'file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240', // Max 10MB per file
-            'bukti_dukung_id' => 'required|exists:bukti_dukung,id',
             'opd_id' => 'required|exists:opd,id',
             'keterangan_upload' => 'nullable|string|max:1000',
-        ]);
+        ];
+
+        // bukti_dukung_id hanya required untuk mode bukti
+        if (!$this->penilaianDiKriteria) {
+            $rules['bukti_dukung_id'] = 'required|exists:bukti_dukung,id';
+        }
+
+        $this->validate($rules);
 
         $uploadedFiles = [];
 
@@ -390,15 +620,19 @@ class BuktiDukung extends Component
             ];
         }
 
-        // Cek apakah sudah ada file sebelumnya
-        $existingFile = FileBuktiDukung::where('bukti_dukung_id', $this->bukti_dukung_id)
+        // Cari record penilaian OPD yang sudah ada
+        // Upload dokumen SELALU per bukti_dukung_id (terlepas dari mode penilaian)
+        // Mode penilaian hanya mempengaruhi record penilaian/verifikasi, bukan upload dokumen
+        $existingPenilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
             ->where('opd_id', $this->opd_id)
+            ->where('role_id', Auth::user()->role_id)
             ->first();
 
-        if ($existingFile) {
+        if ($existingPenilaian) {
             if ($this->ganti_semua_dokumen) {
                 // Mode REPLACE: Hapus file lama dari storage
-                $oldFiles = json_decode($existingFile->link_file, true);
+                $oldFiles = $existingPenilaian->link_file ?? [];
                 if ($oldFiles) {
                     foreach ($oldFiles as $oldFile) {
                         if (isset($oldFile['path'])) {
@@ -408,44 +642,49 @@ class BuktiDukung extends Component
                 }
 
                 // Update dengan file baru saja (replace)
-                $existingFile->update([
-                    'link_file' => json_encode($uploadedFiles),
+                $existingPenilaian->update([
+                    'link_file' => $uploadedFiles,
                     'keterangan' => $this->keterangan_upload,
                     'is_perubahan' => $this->is_perubahan,
                 ]);
             } else {
                 // Mode APPEND: Gabungkan file lama + file baru
-                $oldFiles = json_decode($existingFile->link_file, true) ?? [];
+                $oldFiles = $existingPenilaian->link_file ?? [];
                 $mergedFiles = array_merge($oldFiles, $uploadedFiles);
 
                 // Update dengan gabungan file lama + baru
-                $existingFile->update([
-                    'link_file' => json_encode($mergedFiles),
+                $existingPenilaian->update([
+                    'link_file' => $mergedFiles,
                     'keterangan' => $this->keterangan_upload,
                     'is_perubahan' => $this->is_perubahan,
                 ]);
             }
         } else {
-            // Simpan ke database sebagai JSON (record baru)
-            FileBuktiDukung::create([
+            // Buat record penilaian baru untuk OPD
+            Penilaian::create([
                 'bukti_dukung_id' => $this->bukti_dukung_id,
+                'kriteria_komponen_id' => $this->kriteria_komponen_id,
                 'opd_id' => $this->opd_id,
-                'link_file' => json_encode($uploadedFiles),
+                'role_id' => Auth::user()->role_id,
+                'link_file' => $uploadedFiles,
                 'keterangan' => $this->keterangan_upload,
                 'is_perubahan' => $this->is_perubahan,
             ]);
         }
+
+        // Simpan message sebelum reset
+        $message = $this->ganti_semua_dokumen
+            ? 'Berhasil mengganti semua dokumen.'
+            : 'Berhasil menambahkan dokumen.';
 
         // Reset the file input
         $this->file_bukti_dukung = [];
         $this->keterangan_upload = '';
         $this->is_perubahan = false;
         $this->ganti_semua_dokumen = false;
-        $this->js('window.location.reload()');
-        $message = $this->ganti_semua_dokumen
-            ? 'Berhasil mengganti semua dokumen.'
-            : 'Berhasil menambahkan dokumen.';
+
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success($message);
+        $this->js('window.location.reload()');
     }
 
     public function setBuktiDukungId($bukti_dukung_id)
@@ -462,16 +701,21 @@ class BuktiDukung extends Component
             return;
         }
 
-        if (!$this->selectedFileBuktiDukungId) {
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File bukti dukung tidak ditemukan.');
+        if (!$this->bukti_dukung_id || !$this->opd_id) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Bukti dukung tidak ditemukan.');
             return;
         }
 
-        $fileBuktiDukung = FileBuktiDukung::find($this->selectedFileBuktiDukungId);
+        // Cari record penilaian OPD (selalu query dengan bukti_dukung_id)
+        $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_id)
+            ->where('role_id', Auth::user()->role_id)
+            ->first();
 
-        if ($fileBuktiDukung) {
+        if ($penilaian && $penilaian->link_file) {
             // Hapus file dari storage
-            $files = json_decode($fileBuktiDukung->link_file, true);
+            $files = $penilaian->link_file;
             if ($files) {
                 foreach ($files as $file) {
                     if (isset($file['path'])) {
@@ -480,11 +724,17 @@ class BuktiDukung extends Component
                 }
             }
 
-            // Hapus record dari database
-            $fileBuktiDukung->delete();
+            // Update record - hapus link_file dan reset data upload
+            $penilaian->update([
+                'link_file' => null,
+                'is_perubahan' => false,
+                // Keterangan tetap dipertahankan jika ada keterangan penilaian mandiri
+            ]);
 
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File berhasil dihapus.');
             $this->js('window.location.reload()');
+        } else {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
         }
     }
 
@@ -509,22 +759,55 @@ class BuktiDukung extends Component
             'keterangan_verifikasi' => 'nullable|string|max:1000',
         ]);
 
-        if (!$this->selectedFileBuktiDukungId) {
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File bukti dukung tidak ditemukan.');
+        // Cek apakah OPD sudah upload file
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+        $opdPenilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('opd_id', $this->opd_id)
+            ->where('role_id', $opdRoleId)
+            ->when($this->penilaianDiKriteria, function ($query) {
+                $query->whereNull('bukti_dukung_id');
+            }, function ($query) {
+                $query->where('bukti_dukung_id', $this->bukti_dukung_id);
+            })
+            ->whereNotNull('link_file')
+            ->first();
+
+        if (!$opdPenilaian) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Belum ada file yang diunggah OPD.');
             return;
         }
 
-        // Simpan ke unified penilaian table
-        Penilaian::create([
-            'file_bukti_dukung_id' => $this->selectedFileBuktiDukungId,
-            'bukti_dukung_id' => $this->bukti_dukung_id,
-            'kriteria_komponen_id' => $this->kriteria_komponen_id,
-            'opd_id' => $this->opd_id,
-            'role_id' => Auth::user()->role_id,
-            'is_verified' => $this->is_verified,
-            'keterangan' => $this->keterangan_verifikasi,
-            'tingkatan_nilai_id' => null, // Verifikasi tidak pakai tingkatan_nilai_id
-        ]);
+        // Cari atau buat record penilaian untuk verifikator
+        $buktiDukungId = $this->penilaianDiKriteria ? null : $this->bukti_dukung_id;
+
+        $existingPenilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('opd_id', $this->opd_id)
+            ->where('role_id', Auth::user()->role_id)
+            ->when($this->penilaianDiKriteria, function ($query) {
+                $query->whereNull('bukti_dukung_id');
+            }, function ($query) use ($buktiDukungId) {
+                $query->where('bukti_dukung_id', $buktiDukungId);
+            })
+            ->first();
+
+        if ($existingPenilaian) {
+            // Update existing verifikasi
+            $existingPenilaian->update([
+                'is_verified' => $this->is_verified,
+                'keterangan' => $this->keterangan_verifikasi,
+            ]);
+        } else {
+            // Buat record penilaian baru untuk verifikator
+            Penilaian::create([
+                'bukti_dukung_id' => $buktiDukungId,
+                'kriteria_komponen_id' => $this->kriteria_komponen_id,
+                'opd_id' => $this->opd_id,
+                'role_id' => Auth::user()->role_id,
+                'is_verified' => $this->is_verified,
+                'keterangan' => $this->keterangan_verifikasi,
+                'tingkatan_nilai_id' => null, // Verifikasi tidak pakai tingkatan_nilai_id
+            ]);
+        }
 
         // Reset form
         $this->is_verified = null;
@@ -638,6 +921,22 @@ class BuktiDukung extends Component
             $this->tingkatan_nilai_id = null;
         } catch (\Exception $e) {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menyimpan penilaian: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Navigate back to kriteria komponen page
+     */
+    public function navigateBack()
+    {
+        $kriteriaKomponen = $this->kriteriaKomponen;
+        if ($kriteriaKomponen && $kriteriaKomponen->sub_komponen_id) {
+            return $this->redirect(
+                route('lembar-kerja.kriteria-komponen', [
+                    'sub_komponen_id' => $kriteriaKomponen->sub_komponen_id
+                ]),
+                // navigate: true
+            );
         }
     }
 }
