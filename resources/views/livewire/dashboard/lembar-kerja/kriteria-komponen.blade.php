@@ -75,6 +75,7 @@
                                             <th scope="col" style="width: 6%;">Verval</th>
                                             <th scope="col" style="width: 9%;">Evaluator</th>
                                             <th scope="col" style="width: 10%;">Penjaminan <br>Kualitas</th>
+                                            <th scope="col" style="width: 6%;">Jumlah</th>
                                             <th scope="col" style="width: 6%;">Skor</th>
                                             @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
                                                 <th scope="col" style="width: 5%;">Lacak</th>
@@ -82,6 +83,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        @php
+                                            $totalJumlah = 0;
+                                        @endphp
                                         @foreach ($this->kriteriaKomponenList as $index => $kriteria_komponen)
                                             <tr>
                                                 <th scope="row"><a class="fw-medium">{{ $index + 1 }}</a></th>
@@ -254,7 +258,29 @@
                                                     @php
                                                         $opdId = Auth::user()->opd_id ?? session('opd_session');
                                                         $nilaiRataRata = $kriteria_komponen->getNilaiRataRata($opdId);
+
+                                                        // Hitung jumlah (sum) dari 3 role
+                                                        $nilaiPerRoleKriteria = $kriteria_komponen->getNilaiPerRole(
+                                                            $opdId,
+                                                        );
+                                                        $nilaiMapKriteria = [];
+                                                        foreach ($nilaiPerRoleKriteria as $item) {
+                                                            $nilaiMapKriteria[$item['role_jenis']] = $item['nilai'];
+                                                        }
+                                                        $jumlah =
+                                                            ($nilaiMapKriteria['opd'] ?? 0) +
+                                                            ($nilaiMapKriteria['penilai'] ?? 0) +
+                                                            ($nilaiMapKriteria['penjamin'] ?? 0);
+                                                        $totalJumlah += $jumlah;
                                                     @endphp
+                                                    @if ($jumlah > 0)
+                                                        <span
+                                                            class="badge bg-success">{{ number_format($jumlah, 2) }}%</span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td>
                                                     @if ($nilaiRataRata > 0)
                                                         <span
                                                             class="badge bg-primary">{{ number_format($nilaiRataRata, 2) }}%</span>
@@ -332,6 +358,12 @@
                                                 @else
                                                     <span class="text-muted">-</span>
                                                 @endif
+                                            </td>
+
+                                            {{-- Kolom Jumlah (total sum) --}}
+                                            <td>
+                                                <span
+                                                    class="badge bg-success">{{ number_format($totalJumlah, 2) }}%</span>
                                             </td>
 
                                             {{-- Kolom Skor (dipindah ke sini) --}}

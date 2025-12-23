@@ -152,7 +152,8 @@
                     </div>
                     <div class="card-header d-flex align-items-center justify-content-between gap-3">
                         <div class="flex-grow-1" style="min-width: 0; max-width: calc(100% - 120px);">
-                            <p class="mb-1 text-dark fw-semibold" style="word-wrap: break-word; overflow-wrap: break-word;">Kriteria Komponen:
+                            <p class="mb-1 text-dark fw-semibold"
+                                style="word-wrap: break-word; overflow-wrap: break-word;">Kriteria Komponen:
                                 {{ $this->kriteriaKomponen->kode }}
                                 -
                                 {{ $this->kriteriaKomponen->nama }}
@@ -197,6 +198,8 @@
                                                 <th scope="col" style="width: 8%;">Verval</th>
                                                 <th scope="col" style="width: 10%;">Evaluator</th>
                                                 <th scope="col" style="width: 10%;">Penjaminan <br>Kualitas</th>
+                                                <th scope="col" style="width: 7%;">Jumlah</th>
+                                                <th scope="col" style="width: 7%;">Skor</th>
                                             @endif
                                             <th scope="col"
                                                 style="width: {{ !$this->penilaianDiKriteria ? '9%' : '47%' }};">Aksi
@@ -208,6 +211,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        @php
+                                            $totalJumlah = 0;
+                                            $totalSkor = 0;
+                                        @endphp
                                         @foreach ($this->buktiDukungList as $index => $bukti_dukung)
                                             <tr>
                                                 <th scope="row"><a class="fw-medium">{{ $index + 1 }}</a></th>
@@ -263,7 +270,8 @@
                                                                     <i class="ri-check-fill fw-bold"></i>
                                                                 </button>
                                                             @elseif ($bukti_dukung->penilaian_penjamin->is_verified === false)
-                                                                <button class="btn btn-sm btn-soft-danger btn-icon ms-1"
+                                                                <button
+                                                                    class="btn btn-sm btn-soft-danger btn-icon ms-1"
                                                                     title="Ditolak">
                                                                     <i class="ri-close-fill fw-bold"></i>
                                                                 </button>
@@ -283,6 +291,62 @@
                                                                 <span
                                                                     class="fw-bold">{{ $bukti_dukung->penilaian_penilai->tingkatan_nilai->kode_nilai }}</span>
                                                             </button>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{-- Kolom Jumlah (Sum) --}}
+                                                        @php
+                                                            // Ambil nilai per role untuk bukti dukung ini
+                                                            $nilaiOpd = 0;
+                                                            $nilaiPenilai = 0;
+                                                            $nilaiPenjamin = 0;
+
+                                                            if (
+                                                                $bukti_dukung->penilaian_opd &&
+                                                                $bukti_dukung->penilaian_opd->tingkatan_nilai
+                                                            ) {
+                                                                $nilaiOpd =
+                                                                    $bukti_dukung->penilaian_opd->tingkatan_nilai
+                                                                        ->bobot * $this->bobotPerBukti;
+                                                            }
+                                                            if (
+                                                                $bukti_dukung->penilaian_penilai &&
+                                                                $bukti_dukung->penilaian_penilai->tingkatan_nilai
+                                                            ) {
+                                                                $nilaiPenilai =
+                                                                    $bukti_dukung->penilaian_penilai->tingkatan_nilai
+                                                                        ->bobot * $this->bobotPerBukti;
+                                                            }
+                                                            if (
+                                                                $bukti_dukung->penilaian_penjamin &&
+                                                                $bukti_dukung->penilaian_penjamin->tingkatan_nilai
+                                                            ) {
+                                                                $nilaiPenjamin =
+                                                                    $bukti_dukung->penilaian_penjamin->tingkatan_nilai
+                                                                        ->bobot * $this->bobotPerBukti;
+                                                            }
+
+                                                            $skorRataRata =
+                                                                ($nilaiOpd + $nilaiPenilai + $nilaiPenjamin) / 3;
+                                                            $jumlahBukti = $nilaiOpd + $nilaiPenilai + $nilaiPenjamin;
+
+                                                            $totalSkor += $skorRataRata;
+                                                            $totalJumlah += $jumlahBukti;
+                                                        @endphp
+                                                        @if ($jumlahBukti > 0)
+                                                            <span
+                                                                class="badge bg-success">{{ number_format($jumlahBukti, 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{-- Kolom Skor (Rata-rata) --}}
+                                                        @if ($skorRataRata > 0)
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($skorRataRata, 2) }}%</span>
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
@@ -429,6 +493,18 @@
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
+                                                    </td>
+
+                                                    {{-- Kolom Jumlah (Total sum dari accumulation) --}}
+                                                    <td class="">
+                                                        <span
+                                                            class="badge bg-success">{{ number_format($totalJumlah, 2) }}%</span>
+                                                    </td>
+
+                                                    {{-- Kolom Skor (Total dari accumulation) --}}
+                                                    <td class="">
+                                                        <span
+                                                            class="badge bg-primary">{{ number_format($totalSkor, 2) }}%</span>
                                                     </td>
                                                 @endif
 

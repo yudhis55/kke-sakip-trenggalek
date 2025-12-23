@@ -544,6 +544,7 @@
                                                 <th scope="col" style="width: 7%;">Verval</th>
                                                 <th scope="col" style="width: 8%;">Evaluator</th>
                                                 <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 8%;"></th>Jumlah</th>
                                                 <th scope="col" style="width: 8%;">Skor</th>
                                                 <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
@@ -552,6 +553,7 @@
                                             @php
                                                 $totalBobot = 0;
                                                 $totalNilai = 0;
+                                                $totalJumlah = 0;
                                                 $totalNilaiOpd = 0;
                                                 $totalNilaiVerifikator = 0;
                                                 $totalNilaiPenjamin = 0;
@@ -567,6 +569,14 @@
                                                     }
                                                     $nilaiTotal = $komponen->getNilaiTotal($opd_session);
                                                     $totalNilai += $nilaiTotal;
+
+                                                    // Hitung jumlah (sum) dari 3 role
+                                                    $jumlah =
+                                                        ($nilaiMap['opd'] ?? 0) +
+                                                        ($nilaiMap['penilai'] ?? 0) +
+                                                        ($nilaiMap['penjamin'] ?? 0);
+                                                    $totalJumlah += $jumlah;
+
                                                     $totalNilaiOpd += $nilaiMap['opd'] ?? 0;
                                                     $totalNilaiVerifikator += $nilaiMap['verifikator'] ?? 0;
                                                     $totalNilaiPenjamin += $nilaiMap['penjamin'] ?? 0;
@@ -629,6 +639,14 @@
                                                         @endif
                                                     </td>
                                                     <td>
+                                                        @if ($jumlah > 0)
+                                                            <span
+                                                                class="badge bg-success">{{ number_format($jumlah, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
                                                         @if ($nilaiTotal > 0)
                                                             <span
                                                                 class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
@@ -669,12 +687,17 @@
                                                 </th>
                                                 <th>
                                                     <span class="badge bg-info-subtle text-info">
-                                                        {{ number_format($totalNilaiPenjamin, 2) }}
+                                                        {{ number_format($totalNilaiPenilai, 2) }}
                                                     </span>
                                                 </th>
                                                 <th>
                                                     <span class="badge bg-info-subtle text-info">
-                                                        {{ number_format($totalNilaiPenilai, 2) }}
+                                                        {{ number_format($totalNilaiPenjamin, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-success">
+                                                        {{ number_format($totalJumlah, 2) }}
                                                     </span>
                                                 </th>
                                                 <th>
@@ -737,6 +760,7 @@
                                                 <th scope="col" style="width: 7%;">Verval</th>
                                                 <th scope="col" style="width: 8%;">Evaluator</th>
                                                 <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 8%;">Jumlah</th>
                                                 <th scope="col" style="width: 8%;">Skor</th>
                                                 <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
@@ -745,6 +769,7 @@
                                             @php
                                                 $totalBobot = 0;
                                                 $totalNilai = 0;
+                                                $totalJumlah = 0;
                                                 $totalNilaiOpd = 0;
                                                 $totalNilaiVerifikator = 0;
                                                 $totalNilaiPenjamin = 0;
@@ -760,6 +785,14 @@
                                                     }
                                                     $nilaiTotal = $subKomponen->getNilaiTotal($opd_session);
                                                     $totalNilai += $nilaiTotal;
+
+                                                    // Hitung jumlah (sum) dari 3 role
+                                                    $jumlah =
+                                                        ($nilaiMap['opd'] ?? 0) +
+                                                        ($nilaiMap['penilai'] ?? 0) +
+                                                        ($nilaiMap['penjamin'] ?? 0);
+                                                    $totalJumlah += $jumlah;
+
                                                     $totalNilaiOpd += $nilaiMap['opd'] ?? 0;
                                                     $totalNilaiVerifikator += $nilaiMap['verifikator'] ?? 0;
                                                     $totalNilaiPenjamin += $nilaiMap['penjamin'] ?? 0;
@@ -822,6 +855,14 @@
                                                         @endif
                                                     </td>
                                                     <td>
+                                                        @if ($jumlah > 0)
+                                                            <span
+                                                                class="badge bg-success">{{ number_format($jumlah, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
                                                         @if ($nilaiTotal > 0)
                                                             <span
                                                                 class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
@@ -839,7 +880,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="10" class="text-center">Tidak ada data sub komponen
+                                                    <td colspan="11" class="text-center">Tidak ada data sub komponen
                                                     </td>
                                                 </tr>
                                             @endforelse
@@ -868,6 +909,11 @@
                                                 <th>
                                                     <span class="badge bg-info-subtle text-info">
                                                         {{ number_format($totalNilaiPenilai, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-success">
+                                                        {{ number_format($totalJumlah, 2) }}
                                                     </span>
                                                 </th>
                                                 <th>
