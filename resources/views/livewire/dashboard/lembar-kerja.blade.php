@@ -71,7 +71,7 @@
                                 <span class="badge badge-soft-primary me-2">Bobot:
                                     {{ number_format($sub_komponen->bobot_persen, 2) }}%</span>
                                 <span class="badge badge-outline-primary">Nilai:
-                                    {{ number_format($sub_komponen->nilai_rata_rata ?? 0, 2) }}</span>
+                                    {{ number_format($sub_komponen->nilai_rata_rata ?? 0, 2) }}%</span>
                             </p>
                             <p class="text-muted">Jumlah Kriteria: {{ $sub_komponen->kriteria_komponen->count() }}</p>
                             <a href="{{ route('lembar-kerja.kriteria-komponen', ['sub_komponen_id' => $sub_komponen->id]) }}"
@@ -231,7 +231,7 @@
                                 <p class="text-dark fw-semibold flex-grow-1">Pilih Komponen untuk Verifikasi</p>
                                 <div class="flex-shrink-0">
                                     <button wire:click="backToOpd" type="button"
-                                        class="btn btn-sm btn-soft-secondary btn-label waves-effect waves-light">
+                                        class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light">
                                         <i class="ri-arrow-go-back-line label-icon align-middle fs-16 me-2"></i> Pilih
                                         OPD Lain
                                     </button>
@@ -269,10 +269,10 @@
                                 <h4 class="card-title">{{ $sub_komponen->nama }}</h4>
                                 <p class="card-text text-muted">{{ $sub_komponen->kode }}</p>
                                 <p class="text-muted">
-                                    <span class="badge bg-info-subtle text-info me-2">Bobot:
+                                    <span class="badge badge-soft-primary me-2">Bobot:
                                         {{ number_format($sub_komponen->bobot_persen, 2) }}%</span>
-                                    <span class="badge bg-success-subtle text-success">Nilai:
-                                        {{ number_format($sub_komponen->nilai_rata_rata ?? 0, 2) }}</span>
+                                    <span class="badge badge-outline-primary">Nilai:
+                                        {{ number_format($sub_komponen->nilai_rata_rata ?? 0, 2) }}%</span>
                                 </p>
                                 <p class="text-muted">Jumlah Kriteria: {{ $sub_komponen->kriteria_komponen->count() }}
                                 </p>
