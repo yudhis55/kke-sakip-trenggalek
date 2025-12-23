@@ -125,6 +125,14 @@ class Komponen extends Model
     }
 
     /**
+     * Hitung total nilai komponen (rata-rata dari semua role)
+     */
+    public function getNilaiTotal($opdId)
+    {
+        return $this->getNilaiRataRata($opdId);
+    }
+
+    /**
      * Hitung progress evaluasi (berapa % kriteria yang sudah dinilai)
      * Progress = jumlah kriteria yang punya penilaian / total kriteria
      */
@@ -132,10 +140,10 @@ class Komponen extends Model
     {
         // Optimasi: Gunakan single query dengan join
         $stats = KriteriaKomponen::selectRaw('COUNT(*) as total, COUNT(DISTINCT penilaian.kriteria_komponen_id) as dinilai')
-            ->leftJoin('penilaian', function($join) use ($opdId) {
+            ->leftJoin('penilaian', function ($join) use ($opdId) {
                 $join->on('kriteria_komponen.id', '=', 'penilaian.kriteria_komponen_id')
-                     ->where('penilaian.opd_id', '=', $opdId)
-                     ->whereNotNull('penilaian.tingkatan_nilai_id');
+                    ->where('penilaian.opd_id', '=', $opdId)
+                    ->whereNotNull('penilaian.tingkatan_nilai_id');
             })
             ->where('kriteria_komponen.komponen_id', $this->id)
             ->first();

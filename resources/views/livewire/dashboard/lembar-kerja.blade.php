@@ -108,16 +108,21 @@
                                     <table class="table align-middle table-nowrap mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th scope="col" style="width: 5%;">No</th>
-                                                <th scope="col">OPD</th>
+                                                <th scope="col" style="width: 3%;">No</th>
+                                                <th scope="col" style="width: 20%;">OPD</th>
                                                 @if (Auth::user()->role->jenis == 'admin')
-                                                    <th scope="col" style="width: 15%;">Progress OPD</th>
+                                                    <th scope="col" style="width: 12%;">Progress OPD</th>
                                                 @else
-                                                    <th scope="col" style="width: 15%;">Progress OPD</th>
-                                                    <th scope="col" style="width: 15%;">Progress Verifikasi</th>
+                                                    <th scope="col" style="width: 10%;">Progress OPD</th>
+                                                    <th scope="col" style="width: 10%;">Progress Verifikasi</th>
                                                 @endif
-                                                {{-- <th scope="col" style="width: 15%;">Nilai</th> --}}
-                                                <th scope="col" style="width: 12%;">Aksi</th>
+                                                {{-- COMMENTED for performance optimization --}}
+                                                {{-- <th scope="col" style="width: 8%;">Penilaian<br>Mandiri</th>
+                                                <th scope="col" style="width: 7%;">Verval</th>
+                                                <th scope="col" style="width: 8%;">Evaluator</th>
+                                                <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 7%;">Skor</th> --}}
+                                                <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -176,14 +181,55 @@
                                                             </div>
                                                         </td>
                                                     @endif
-                                                    {{-- <td>
-                                                        @if ($opd->nilai_total > 0)
-                                                            <span
-                                                                class="badge text-bg-primary">{{ number_format($opd->nilai_total, 2) }}</span>
+                                                    {{-- Nilai Per Role - COMMENTED for performance optimization --}}
+                                                    {{-- @php
+                                                        $nilaiPerRole = $opd->getNilaiPerRole();
+                                                        $nilaiMap = [];
+                                                        foreach ($nilaiPerRole as $item) {
+                                                            $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                        }
+                                                        $nilaiTotal = $opd->getNilaiTotal();
+                                                    @endphp
+                                                    <td>
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}</span>
                                                         @else
-                                                            <span>-</span>
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['verifikator']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['verifikator'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penilai']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if ($nilaiTotal > 0)
+                                                            <span class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
                                                         @endif
                                                     </td> --}}
+                                                    {{-- <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td> --}}
                                                     <td>
                                                         <button wire:click="selectOpd({{ $opd->id }})"
                                                             type="button" class="btn btn-sm btn-primary">
@@ -194,7 +240,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ Auth::user()->role->jenis == 'admin' ? '5' : '6' }}"
+                                                    <td colspan="{{ Auth::user()->role->jenis == 'admin' ? '4' : '5' }}"
                                                         class="text-center">Tidak ada data OPD</td>
                                                 </tr>
                                             @endforelse
@@ -312,15 +358,21 @@
                                     <table class="table align-middle table-nowrap mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th scope="col" style="width: 5%;">No</th>
-                                                <th scope="col">OPD</th>
-                                                <th scope="col" style="width: 13%;">Progress OPD</th>
+                                                <th scope="col" style="width: 3%;">No</th>
+                                                <th scope="col" style="width: 18%;">OPD</th>
+                                                <th scope="col" style="width: 10%;">Progress OPD</th>
                                                 @if (Auth::user()->role->jenis == 'penjamin')
-                                                    <th scope="col" style="width: 13%;">Progress Penjaminan</th>
+                                                    <th scope="col" style="width: 10%;">Progress Penjaminan</th>
                                                 @else
-                                                    <th scope="col" style="width: 13%;">Progress Evaluasi</th>
+                                                    <th scope="col" style="width: 10%;">Progress Evaluasi</th>
                                                 @endif
-                                                <th scope="col" style="width: 12%;">Aksi</th>
+                                                {{-- COMMENTED for performance optimization --}}
+                                                {{-- <th scope="col" style="width: 8%;">Penilaian<br>Mandiri</th>
+                                                <th scope="col" style="width: 7%;">Verval</th>
+                                                <th scope="col" style="width: 8%;">Evaluator</th>
+                                                <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 7%;">Skor</th> --}}
+                                                <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -377,14 +429,55 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    {{-- <td>
-                                                        @if ($opd->nilai_total > 0)
-                                                            <span
-                                                                class="badge text-bg-primary">{{ number_format($opd->nilai_total, 2) }}</span>
+                                                    {{-- Nilai Per Role - COMMENTED for performance optimization --}}
+                                                    {{-- @php
+                                                        $nilaiPerRole = $opd->getNilaiPerRole();
+                                                        $nilaiMap = [];
+                                                        foreach ($nilaiPerRole as $item) {
+                                                            $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                        }
+                                                        $nilaiTotal = $opd->getNilaiTotal();
+                                                    @endphp
+                                                    <td>
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}</span>
                                                         @else
-                                                            <span>-</span>
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['verifikator']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['verifikator'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penilai']))
+                                                            <span class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if ($nilaiTotal > 0)
+                                                            <span class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
                                                         @endif
                                                     </td> --}}
+                                                    {{-- <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td>
+                                                    <td><span class="text-muted">-</span></td> --}}
                                                     <td>
                                                         <button wire:click="selectOpd({{ $opd->id }})"
                                                             type="button" class="btn btn-sm btn-primary">
@@ -443,23 +536,41 @@
                                     <table class="table align-middle table-nowrap mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th scope="col" style="width: 5%;">No</th>
-                                                <th scope="col" style="width: 12%;">Kode</th>
-                                                <th scope="col">Nama Komponen</th>
-                                                <th scope="col" style="width: 12%;">Bobot</th>
-                                                <th scope="col" style="width: 12%;">Nilai</th>
-                                                <th scope="col" style="width: 12%;">Aksi</th>
+                                                <th scope="col" style="width: 3%;">No</th>
+                                                <th scope="col" style="width: 8%;">Kode</th>
+                                                <th scope="col" style="width: 20%;">Nama Komponen</th>
+                                                <th scope="col" style="width: 8%;">Bobot</th>
+                                                <th scope="col" style="width: 8%;">Penilaian<br>Mandiri</th>
+                                                <th scope="col" style="width: 7%;">Verval</th>
+                                                <th scope="col" style="width: 8%;">Evaluator</th>
+                                                <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 8%;">Skor</th>
+                                                <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @php
                                                 $totalBobot = 0;
                                                 $totalNilai = 0;
+                                                $totalNilaiOpd = 0;
+                                                $totalNilaiVerifikator = 0;
+                                                $totalNilaiPenjamin = 0;
+                                                $totalNilaiPenilai = 0;
                                             @endphp
                                             @forelse ($this->komponenOptions as $index => $komponen)
                                                 @php
                                                     $totalBobot += $komponen->bobot;
-                                                    $totalNilai += $komponen->nilai_rata_rata ?? 0;
+                                                    $nilaiPerRole = $komponen->getNilaiPerRole($opd_session);
+                                                    $nilaiMap = [];
+                                                    foreach ($nilaiPerRole as $item) {
+                                                        $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                    }
+                                                    $nilaiTotal = $komponen->getNilaiTotal($opd_session);
+                                                    $totalNilai += $nilaiTotal;
+                                                    $totalNilaiOpd += $nilaiMap['opd'] ?? 0;
+                                                    $totalNilaiVerifikator += $nilaiMap['verifikator'] ?? 0;
+                                                    $totalNilaiPenjamin += $nilaiMap['penjamin'] ?? 0;
+                                                    $totalNilaiPenilai += $nilaiMap['penilai'] ?? 0;
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
@@ -472,9 +583,58 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge text-bg-primary">
-                                                            {{ number_format($komponen->nilai_rata_rata ?? 0, 2) }}
-                                                        </span>
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @php
+                                                            // Verifikator hanya melakukan verifikasi, bukan penilaian
+                                                            // Tampilkan icon checklist jika sudah terverifikasi
+                                                            $isVerified = \App\Models\Penilaian::where(
+                                                                'opd_id',
+                                                                $opd_session,
+                                                            )
+                                                                ->whereHas('kriteria_komponen.sub_komponen', function (
+                                                                    $q,
+                                                                ) use ($komponen) {
+                                                                    $q->where('komponen_id', $komponen->id);
+                                                                })
+                                                                ->where('is_verified', true)
+                                                                ->exists();
+                                                        @endphp
+                                                        @if ($isVerified)
+                                                            <i class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penilai']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if ($nilaiTotal > 0)
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         <button wire:click="selectKomponen({{ $komponen->id }})"
@@ -486,7 +646,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="6" class="text-center">Tidak ada data komponen
+                                                    <td colspan="10" class="text-center">Tidak ada data komponen
                                                     </td>
                                                 </tr>
                                             @endforelse
@@ -500,7 +660,25 @@
                                                     </span>
                                                 </th>
                                                 <th>
-                                                    <span class="badge text-bg-primary">
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiOpd, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="text-muted">-</span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiPenjamin, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiPenilai, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-primary">
                                                         {{ number_format($totalNilai, 2) }}
                                                     </span>
                                                 </th>
@@ -547,23 +725,41 @@
                                     <table class="table align-middle table-nowrap mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th scope="col" style="width: 5%;">No</th>
-                                                <th scope="col" style="width: 12%;">Kode</th>
-                                                <th scope="col">Nama Sub Komponen</th>
-                                                <th scope="col" style="width: 12%;">Bobot</th>
-                                                <th scope="col" style="width: 12%;">Nilai</th>
-                                                <th scope="col" style="width: 12%;">Aksi</th>
+                                                <th scope="col" style="width: 3%;">No</th>
+                                                <th scope="col" style="width: 8%;">Kode</th>
+                                                <th scope="col" style="width: 20%;">Nama Sub Komponen</th>
+                                                <th scope="col" style="width: 8%;">Bobot</th>
+                                                <th scope="col" style="width: 8%;">Penilaian<br>Mandiri</th>
+                                                <th scope="col" style="width: 7%;">Verval</th>
+                                                <th scope="col" style="width: 8%;">Evaluator</th>
+                                                <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
+                                                <th scope="col" style="width: 8%;">Skor</th>
+                                                <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @php
                                                 $totalBobot = 0;
                                                 $totalNilai = 0;
+                                                $totalNilaiOpd = 0;
+                                                $totalNilaiVerifikator = 0;
+                                                $totalNilaiPenjamin = 0;
+                                                $totalNilaiPenilai = 0;
                                             @endphp
                                             @forelse ($this->subKomponenOptions as $index => $subKomponen)
                                                 @php
                                                     $totalBobot += $subKomponen->bobot_persen;
-                                                    $totalNilai += $subKomponen->nilai_rata_rata ?? 0;
+                                                    $nilaiPerRole = $subKomponen->getNilaiPerRole($opd_session);
+                                                    $nilaiMap = [];
+                                                    foreach ($nilaiPerRole as $item) {
+                                                        $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                    }
+                                                    $nilaiTotal = $subKomponen->getNilaiTotal($opd_session);
+                                                    $totalNilai += $nilaiTotal;
+                                                    $totalNilaiOpd += $nilaiMap['opd'] ?? 0;
+                                                    $totalNilaiVerifikator += $nilaiMap['verifikator'] ?? 0;
+                                                    $totalNilaiPenjamin += $nilaiMap['penjamin'] ?? 0;
+                                                    $totalNilaiPenilai += $nilaiMap['penilai'] ?? 0;
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
@@ -576,9 +772,58 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge text-bg-primary">
-                                                            {{ number_format($subKomponen->nilai_rata_rata ?? 0, 2) }}
-                                                        </span>
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @php
+                                                            // Verifikator hanya melakukan verifikasi, bukan penilaian
+                                                            // Tampilkan icon checklist jika sudah terverifikasi
+                                                            $isVerified = \App\Models\Penilaian::where(
+                                                                'opd_id',
+                                                                $opd_session,
+                                                            )
+                                                                ->whereHas('kriteria_komponen', function ($q) use (
+                                                                    $subKomponen,
+                                                                ) {
+                                                                    $q->where('sub_komponen_id', $subKomponen->id);
+                                                                })
+                                                                ->where('is_verified', true)
+                                                                ->exists();
+                                                        @endphp
+                                                        @if ($isVerified)
+                                                            <i class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if (isset($nilaiMap['penilai']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if ($nilaiTotal > 0)
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiTotal, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         <a href="{{ route('lembar-kerja.kriteria-komponen', ['sub_komponen_id' => $subKomponen->id]) }}"
@@ -590,7 +835,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="6" class="text-center">Tidak ada data sub komponen
+                                                    <td colspan="10" class="text-center">Tidak ada data sub komponen
                                                     </td>
                                                 </tr>
                                             @endforelse
@@ -604,7 +849,25 @@
                                                     </span>
                                                 </th>
                                                 <th>
-                                                    <span class="badge text-bg-primary">
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiOpd, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="text-muted">-</span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiPenjamin, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ number_format($totalNilaiPenilai, 2) }}
+                                                    </span>
+                                                </th>
+                                                <th>
+                                                    <span class="badge bg-primary">
                                                         {{ number_format($totalNilai, 2) }}
                                                     </span>
                                                 </th>

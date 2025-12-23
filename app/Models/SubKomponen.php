@@ -99,6 +99,14 @@ class SubKomponen extends Model
     }
 
     /**
+     * Hitung total nilai sub komponen (rata-rata dari semua role)
+     */
+    public function getNilaiTotal($opdId)
+    {
+        return $this->getNilaiRataRata($opdId);
+    }
+
+    /**
      * Hitung progress evaluasi (berapa % kriteria yang sudah dinilai)
      */
     public function getProgress($opdId)

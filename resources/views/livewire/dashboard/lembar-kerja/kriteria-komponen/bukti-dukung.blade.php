@@ -55,8 +55,8 @@
                         class="text-decoration-underline text-primary fw-semibold">
                         <strong>Sub Komponen:</strong> {{ $this->kriteriaKomponen->sub_komponen->nama }}
                     </a>
-                    <i class="ri-arrow-right-s-line mx-2"></i>
-                    <strong>Kriteria:</strong> {{ $this->kriteriaKomponen->nama }}
+                    {{-- <i class="ri-arrow-right-s-line mx-2"></i>
+                    <strong>Kriteria:</strong> {{ $this->kriteriaKomponen->nama }} --}}
                 </div>
             </div>
         </div>
@@ -150,21 +150,22 @@
                             </li>
                         </ul>
                     </div>
-                    <div class="card-header align-items-center d-flex justify-content-between">
-                        <div>
-                            <p class="mb-1 text-dark fw-semibold">Kriteria Komponen: {{ $this->kriteriaKomponen->kode }}
+                    <div class="card-header d-flex align-items-center justify-content-between gap-3">
+                        <div class="flex-grow-1" style="min-width: 0; max-width: calc(100% - 120px);">
+                            <p class="mb-1 text-dark fw-semibold" style="word-wrap: break-word; overflow-wrap: break-word;">Kriteria Komponen:
+                                {{ $this->kriteriaKomponen->kode }}
                                 -
                                 {{ $this->kriteriaKomponen->nama }}
-                                <span class="badge badge-soft-primary fs-6 ms-2">
+                                <span class="badge text-bg-primary ms-2">
                                     ( Bobot: {{ number_format($this->bobotKriteria, 2) }}% )
                                 </span>
-                                @php
+                                {{-- @php
                                     $nilaiRataRata = $this->kriteriaKomponen->getNilaiRataRata($opd_id);
                                 @endphp
                                 <span class="badge badge-soft-primary fs-6 ms-2">(Rata-rata:
-                                    {{ number_format($nilaiRataRata, 2) }})</span>
+                                    {{ number_format($nilaiRataRata, 2) }})</span> --}}
                             </p>
-                            <p class="mb-0 text-muted">
+                            <p class="mb-0 text-muted" style="font-size: 0.875rem;">
                                 <span class="me-3"><small>Jenis Penilaian: <span
                                             class="fw-medium">{{ $this->kriteriaKomponen->jenis_nilai->nama }}</span></small></span>
                                 <span><small>Metode Penilaian: <span
@@ -174,30 +175,35 @@
                         </div>
 
                         <!-- Buttons with Label -->
-                        <button wire:click="navigateBack" type="button"
-                            class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light"><i
-                                class=" ri-arrow-go-back-line label-icon align-middle fs-16 me-2"></i> Kembali</button>
+                        <div class="flex-shrink-0" style="min-width: 110px;">
+                            <button wire:click="navigateBack" type="button"
+                                class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light"><i
+                                    class=" ri-arrow-go-back-line label-icon align-middle fs-16 me-2"></i>
+                                Kembali</button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="live-preview">
                             <div class="table-responsive">
-                                <table class="table align-middle table-nowrap mb-0">
+                                <table class="table align-middle mb-0" style="table-layout: fixed;">
                                     <thead class="table-light">
                                         <tr>
                                             {{-- <th></th> --}}
-                                            <th scope="col">No</th>
-                                            <th scope="col">Bukti Dukung</th>
-                                            <th scope="col">Bobot</th>
+                                            <th scope="col" style="width: 5%;">No</th>
+                                            <th scope="col" style="width: 33%;">Bukti Dukung</th>
+                                            <th scope="col" style="width: 8%;">Bobot</th>
                                             @if (!$this->penilaianDiKriteria)
-                                                <th scope="col">Penilaian <br>Mandiri</th>
-                                                <th scope="col">Verval</th>
-                                                <th scope="col">Evaluator</th>
-                                                <th scope="col">Penjaminan <br>Kualitas</th>
+                                                <th scope="col" style="width: 10%;">Penilaian <br>Mandiri</th>
+                                                <th scope="col" style="width: 8%;">Verval</th>
+                                                <th scope="col" style="width: 10%;">Evaluator</th>
+                                                <th scope="col" style="width: 10%;">Penjaminan <br>Kualitas</th>
                                             @endif
-                                            <th scope="col">Aksi</th>
+                                            <th scope="col"
+                                                style="width: {{ !$this->penilaianDiKriteria ? '9%' : '47%' }};">Aksi
+                                            </th>
 
                                             @if (!$this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
-                                                <th scope="col">Tracking</th>
+                                                <th scope="col" style="width: 7%;">Tracking</th>
                                             @endif
                                         </tr>
                                     </thead>
@@ -320,7 +326,8 @@
                                                             @if ($bukti_dukung->penilaian_opd && $bukti_dukung->penilaian_opd->link_file)
                                                                 <i class="ri-eye-line align-bottom me-1"></i>Lihat
                                                             @elseif ($this->dalamRentangAkses)
-                                                                <i class="ri-upload-2-line align-bottom me-1"></i>Unggah
+                                                                <i
+                                                                    class="ri-upload-2-line align-bottom me-1"></i>Unggah
                                                             @else
                                                                 <i class="ri-eye-line align-bottom me-1"></i>Lihat
                                                             @endif
@@ -363,66 +370,71 @@
                                             </tr>
                                         @endforeach
                                     </tbody>
-                                    <tfoot class="table-light">
-                                        <tr>
-                                            <td colspan="3" class="text-center"><strong>Total Nilai Kriteria
-                                                    Komponen:</strong></td>
-                                            @if (!$this->penilaianDiKriteria)
-                                                @php
-                                                    $nilaiPerRole = $this->kriteriaKomponen->getNilaiPerRole($opd_id);
-                                                    $nilaiRataRata = $this->kriteriaKomponen->getNilaiRataRata($opd_id);
+                                    @if (!$this->penilaianDiKriteria)
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <td colspan="3" class="text-center"><strong>Total Nilai Kriteria
+                                                        Komponen:</strong></td>
+                                                @if (!$this->penilaianDiKriteria)
+                                                    @php
+                                                        $nilaiPerRole = $this->kriteriaKomponen->getNilaiPerRole(
+                                                            $opd_id,
+                                                        );
+                                                        $nilaiRataRata = $this->kriteriaKomponen->getNilaiRataRata(
+                                                            $opd_id,
+                                                        );
 
-                                                    // Mapping role jenis ke nilai
-                                                    $nilaiMap = [];
-                                                    foreach ($nilaiPerRole as $item) {
-                                                        $nilaiMap[$item['role_jenis']] = $item['nilai'];
-                                                    }
-                                                @endphp
+                                                        // Mapping role jenis ke nilai
+                                                        $nilaiMap = [];
+                                                        foreach ($nilaiPerRole as $item) {
+                                                            $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                        }
+                                                    @endphp
 
-                                                {{-- Kolom Penilaian Mandiri (OPD) --}}
+                                                    {{-- Kolom Penilaian Mandiri (OPD) --}}
+                                                    <td class="">
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiMap['opd'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+
+                                                    {{-- Kolom Verval (Verifikator) --}}
+                                                    <td class="">
+                                                        @if (isset($nilaiMap['verifikator']))
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiMap['verifikator'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+
+                                                    {{-- Kolom Evaluator (Penjamin) --}}
+                                                    <td class="">
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiMap['penjamin'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+
+                                                    {{-- Kolom Penjaminan Kualitas (Penilai) --}}
+                                                    <td class="">
+                                                        @if (isset($nilaiMap['penilai']))
+                                                            <span
+                                                                class="badge bg-primary">{{ number_format($nilaiMap['penilai'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                @endif
+
+                                                {{-- Kolom Aksi: Tampilkan Rata-rata --}}
                                                 <td class="">
-                                                    @if (isset($nilaiMap['opd']))
-                                                        <span
-                                                            class="badge bg-primary">{{ number_format($nilaiMap['opd'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Verval (Verifikator) --}}
-                                                <td class="">
-                                                    @if (isset($nilaiMap['verifikator']))
-                                                        <span
-                                                            class="badge bg-primary">{{ number_format($nilaiMap['verifikator'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Evaluator (Penjamin) --}}
-                                                <td class="">
-                                                    @if (isset($nilaiMap['penjamin']))
-                                                        <span
-                                                            class="badge bg-primary">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Penjaminan Kualitas (Penilai) --}}
-                                                <td class="">
-                                                    @if (isset($nilaiMap['penilai']))
-                                                        <span
-                                                            class="badge bg-primary">{{ number_format($nilaiMap['penilai'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-                                            @endif
-
-                                            {{-- Kolom Aksi: Tampilkan Rata-rata --}}
-                                            <td class="">
-                                                {{-- @php
+                                                    {{-- @php
                                                     $nilaiRataRata = $this->kriteriaKomponen->getNilaiRataRata($opd_id);
                                                 @endphp
                                                 <div>
@@ -430,13 +442,14 @@
                                                         class="badge bg-primary fs-6">{{ number_format($nilaiRataRata, 2) }}</span>
                                                     <div><small class="text-muted">Rata-rata</small></div>
                                                 </div> --}}
-                                            </td>
+                                                </td>
 
-                                            @if (!$this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
-                                                <td></td>
-                                            @endif
-                                        </tr>
-                                    </tfoot>
+                                                @if (!$this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
+                                                    <td></td>
+                                                @endif
+                                            </tr>
+                                        </tfoot>
+                                    @endif
                                 </table>
                                 <!-- end table -->
                             </div>

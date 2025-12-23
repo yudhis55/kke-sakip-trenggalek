@@ -36,8 +36,8 @@
                     <a href="{{ route('lembar-kerja') }}" class="text-decoration-underline text-primary fw-semibold">
                         <strong>Komponen:</strong> {{ $this->subKomponen->komponen->nama }}
                     </a>
-                    <i class="ri-arrow-right-s-line mx-2"></i>
-                    <strong>Sub Komponen:</strong> {{ $this->subKomponen->nama }}
+                    {{-- <i class="ri-arrow-right-s-line mx-2"></i>
+                    <strong>Sub Komponen:</strong> {{ $this->subKomponen->nama }} --}}
                 </div>
             </div>
         </div>
@@ -50,7 +50,8 @@
                             <span class="badge bg-primary ms-2">Bobot:
                                 {{ number_format($this->bobotSubKomponen, 2) }}%</span>
                         </h4> --}}
-                        <p class="mb-0 text-dark fw-semibold flex-grow-1">Sub Komponen: {{ $this->subKomponen->kode }} - {{ $this->subKomponen->nama }}
+                        <p class="mb-0 text-dark fw-semibold flex-grow-1">Sub Komponen: {{ $this->subKomponen->kode }} -
+                            {{ $this->subKomponen->nama }}
                             <span class="badge text-bg-primary ms-2">Bobot:
                                 {{ number_format($this->bobotSubKomponen, 2) }}%</span>
                         </p>
@@ -61,25 +62,22 @@
                     <div class="card-body">
                         <div class="live-preview">
                             <div class="table-responsive">
-                                <table class="table align-middle table-nowrap mb-0">
+                                <table class="table align-middle mb-0" style="table-layout: fixed;">
                                     <thead class="table-light">
                                         <tr>
                                             {{-- <th></th> --}}
-                                            <th scope="col">No</th>
-                                            <th scope="col">Kode</th>
-                                            <th scope="col">Kriteria Komponen</th>
-                                            <th scope="col">Bobot</th>
-                                            <th scope="col">Bukti Dukung</th>
-                                            <th scope="col">Skor</th>
-                                            @if ($this->penilaianDiKriteria)
-                                                <th scope="col">Penilaian <br>Mandiri</th>
-                                                <th scope="col">Verval</th>
-                                                <th scope="col">Evaluator</th>
-                                                <th scope="col">Penjaminan <br>Kualitas</th>
-                                            @endif
-                                            {{-- <th scope="col">Persentase</th> --}}
+                                            <th scope="col" style="width: 3%;">No</th>
+                                            <th scope="col" style="width: 7%;">Kode</th>
+                                            <th scope="col" style="width: 25%;">Kriteria Komponen</th>
+                                            <th scope="col" style="width: 6%;">Bobot</th>
+                                            <th scope="col" style="width: 8%;">Bukti Dukung</th>
+                                            <th scope="col" style="width: 10%;">Penilaian <br>Mandiri</th>
+                                            <th scope="col" style="width: 6%;">Verval</th>
+                                            <th scope="col" style="width: 9%;">Evaluator</th>
+                                            <th scope="col" style="width: 10%;">Penjaminan <br>Kualitas</th>
+                                            <th scope="col" style="width: 6%;">Skor</th>
                                             @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
-                                                <th scope="col">Lacak</th>
+                                                <th scope="col" style="width: 5%;">Lacak</th>
                                             @endif
                                         </tr>
                                     </thead>
@@ -103,32 +101,46 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    @php
-                                                        $opdId = Auth::user()->opd_id ?? session('opd_session');
-                                                        $nilaiRataRata = $kriteria_komponen->getNilaiRataRata($opdId);
-                                                    @endphp
-                                                    @if ($nilaiRataRata > 0)
-                                                        <span
-                                                            class="badge bg-primary">{{ number_format($nilaiRataRata, 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-                                                @if ($this->penilaianDiKriteria)
-                                                    <td>
-                                                        {{-- Penilaian Mandiri (OPD) --}}
+                                                    {{-- Penilaian Mandiri (OPD) --}}
+                                                    @if ($this->penilaianDiKriteria)
                                                         @if ($kriteria_komponen->penilaian_opd && $kriteria_komponen->penilaian_opd->tingkatan_nilai)
+                                                            @php
+                                                                $skorPenilaianMandiri =
+                                                                    $kriteria_komponen->penilaian_opd->tingkatan_nilai
+                                                                        ->bobot * $kriteria_komponen->bobot_persen;
+                                                            @endphp
                                                             <button class="btn btn-sm btn-soft-primary"
-                                                                title="Nilai: {{ $kriteria_komponen->penilaian_opd->tingkatan_nilai->bobot }}">
+                                                                title="Bobot: {{ $kriteria_komponen->penilaian_opd->tingkatan_nilai->bobot }}">
                                                                 <span
                                                                     class="fw-bold">{{ $kriteria_komponen->penilaian_opd->tingkatan_nilai->kode_nilai }}</span>
                                                             </button>
+                                                            <div class="mt-1">
+                                                                <small class="text-muted"><span
+                                                                        class="fw-semibold text-dark">{{ number_format($skorPenilaianMandiri, 2) }}%</span></small>
+                                                            </div>
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
-                                                    </td>
-                                                    <td>
-                                                        {{-- Verifikator --}}
+                                                    @else
+                                                        @php
+                                                            $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                            $nilaiPerRole = $kriteria_komponen->getNilaiPerRole($opdId);
+                                                            $nilaiMap = [];
+                                                            foreach ($nilaiPerRole as $item) {
+                                                                $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                            }
+                                                        @endphp
+                                                        @if (isset($nilaiMap['opd']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    {{-- Verifikator --}}
+                                                    @if ($this->penilaianDiKriteria)
                                                         @if ($kriteria_komponen->penilaian_verifikator)
                                                             @if ($kriteria_komponen->penilaian_verifikator->is_verified === true)
                                                                 <button class="btn btn-sm btn-soft-success btn-icon"
@@ -144,9 +156,26 @@
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
-                                                    </td>
-                                                    <td>
-                                                        {{-- Evaluator (Penjamin) --}}
+                                                    @else
+                                                        @php
+                                                            $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                            $nilaiPerRole = $kriteria_komponen->getNilaiPerRole($opdId);
+                                                            $nilaiMap = [];
+                                                            foreach ($nilaiPerRole as $item) {
+                                                                $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                            }
+                                                        @endphp
+                                                        @if (isset($nilaiMap['verifikator']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['verifikator'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    {{-- Evaluator (Penjamin) --}}
+                                                    @if ($this->penilaianDiKriteria)
                                                         @if ($kriteria_komponen->penilaian_penjamin)
                                                             @if ($kriteria_komponen->penilaian_penjamin->tingkatan_nilai)
                                                                 <button class="btn btn-sm btn-soft-primary"
@@ -175,9 +204,26 @@
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
-                                                    </td>
-                                                    <td>
-                                                        {{-- Penilai --}}
+                                                    @else
+                                                        @php
+                                                            $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                            $nilaiPerRole = $kriteria_komponen->getNilaiPerRole($opdId);
+                                                            $nilaiMap = [];
+                                                            foreach ($nilaiPerRole as $item) {
+                                                                $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                            }
+                                                        @endphp
+                                                        @if (isset($nilaiMap['penjamin']))
+                                                            <span
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    {{-- Penilai --}}
+                                                    @if ($this->penilaianDiKriteria)
                                                         @if ($kriteria_komponen->penilaian_penilai && $kriteria_komponen->penilaian_penilai->tingkatan_nilai)
                                                             <button class="btn btn-sm btn-soft-primary"
                                                                 title="Nilai: {{ $kriteria_komponen->penilaian_penilai->tingkatan_nilai->bobot }}">
@@ -187,25 +233,35 @@
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
-                                                    </td>
-                                                @endif
-                                                {{-- <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="flex-grow-1 me-2">
-                                                            <div class="progress" style="height: 6px;">
-                                                                <div class="progress-bar bg-{{ $kriteria_komponen->persentase_kelengkapan == 100 ? 'success' : ($kriteria_komponen->persentase_kelengkapan >= 50 ? 'warning' : 'danger') }}"
-                                                                    role="progressbar"
-                                                                    style="width: {{ $kriteria_komponen->persentase_kelengkapan }}%"
-                                                                    aria-valuenow="{{ $kriteria_komponen->persentase_kelengkapan }}"
-                                                                    aria-valuemin="0" aria-valuemax="100"></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex-shrink-0">
+                                                    @else
+                                                        @php
+                                                            $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                            $nilaiPerRole = $kriteria_komponen->getNilaiPerRole($opdId);
+                                                            $nilaiMap = [];
+                                                            foreach ($nilaiPerRole as $item) {
+                                                                $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                            }
+                                                        @endphp
+                                                        @if (isset($nilaiMap['penilai']))
                                                             <span
-                                                                class="text-muted fs-12">{{ number_format($kriteria_komponen->persentase_kelengkapan, 1) }}%</span>
-                                                        </div>
-                                                    </div>
-                                                </td> --}}
+                                                                class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}%</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @php
+                                                        $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                        $nilaiRataRata = $kriteria_komponen->getNilaiRataRata($opdId);
+                                                    @endphp
+                                                    @if ($nilaiRataRata > 0)
+                                                        <span
+                                                            class="badge bg-primary">{{ number_format($nilaiRataRata, 2) }}%</span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
                                                 @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
                                                     <td>
                                                         <button type="button"
@@ -222,75 +278,71 @@
                                     </tbody>
                                     <tfoot class="table-light">
                                         <tr>
-                                            <td colspan="{{ $this->penilaianDiKriteria ? 5 : 5 }}" class="text-center">
+                                            <td colspan="5" class="text-center">
                                                 <strong>Total Nilai Sub
                                                     Komponen:</strong>
                                             </td>
+                                            @php
+                                                $opdId = Auth::user()->opd_id ?? session('opd_session');
+                                                $nilaiPerRole = $this->subKomponen->getNilaiPerRole($opdId);
+                                                $nilaiRataRata = $this->subKomponen->getNilaiRataRata($opdId);
+
+                                                // Mapping role jenis ke nilai
+                                                $nilaiMap = [];
+                                                foreach ($nilaiPerRole as $item) {
+                                                    $nilaiMap[$item['role_jenis']] = $item['nilai'];
+                                                }
+                                            @endphp
+
+                                            {{-- Kolom Penilaian Mandiri (OPD) --}}
+                                            <td>
+                                                @if (isset($nilaiMap['opd']))
+                                                    <span
+                                                        class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}%</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Kolom Verval (Verifikator) --}}
+                                            <td>
+                                                @if (isset($nilaiMap['verifikator']))
+                                                    <span
+                                                        class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['verifikator'], 2) }}%</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Kolom Evaluator (Penilai) --}}
+                                            <td>
+                                                @if (isset($nilaiMap['penilai']))
+                                                    <span
+                                                        class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}%</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Kolom Penjaminan Kualitas (Penjamin) --}}
+                                            <td>
+                                                @if (isset($nilaiMap['penjamin']))
+                                                    <span
+                                                        class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}%</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Kolom Skor (dipindah ke sini) --}}
                                             <td>
                                                 @php
                                                     $opdId = Auth::user()->opd_id ?? session('opd_session');
                                                     $nilaiRataRata = $this->subKomponen->getNilaiRataRata($opdId);
                                                 @endphp
                                                 <span
-                                                    class="badge bg-primary">{{ number_format($nilaiRataRata, 2) }}</span>
+                                                    class="badge bg-primary">{{ number_format($nilaiRataRata, 2) }}%</span>
                                             </td>
-                                            {{-- <td class="text-center">
-                                                <span
-                                                    class="badge bg-secondary">{{ number_format($this->bobotSubKomponen, 2) }}%</span>
-                                            </td> --}}
-                                            @if ($this->penilaianDiKriteria)
-                                                @php
-                                                    $opdId = Auth::user()->opd_id ?? session('opd_session');
-                                                    $nilaiPerRole = $this->subKomponen->getNilaiPerRole($opdId);
-                                                    $nilaiRataRata = $this->subKomponen->getNilaiRataRata($opdId);
-
-                                                    // Mapping role jenis ke nilai
-                                                    $nilaiMap = [];
-                                                    foreach ($nilaiPerRole as $item) {
-                                                        $nilaiMap[$item['role_jenis']] = $item['nilai'];
-                                                    }
-                                                @endphp
-
-                                                {{-- Kolom Penilaian Mandiri (OPD) --}}
-                                                <td>
-                                                    @if (isset($nilaiMap['opd']))
-                                                        <span
-                                                            class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['opd'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Verval (Verifikator) --}}
-                                                <td>
-                                                    @if (isset($nilaiMap['verifikator']))
-                                                        <span
-                                                            class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['verifikator'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Evaluator (Penilai) --}}
-                                                <td>
-                                                    @if (isset($nilaiMap['penilai']))
-                                                        <span
-                                                            class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penilai'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Kolom Penjaminan Kualitas (Penjamin) --}}
-                                                <td>
-                                                    @if (isset($nilaiMap['penjamin']))
-                                                        <span
-                                                            class="badge bg-info-subtle text-info">{{ number_format($nilaiMap['penjamin'], 2) }}</span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-                                            @endif
 
                                             @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
                                                 <td></td>

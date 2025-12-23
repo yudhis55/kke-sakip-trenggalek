@@ -166,7 +166,7 @@ class LembarKerja extends Component
 
                     // Jika bukan admin, hitung juga progress penilaian mandiri OPD
                     if ($userRoleJenis != 'admin') {
-                        $existsOpdMandiri = \DB::table('penilaian')
+                        $existsOpdMandiri = DB::table('penilaian')
                             ->where('kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('opd_id', $opdId)
                             ->where('role_id', $opdRoleId)
