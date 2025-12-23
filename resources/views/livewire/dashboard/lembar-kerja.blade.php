@@ -228,7 +228,7 @@
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
                                 {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih Komponen untuk Verifikasi</h4> --}}
-                                <p class="text-dark fw-semibold flex-grow-1">Pilih Komponen untuk Verifikasi</p>
+                                <p class="mb-0 text-dark fw-semibold flex-grow-1">Pilih Komponen untuk Verifikasi</p>
                                 <div class="flex-shrink-0">
                                     <button wire:click="backToOpd" type="button"
                                         class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light">
