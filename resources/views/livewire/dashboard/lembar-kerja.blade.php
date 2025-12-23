@@ -702,7 +702,11 @@
                             <i class="ri-building-line me-2 align-middle fs-16"></i>
                             <strong>OPD:</strong> {{ \App\Models\Opd::find($opd_session)->nama }}
                             <i class="ri-arrow-right-s-line mx-2"></i>
-                            <strong>Komponen:</strong> {{ \App\Models\Komponen::find($selected_komponen_id)->nama }}
+                            <strong>Komponen:</strong>
+                            <a href="javascript:void(0);" wire:click="backToKomponen"
+                                class="text-primary text-decoration-underline">
+                                {{ \App\Models\Komponen::find($selected_komponen_id)->nama }}
+                            </a>
                         </div>
                     </div>
                 </div>
