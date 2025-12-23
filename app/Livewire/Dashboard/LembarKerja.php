@@ -14,6 +14,7 @@ use Livewire\Attributes\Session;
 use App\Models\Role;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
 
 class LembarKerja extends Component
 {
@@ -101,7 +102,7 @@ class LembarKerja extends Component
         $totalItemsPerOpd = [];
 
         // Get semua sub komponen dengan kriteria dan bukti dukung
-        $subKomponenList = \DB::table('sub_komponen')
+        $subKomponenList = DB::table('sub_komponen')
             ->select('sub_komponen.id', 'sub_komponen.penilaian_di', 'kriteria_komponen.id as kriteria_id')
             ->join('kriteria_komponen', 'sub_komponen.id', '=', 'kriteria_komponen.sub_komponen_id')
             ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
@@ -115,7 +116,7 @@ class LembarKerja extends Component
                 $totalItems += 1;
             } else {
                 // Hitung jumlah bukti dukung untuk kriteria ini
-                $buktiCount = \DB::table('bukti_dukung')
+                $buktiCount = DB::table('bukti_dukung')
                     ->where('kriteria_komponen_id', $subKomponen->kriteria_id)
                     ->count();
                 $totalItems += $buktiCount;
@@ -143,7 +144,7 @@ class LembarKerja extends Component
                     // Cek apakah kriteria ini sudah dinilai/diverifikasi (untuk role target)
                     if ($userRoleJenis == 'verifikator') {
                         // Verifikator: cek is_verified
-                        $exists = \DB::table('penilaian')
+                        $exists = DB::table('penilaian')
                             ->where('kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('opd_id', $opdId)
                             ->where('role_id', $targetRoleId)
@@ -151,7 +152,7 @@ class LembarKerja extends Component
                             ->exists();
                     } else {
                         // Penilai/Penjamin: cek tingkatan_nilai_id
-                        $exists = \DB::table('penilaian')
+                        $exists = DB::table('penilaian')
                             ->where('kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('opd_id', $opdId)
                             ->where('role_id', $targetRoleId)
@@ -180,7 +181,7 @@ class LembarKerja extends Component
                     // Hitung bukti dukung yang sudah dinilai/diverifikasi (untuk role target)
                     if ($userRoleJenis == 'verifikator') {
                         // Verifikator: cek is_verified
-                        $buktiSelesai = \DB::table('penilaian')
+                        $buktiSelesai = DB::table('penilaian')
                             ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
                             ->where('bukti_dukung.kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('penilaian.opd_id', $opdId)
@@ -190,7 +191,7 @@ class LembarKerja extends Component
                             ->count('penilaian.bukti_dukung_id');
                     } else {
                         // Penilai/Penjamin: cek tingkatan_nilai_id
-                        $buktiSelesai = \DB::table('penilaian')
+                        $buktiSelesai = DB::table('penilaian')
                             ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
                             ->where('bukti_dukung.kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('penilaian.opd_id', $opdId)
@@ -204,7 +205,7 @@ class LembarKerja extends Component
 
                     // Jika bukan admin, hitung juga progress penilaian mandiri OPD
                     if ($userRoleJenis != 'admin') {
-                        $buktiSelesaiOpdMandiri = \DB::table('penilaian')
+                        $buktiSelesaiOpdMandiri = DB::table('penilaian')
                             ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
                             ->where('bukti_dukung.kriteria_komponen_id', $subKomponen->kriteria_id)
                             ->where('penilaian.opd_id', $opdId)
