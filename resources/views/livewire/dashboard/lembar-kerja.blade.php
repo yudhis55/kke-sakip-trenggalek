@@ -93,7 +93,15 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Pilih OPD untuk Verifikasi</h4>
+                                {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih OPD untuk Verifikasi</h4> --}}
+                                <p class="mb-0 text-dark fw-semibold flex-grow-1">Pilih OPD untuk Verifikasi</p>
+                                <div class="flex-shrink-0">
+                                    <div class="search-box">
+                                        <input type="text" wire:model.live="searchOpd" class="form-control search"
+                                            placeholder="Cari OPD...">
+                                        <i class="ri-search-line search-icon"></i>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -102,7 +110,12 @@
                                             <tr>
                                                 <th scope="col" style="width: 5%;">No</th>
                                                 <th scope="col">OPD</th>
-                                                <th scope="col" style="width: 15%;">Progress</th>
+                                                @if (Auth::user()->role->jenis == 'admin')
+                                                    <th scope="col" style="width: 15%;">Progress OPD</th>
+                                                @else
+                                                    <th scope="col" style="width: 15%;">Progress OPD</th>
+                                                    <th scope="col" style="width: 15%;">Progress Verifikasi</th>
+                                                @endif
                                                 <th scope="col" style="width: 15%;">Nilai</th>
                                                 <th scope="col" style="width: 12%;">Aksi</th>
                                             </tr>
@@ -114,27 +127,55 @@
                                                     <td>{{ $opd->nama }}</td>
                                                     <td>
                                                         @php
-                                                            $progress = $opd->progress ?? 0;
-                                                            $progressClass =
-                                                                $progress == 0
+                                                            $progressOpd = $opd->progress_opd ?? ($opd->progress ?? 0);
+                                                            $progressOpdClass =
+                                                                $progressOpd == 0
                                                                     ? 'bg-secondary'
-                                                                    : ($progress < 50
+                                                                    : ($progressOpd < 50
                                                                         ? 'bg-danger'
-                                                                        : ($progress < 100
+                                                                        : ($progressOpd < 100
                                                                             ? 'bg-warning'
                                                                             : 'bg-success'));
                                                         @endphp
                                                         <div
                                                             class="progress animated-progress custom-progress progress-label">
-                                                            <div class="progress-bar {{ $progressClass }}"
-                                                                role="progressbar" style="width: {{ $progress }}%"
-                                                                aria-valuenow="{{ $progress }}" aria-valuemin="0"
+                                                            <div class="progress-bar {{ $progressOpdClass }}"
+                                                                role="progressbar" style="width: {{ $progressOpd }}%"
+                                                                aria-valuenow="{{ $progressOpd }}" aria-valuemin="0"
                                                                 aria-valuemax="100">
-                                                                <div class="label">{{ number_format($progress, 0) }}%
+                                                                <div class="label">
+                                                                    {{ number_format($progressOpd, 0) }}%
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
+                                                    @if (Auth::user()->role->jenis == 'verifikator')
+                                                        <td>
+                                                            @php
+                                                                $progress = $opd->progress ?? 0;
+                                                                $progressClass =
+                                                                    $progress == 0
+                                                                        ? 'bg-secondary'
+                                                                        : ($progress < 50
+                                                                            ? 'bg-danger'
+                                                                            : ($progress < 100
+                                                                                ? 'bg-warning'
+                                                                                : 'bg-success'));
+                                                            @endphp
+                                                            <div
+                                                                class="progress animated-progress custom-progress progress-label">
+                                                                <div class="progress-bar {{ $progressClass }}"
+                                                                    role="progressbar"
+                                                                    style="width: {{ $progress }}%"
+                                                                    aria-valuenow="{{ $progress }}"
+                                                                    aria-valuemin="0" aria-valuemax="100">
+                                                                    <div class="label">
+                                                                        {{ number_format($progress, 0) }}%
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    @endif
                                                     <td>
                                                         @if ($opd->nilai_total > 0)
                                                             <span
@@ -153,7 +194,8 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="5" class="text-center">Tidak ada data OPD</td>
+                                                    <td colspan="{{ Auth::user()->role->jenis == 'admin' ? '5' : '6' }}"
+                                                        class="text-center">Tidak ada data OPD</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -185,7 +227,8 @@
                     <div class="col-xxl-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Pilih Komponen untuk Verifikasi</h4>
+                                {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih Komponen untuk Verifikasi</h4> --}}
+                                <p class="text-dark fw-semibold flex-grow-1">Pilih Komponen untuk Verifikasi</p>
                                 <div class="flex-shrink-0">
                                     <button wire:click="backToOpd" type="button"
                                         class="btn btn-sm btn-soft-secondary btn-label waves-effect waves-light">
@@ -254,7 +297,15 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Pilih OPD untuk Evaluasi</h4>
+                                {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih OPD untuk Evaluasi</h4> --}}
+                                <p class="mb-0 text-dark fw-semibold flex-grow-1">Pilih OPD untuk Evaluasi</p>
+                                <div class="flex-shrink-0">
+                                    <div class="search-box">
+                                        <input type="text" wire:model.live="searchOpd" class="form-control search"
+                                            placeholder="Cari OPD...">
+                                        <i class="ri-search-line search-icon"></i>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -263,8 +314,12 @@
                                             <tr>
                                                 <th scope="col" style="width: 5%;">No</th>
                                                 <th scope="col">OPD</th>
-                                                <th scope="col" style="width: 15%;">Progress</th>
-                                                {{-- <th scope="col" style="width: 15%;">Nilai</th> --}}
+                                                <th scope="col" style="width: 13%;">Progress OPD</th>
+                                                @if (Auth::user()->role->jenis == 'penjamin')
+                                                    <th scope="col" style="width: 13%;">Progress Penjaminan</th>
+                                                @else
+                                                    <th scope="col" style="width: 13%;">Progress Evaluasi</th>
+                                                @endif
                                                 <th scope="col" style="width: 12%;">Aksi</th>
                                             </tr>
                                         </thead>
@@ -273,6 +328,31 @@
                                                 <tr>
                                                     <td>{{ $this->opdList->firstItem() + $index }}</td>
                                                     <td>{{ $opd->nama }}</td>
+                                                    <td>
+                                                        @php
+                                                            $progressOpd = $opd->progress_opd ?? 0;
+                                                            $progressOpdClass =
+                                                                $progressOpd == 0
+                                                                    ? 'bg-secondary'
+                                                                    : ($progressOpd < 50
+                                                                        ? 'bg-danger'
+                                                                        : ($progressOpd < 100
+                                                                            ? 'bg-warning'
+                                                                            : 'bg-success'));
+                                                        @endphp
+                                                        <div
+                                                            class="progress animated-progress custom-progress progress-label">
+                                                            <div class="progress-bar {{ $progressOpdClass }}"
+                                                                role="progressbar"
+                                                                style="width: {{ $progressOpd }}%"
+                                                                aria-valuenow="{{ $progressOpd }}" aria-valuemin="0"
+                                                                aria-valuemax="100">
+                                                                <div class="label">
+                                                                    {{ number_format($progressOpd, 0) }}%
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         @php
                                                             $progress = $opd->progress ?? 0;
@@ -348,7 +428,8 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Pilih Komponen untuk Evaluasi</h4>
+                                {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih Komponen untuk Evaluasi</h4> --}}
+                                <p class="mb-0 text-dark fw-semibold flex-grow-1">Pilih Komponen untuk Evaluasi</p>
                                 <div class="flex-shrink-0">
                                     <button wire:click="backToOpd" type="button"
                                         class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light">
@@ -452,7 +533,8 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Pilih Sub Komponen untuk Evaluasi</h4>
+                                {{-- <h4 class="card-title mb-0 flex-grow-1">Pilih Sub Komponen untuk Evaluasi</h4> --}}
+                                <p class="mb-0 text-dark fw-semibold flex-grow-1">Pilih Sub Komponen untuk Evaluasi</p>
                                 <div class="flex-shrink-0">
                                     <button wire:click="backToKomponen" type="button"
                                         class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light">

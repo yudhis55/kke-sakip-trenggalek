@@ -2,7 +2,7 @@
     <div class="container-fluid">
 
         <!-- start page title -->
-        <div class="row">
+        {{-- <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Kriteria Komponen
@@ -19,7 +19,7 @@
 
                 </div>
             </div>
-        </div>
+        </div> --}}
         <!-- end page title -->
 
         {{-- Breadcrumb Navigation --}}
@@ -33,7 +33,9 @@
                         <strong>OPD:</strong> {{ \App\Models\Opd::find(session('opd_session'))->nama }}
                     @endif
                     <i class="ri-arrow-right-s-line mx-2"></i>
-                    <strong>Komponen:</strong> {{ $this->subKomponen->komponen->nama }}
+                    <a href="{{ route('lembar-kerja') }}" class="text-decoration-underline text-primary fw-semibold">
+                        <strong>Komponen:</strong> {{ $this->subKomponen->komponen->nama }}
+                    </a>
                     <i class="ri-arrow-right-s-line mx-2"></i>
                     <strong>Sub Komponen:</strong> {{ $this->subKomponen->nama }}
                 </div>
@@ -44,11 +46,14 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header align-items-center d-flex">
-                        <h4 class="card-title mb-0 flex-grow-1">
-                            Sub Komponen: {{ $this->subKomponen->kode }} - {{ $this->subKomponen->nama }}
+                        {{-- <h4 class="card-title mb-0 flex-grow-1">Sub Komponen: {{ $this->subKomponen->kode }} - {{ $this->subKomponen->nama }}
                             <span class="badge bg-primary ms-2">Bobot:
                                 {{ number_format($this->bobotSubKomponen, 2) }}%</span>
-                        </h4>
+                        </h4> --}}
+                        <p class="mb-0 text-dark fw-semibold flex-grow-1">Sub Komponen: {{ $this->subKomponen->kode }} - {{ $this->subKomponen->nama }}
+                            <span class="badge text-bg-primary ms-2">Bobot:
+                                {{ number_format($this->bobotSubKomponen, 2) }}%</span>
+                        </p>
                         <a href="{{ route('lembar-kerja') }}" type="button"
                             class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light"><i
                                 class=" ri-arrow-go-back-line label-icon align-middle fs-16 me-2"></i> Kembali</a>

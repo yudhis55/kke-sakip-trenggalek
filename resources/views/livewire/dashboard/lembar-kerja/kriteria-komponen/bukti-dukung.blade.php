@@ -2,12 +2,12 @@
     <div x-data="{ tab: 'bukti_dukung', menu: 'dokumen' }" class="container-fluid" x-cloak>
 
         <!-- start page title -->
-        <div class="row">
+        {{-- <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-0">Bukti Dukung</h4>
+                    <h4 class="mb-0">Bukti Dukung</h4> --}}
 
-                    {{-- <div class="d-flex align-items-center gap-2">
+        {{-- <div class="d-flex align-items-center gap-2">
                         <h4 class="mb-0">Bukti Dukung</h4>
                         @if ($this->penilaianDiKriteria)
                             <span class="badge bg-info">
@@ -20,10 +20,10 @@
                         @endif
                     </div> --}}
 
-                    {{-- <div x-text="tab + ', ' + menu + ', ' + $wire.bukti_dukung_id"></div> --}}
-                    {{-- @dump($bukti_dukung_id) --}}
+        {{-- <div x-text="tab + ', ' + menu + ', ' + $wire.bukti_dukung_id"></div> --}}
+        {{-- @dump($bukti_dukung_id) --}}
 
-                    <div class="page-title-right">
+        {{-- <div class="page-title-right">
                         <ol class="breadcrumb m-0">
                             <li class="breadcrumb-item">...</li>
                             <li class="breadcrumb-item">Kriteria Komponen</li>
@@ -33,7 +33,7 @@
 
                 </div>
             </div>
-        </div>
+        </div> --}}
         <!-- end page title -->
 
         {{-- Breadcrumb Navigation --}}
@@ -47,9 +47,14 @@
                         <strong>OPD:</strong> {{ \App\Models\Opd::find(session('opd_session'))->nama }}
                     @endif
                     <i class="ri-arrow-right-s-line mx-2"></i>
-                    <strong>Komponen:</strong> {{ $this->kriteriaKomponen->sub_komponen->komponen->nama }}
+                    <a href="{{ route('lembar-kerja') }}" class="text-decoration-underline text-primary fw-semibold">
+                        <strong>Komponen:</strong> {{ $this->kriteriaKomponen->sub_komponen->komponen->nama }}
+                    </a>
                     <i class="ri-arrow-right-s-line mx-2"></i>
-                    <strong>Sub Komponen:</strong> {{ $this->kriteriaKomponen->sub_komponen->nama }}
+                    <a href="{{ route('lembar-kerja.kriteria-komponen', ['sub_komponen_id' => $this->kriteriaKomponen->sub_komponen_id]) }}"
+                        class="text-decoration-underline text-primary fw-semibold">
+                        <strong>Sub Komponen:</strong> {{ $this->kriteriaKomponen->sub_komponen->nama }}
+                    </a>
                     <i class="ri-arrow-right-s-line mx-2"></i>
                     <strong>Kriteria:</strong> {{ $this->kriteriaKomponen->nama }}
                 </div>
@@ -146,13 +151,28 @@
                         </ul>
                     </div>
                     <div class="card-header align-items-center d-flex justify-content-between">
-                        <p class="mb-sm-0 text-dark fw-semibold">Kriteria Komponen: {{ $this->kriteriaKomponen->kode }}
-                            -
-                            {{ $this->kriteriaKomponen->nama }}
-                            <span class="badge badge-soft-primary fs-6 ms-2">
-                                ( Bobot: {{ number_format($this->bobotKriteria, 2) }}% )
-                            </span>
-                        </p>
+                        <div>
+                            <p class="mb-1 text-dark fw-semibold">Kriteria Komponen: {{ $this->kriteriaKomponen->kode }}
+                                -
+                                {{ $this->kriteriaKomponen->nama }}
+                                <span class="badge badge-soft-primary fs-6 ms-2">
+                                    ( Bobot: {{ number_format($this->bobotKriteria, 2) }}% )
+                                </span>
+                                @php
+                                    $nilaiRataRata = $this->kriteriaKomponen->getNilaiRataRata($opd_id);
+                                @endphp
+                                <span class="badge badge-soft-primary fs-6 ms-2">(Rata-rata:
+                                    {{ number_format($nilaiRataRata, 2) }})</span>
+                            </p>
+                            <p class="mb-0 text-muted">
+                                <span class="me-3"><small>Jenis Penilaian: <span
+                                            class="fw-medium">{{ $this->kriteriaKomponen->jenis_nilai->nama }}</span></small></span>
+                                <span><small>Metode Penilaian: <span
+                                            class="fw-medium">{{ $this->kriteriaKomponen->sub_komponen->penilaian_di == 'bukti' ? 'Bukti Dukung' : 'Kriteria Komponen' }}
+                                            </></span></small></span>
+                            </p>
+                        </div>
+
                         <!-- Buttons with Label -->
                         <button wire:click="navigateBack" type="button"
                             class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light"><i
