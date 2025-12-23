@@ -116,7 +116,7 @@
                                                     <th scope="col" style="width: 15%;">Progress OPD</th>
                                                     <th scope="col" style="width: 15%;">Progress Verifikasi</th>
                                                 @endif
-                                                <th scope="col" style="width: 15%;">Nilai</th>
+                                                {{-- <th scope="col" style="width: 15%;">Nilai</th> --}}
                                                 <th scope="col" style="width: 12%;">Aksi</th>
                                             </tr>
                                         </thead>
@@ -176,14 +176,14 @@
                                                             </div>
                                                         </td>
                                                     @endif
-                                                    <td>
+                                                    {{-- <td>
                                                         @if ($opd->nilai_total > 0)
                                                             <span
                                                                 class="badge text-bg-primary">{{ number_format($opd->nilai_total, 2) }}</span>
                                                         @else
                                                             <span>-</span>
                                                         @endif
-                                                    </td>
+                                                    </td> --}}
                                                     <td>
                                                         <button wire:click="selectOpd({{ $opd->id }})"
                                                             type="button" class="btn btn-sm btn-primary">
