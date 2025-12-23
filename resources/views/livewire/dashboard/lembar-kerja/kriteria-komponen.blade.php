@@ -109,11 +109,11 @@
                                                                     $kriteria_komponen->penilaian_opd->tingkatan_nilai
                                                                         ->bobot * $kriteria_komponen->bobot_persen;
                                                             @endphp
-                                                            <button class="btn btn-sm btn-soft-primary"
+                                                            {{-- <button class="btn btn-sm btn-soft-primary"
                                                                 title="Bobot: {{ $kriteria_komponen->penilaian_opd->tingkatan_nilai->bobot }}">
                                                                 <span
                                                                     class="fw-bold">{{ $kriteria_komponen->penilaian_opd->tingkatan_nilai->kode_nilai }}</span>
-                                                            </button>
+                                                            </button> --}}
                                                             <div class="mt-1">
                                                                 <small class="text-muted"><span
                                                                         class="fw-semibold text-dark">{{ number_format($skorPenilaianMandiri, 2) }}%</span></small>
