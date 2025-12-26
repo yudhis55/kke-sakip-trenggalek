@@ -257,7 +257,7 @@
         </div> <!-- end row--> --}}
 
         <div class="row">
-            <div class="col-xl-4">
+            <div class="col-xl-3">
                 <div class="card card-animate">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -267,72 +267,182 @@
                                 </span>
                             </div>
                             <div class="flex-grow-1 overflow-hidden ms-3">
-                                <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Rata Rata Nilai</p>
+                                <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Jumlah Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
                                     <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="825">0</span></h4>
-                                    <span class="badge badge-soft-danger fs-12"><i
-                                            class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>5.02 %</span>
+                                            data-target="{{ $this->jumlahKomponen }}">0</span></h4>
+                                    {{-- <span class="badge badge-soft-danger fs-12"><i
+                                            class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>5.02 %</span> --}}
                                 </div>
-                                <p class="text-muted text-truncate mb-0">Penilaian Mandiri OPD Tahun 2025</p>
+                                <p class="text-muted text-truncate mb-0">Tahun 2025</p>
                             </div>
                         </div>
                     </div><!-- end card body -->
                 </div>
             </div><!-- end col -->
 
-            <div class="col-xl-4">
+            <div class="col-xl-3">
                 <div class="card card-animate">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-warning rounded-2 fs-2">
-                                    <i data-feather="award"></i>
+                                <span class="avatar-title bg-primary rounded-2 fs-2">
+                                    <i data-feather="briefcase"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <p class="text-uppercase fw-medium text-muted mb-3">Jumlah Dokumen</p>
+                                <p class="text-uppercase fw-medium text-muted mb-3">Jumlah Sub Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
                                     <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="7522">0</span></h4>
-                                    <span class="badge badge-soft-success fs-12"><i
-                                            class="ri-arrow-up-s-line fs-13 align-middle me-1"></i>3.58 %</span>
+                                            data-target="{{ $this->jumlahSubKomponen }}">0</span></h4>
+                                    {{-- <span class="badge badge-soft-success fs-12"><i
+                                            class="ri-arrow-up-s-line fs-13 align-middle me-1"></i>3.58 %</span> --}}
                                 </div>
-                                <p class="text-muted mb-0">Jumlah Dokumen Pendukung Terupload</p>
+                                <p class="text-muted mb-0">Tahun 2025</p>
                             </div>
                         </div>
                     </div><!-- end card body -->
                 </div>
             </div><!-- end col -->
 
-            <div class="col-xl-4">
+            <div class="col-xl-3">
                 <div class="card card-animate">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm flex-shrink-0">
-                                <span class="avatar-title bg-info rounded-2 fs-2">
-                                    <i data-feather="clock"></i>
+                                <span class="avatar-title bg-primary rounded-2 fs-2">
+                                    <i data-feather="briefcase"></i>
                                 </span>
                             </div>
                             <div class="flex-grow-1 overflow-hidden ms-3">
                                 <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
-                                    Kriteria Komponen Disetujui</p>
+                                    Jumlah Kriteria Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
                                     <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="168">0</span>h <span class="counter-value"
-                                            data-target="40">0</span>m</h4>
-                                    <span class="badge badge-soft-danger fs-12"><i
+                                            data-target="{{ $this->jumlahKriteriaKomponen }}">0</span></h4>
+                                    {{-- <span class="badge badge-soft-danger fs-12"><i
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
-                                        %</span>
+                                        %</span> --}}
                                 </div>
-                                <p class="text-muted text-truncate mb-0">Jumlah Kriteria Komponen Disetujui Evaluator
+                                <p class="text-muted text-truncate mb-0">Tahun 2025
                                 </p>
                             </div>
                         </div>
                     </div><!-- end card body -->
                 </div>
             </div><!-- end col -->
+
+            <div class="col-xl-3">
+                <div class="card card-animate">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-primary rounded-2 fs-2">
+                                    <i data-feather="briefcase"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden ms-3">
+                                <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
+                                    Jumlah Bukti Dukung</p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
+                                            data-target="{{ $this->jumlahBuktiDukung }}">0</span></h4>
+                                    {{-- <span class="badge badge-soft-danger fs-12"><i
+                                            class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
+                                        %</span> --}}
+                                </div>
+                                <p class="text-muted text-truncate mb-0">Tahun 2025
+                                </p>
+                            </div>
+                        </div>
+                    </div><!-- end card body -->
+                </div>
+            </div><!-- end col -->
+
+
         </div><!-- end row -->
+
+        <div class="row">
+            <div class="col-xl-6">
+                <div class="card card-animate">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-success rounded-2 fs-2">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden ms-3">
+                                <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
+                                    Kriteria Komponen Dinilai</p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <h4 class="fs-4 flex-grow-1 mb-0">
+                                        <span class="counter-value"
+                                            data-target="{{ $this->jumlahKriteriaKomponenDinilai }}">0</span>
+                                        <span class="text-muted"> / </span>
+                                        <span class="counter-value"
+                                            data-target="{{ $this->totalKriteriaKomponenDiKriteria }}">0</span>
+                                    </h4>
+                                </div>
+                                <p class="text-muted text-truncate mb-0">
+                                    @if (Auth::user()->role->jenis == 'opd')
+                                        Penilaian Mandiri (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'verifikator')
+                                        Telah Diverifikasi (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'penjamin')
+                                        Penjaminan Kualitas (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'penilai')
+                                        Tahun 2025
+                                    @else
+                                        Tahun 2025
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div><!-- end card body -->
+                </div>
+            </div><!-- end col -->
+
+            <div class="col-xl-6">
+                <div class="card card-animate">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-success rounded-2 fs-2">
+                                    <i data-feather="file-text"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden ms-3">
+                                <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
+                                    Bukti Dukung Dinilai</p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <h4 class="fs-4 flex-grow-1 mb-0">
+                                        <span class="counter-value"
+                                            data-target="{{ $this->jumlahBuktiDukungDinilai }}">0</span>
+                                        <span class="text-muted"> / </span>
+                                        <span class="counter-value"
+                                            data-target="{{ $this->totalBuktiDukungDiBukti }}">0</span>
+                                    </h4>
+                                </div>
+                                <p class="text-muted text-truncate mb-0">
+                                    @if (Auth::user()->role->jenis == 'opd')
+                                        Penilaian Mandiri (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'verifikator')
+                                        Telah Diverifikasi (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'penjamin')
+                                        Penjaminan Kualitas (Tahun 2025)
+                                    @elseif (Auth::user()->role->jenis == 'penilai')
+                                        Evaluasi (Tahun 2025)
+                                    @else
+                                        Total Dinilai OPD (Tahun 2025)
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div><!-- end card body -->
+                </div>
+            </div><!-- end col -->
+        </div>
 
         <div class="row">
             <div class="col-xl-6">
@@ -342,7 +452,8 @@
                     </div><!-- end card header -->
 
                     <div class="card-body">
-                        <div id="column_rotated_labels" data-colors='["--vz-info"]' class="apex-charts" dir="ltr">
+                        <div id="column_rotated_labels" data-colors='["--vz-info"]' class="apex-charts"
+                            dir="ltr">
                         </div>
                     </div><!-- end card-body -->
                 </div><!-- end card -->
