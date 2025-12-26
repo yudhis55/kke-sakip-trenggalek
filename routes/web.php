@@ -3,11 +3,12 @@
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard\Dashboard;
-use App\Livewire\Dashboard\LembarKerja;
-use App\Livewire\Dashboard\LembarKerja\KriteriaKomponen;
-use App\Livewire\Dashboard\LembarKerja\KriteriaKomponen\BuktiDukung;
+use App\Livewire\Dashboard\Monitoring;
+use App\Livewire\Dashboard\Monitoring\KriteriaKomponen;
+use App\Livewire\Dashboard\Monitoring\KriteriaKomponen\BuktiDukung;
 use App\Livewire\Dashboard\Mapping;
 use App\Livewire\Dashboard\Pengaturan;
+use App\Livewire\Dashboard\LembarKerja;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -35,9 +36,10 @@ Route::middleware([EnsureUserHasRole::class . ':admin,verifikator_bappeda,verifi
     // Admin only routes can be defined here
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/mapping', Mapping::class)->name('mapping');
+    Route::get('/monitoring', Monitoring::class)->name('monitoring');
+    Route::get('/monitoring/sub-komponen/{sub_komponen_id}/kriteria-komponen/{kriteria_komponen_id}/bukti-dukung', BuktiDukung::class)->name('monitoring.kriteria-komponen.bukti-dukung');
+    Route::get('/monitoring/sub-komponen/{sub_komponen_id}/kriteria-komponen', KriteriaKomponen::class)->name('monitoring.kriteria-komponen');
     Route::get('/lembar-kerja', LembarKerja::class)->name('lembar-kerja');
-    Route::get('/lembar-kerja/sub-komponen/{sub_komponen_id}/kriteria-komponen/{kriteria_komponen_id}/bukti-dukung', BuktiDukung::class)->name('lembar-kerja.kriteria-komponen.bukti-dukung');
-    Route::get('/lembar-kerja/sub-komponen/{sub_komponen_id}/kriteria-komponen', KriteriaKomponen::class)->name('lembar-kerja.kriteria-komponen');
     Route::get('/pengaturan', Pengaturan::class)->name('pengaturan');
 });
 
