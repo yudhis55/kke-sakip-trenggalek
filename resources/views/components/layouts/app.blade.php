@@ -214,9 +214,17 @@
                             <a wire:current="active" class="nav-link menu-link" href="/lembar-kerja" role="button"
                                 aria-expanded="false" aria-controls="sidebarLayouts">
                                 <i class="mdi mdi-view-carousel-outline"></i> <span data-key="t-layouts">Lembar
-                                    Kerja</span> <span class="badge badge-pill bg-danger" data-key="t-hot">Hot</span>
+                                    Kerja</span>
                             </a>
-                        </li> <!-- end Dashboard Menu -->
+                        </li>
+
+                        <li class="nav-item">
+                            <a wire:current="active" class="nav-link menu-link" href="/monitoring" role="button"
+                                aria-expanded="false" aria-controls="sidebarLayouts">
+                                <i class="mdi mdi-chart-box-outline"></i> <span data-key="t-layouts">Monitoring</span>
+                            </a>
+                        </li>
+                        <!-- end Dashboard Menu -->
 
                         {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Pages</span>
                         </li> --}}
@@ -252,12 +260,12 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-sm-6">
-                            {{ date('Y') }} © Inspektorat.
+                            {{ date('Y') }} © Diskominfo Trenggalek.
                         </div>
                         <div class="col-sm-6">
-                            <div class="text-sm-end d-none d-sm-block">
-                                Design & Develop by Inspektorat
-                            </div>
+                            {{-- <div class="text-sm-end d-none d-sm-block">
+                                Design & Develop by Diskominfo Trenggalek
+                            </div> --}}
                         </div>
                     </div>
                 </div>
@@ -295,6 +303,9 @@
 
     <!-- apexcharts -->
     <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js') }}"></script>
+
+    <!-- prismjs plugin -->
+    <script src="{{ asset('assets/libs/prismjs/prism.js') }}"></script>
 
     <!-- Vector map-->
     <script src="{{ asset('assets/libs/jsvectormap/js/jsvectormap.min.js') }}"></script>
