@@ -203,8 +203,8 @@ class KriteriaKomponen extends Model
             // Load sub_komponen jika belum
             $subKomponen = $this->sub_komponen ?? SubKomponen::find($this->sub_komponen_id);
 
-            // Cek apakah penilaian di level kriteria atau bukti
-            if ($subKomponen && $subKomponen->penilaian_di === 'kriteria') {
+            // Cek apakah penilaian di level kriteria atau bukti (PERBAIKAN: sekarang di kriteria_komponen)
+            if ($this->penilaian_di === 'kriteria') {
                 // Mode Kriteria: Ambil penilaian langsung di kriteria
                 // Gunakan relasi jika sudah di-eager load
                 if ($this->relationLoaded('penilaian')) {
@@ -290,10 +290,7 @@ class KriteriaKomponen extends Model
      */
     public function getNilaiPerRole($opdId)
     {
-        // Load sub_komponen untuk cek mode penilaian
-        $subKomponen = $this->sub_komponen ?? SubKomponen::find($this->sub_komponen_id);
-
-        // Build query berdasarkan mode penilaian
+        // Build query berdasarkan mode penilaian (PERBAIKAN: sekarang di kriteria_komponen)
         $query = Penilaian::where('kriteria_komponen_id', $this->id)
             ->where('opd_id', $opdId)
             ->whereNotNull('tingkatan_nilai_id')
@@ -301,7 +298,7 @@ class KriteriaKomponen extends Model
 
         // Jika penilaian di kriteria, cari yang bukti_dukung_id NULL
         // Jika penilaian di bukti, cari yang bukti_dukung_id NOT NULL
-        if ($subKomponen && $subKomponen->penilaian_di === 'kriteria') {
+        if ($this->penilaian_di === 'kriteria') {
             $query->whereNull('bukti_dukung_id');
         } else {
             $query->whereNotNull('bukti_dukung_id')

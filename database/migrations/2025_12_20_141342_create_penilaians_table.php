@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('penilaian', function (Blueprint $table) {
             $table->id();
-            $table->boolean('is_verified')->default(false)->nullable();
+            $table->boolean('is_verified')->default(null)->nullable();
             $table->text('keterangan')->nullable();
             $table->foreignId('tingkatan_nilai_id')->nullable()->constrained('tingkatan_nilai')->restrictOnDelete();
             $table->foreignId('file_bukti_dukung_id')->nullable()->constrained('file_bukti_dukung')->restrictOnDelete();

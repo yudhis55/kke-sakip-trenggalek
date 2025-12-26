@@ -45,4 +45,37 @@ class Penilaian extends Model
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
+
+    public function history()
+    {
+        return $this->hasMany(PenilaianHistory::class, 'penilaian_id')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Helper method untuk record history setiap perubahan
+     */
+    public function recordHistory(
+        $userId,
+        $roleId,
+        $opdId,
+        $kriteriaKomponenId,
+        $buktiDukungId = null,
+        $tingkatanNilaiId = null,
+        $isVerified = null,
+        $keterangan = null,
+        $isPerubahan = false
+    ) {
+        return PenilaianHistory::create([
+            'penilaian_id' => $this->id,
+            'bukti_dukung_id' => $buktiDukungId,
+            'kriteria_komponen_id' => $kriteriaKomponenId,
+            'opd_id' => $opdId,
+            'role_id' => $roleId,
+            'user_id' => $userId,
+            'tingkatan_nilai_id' => $tingkatanNilaiId,
+            'is_verified' => $isVerified,
+            'keterangan' => $keterangan,
+            'is_perubahan' => $isPerubahan,
+        ]);
+    }
 }

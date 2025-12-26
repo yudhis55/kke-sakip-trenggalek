@@ -18,7 +18,6 @@ return new class extends Migration
             $table->float('bobot');
             $table->foreignId('komponen_id')->constrained('komponen')->restrictOnDelete();
             $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
-            $table->string('penilaian_di');
             $table->timestamps();
         });
     }

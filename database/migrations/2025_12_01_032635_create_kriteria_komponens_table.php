@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('komponen_id')->constrained('komponen')->restrictOnDelete();
             $table->foreignId('jenis_nilai_id')->constrained('jenis_nilai')->restrictOnDelete();
             $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
+            $table->string('penilaian_di');
             $table->timestamps();
         });
     }
