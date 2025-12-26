@@ -54,6 +54,29 @@ class MappingSeeder extends Seeder
             'DVAL001.3' => 2,
         ];
 
+        // Mapping penilaian_di untuk kriteria tertentu (yang penilaian_di = 'bukti')
+        // Default = 'kriteria', yang ada di array ini = 'bukti'
+        $penilaianDiKriteriaMapping = [
+            'AREN001.1' => 'bukti',
+            'AREN001.2' => 'bukti',
+            'AREN001.3' => 'bukti',
+            'AREN001.4' => 'bukti',
+            'AREN002.1' => 'bukti',
+            'AREN002.2' => 'bukti',
+            'BKUR001.1' => 'bukti',
+            'BKUR001.2' => 'bukti',
+            'BKUR001.3' => 'bukti',
+            'CLAP001.1' => 'bukti',
+            'CLAP001.2' => 'bukti',
+            'CLAP001.3' => 'bukti',
+            'CLAP001.4' => 'bukti',
+            'CLAP001.5' => 'bukti',
+            'CLAP001.6' => 'bukti',
+            'DVAL001.1' => 'bukti',
+            'DVAL001.2' => 'bukti',
+            'DVAL001.3' => 'bukti',
+        ];
+
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
         $data = [
             [
@@ -785,16 +808,12 @@ class MappingSeeder extends Seeder
                         if ($existingSub) {
                             $subId = $existingSub->id;
                         } else {
-                            // Tentukan penilaian_di berdasarkan kode sub_komponen
-                            $penilaianDi = in_array($sub['kode'], ['AREN001', 'AREN002']) ? 'bukti' : 'kriteria';
-
                             $subId = DB::table('sub_komponen')->insertGetId([
                                 'kode' => $sub['kode'],
                                 'nama' => $sub['nama'] ?? '—',
                                 'bobot' => $this->parseBobot($sub['bobot'] ?? null),
                                 'komponen_id' => $komponenId,
                                 'tahun_id' => $tahun_id,
-                                'penilaian_di' => $penilaianDi,
                             ]);
                         }
 
@@ -813,12 +832,16 @@ class MappingSeeder extends Seeder
                                     // Tentukan jenis_nilai_id berdasarkan mapping atau default ke 1
                                     $jenisNilaiId = $jenisNilaiKriteriaMapping[$krit['kode']] ?? 1;
 
+                                    // Tentukan penilaian_di berdasarkan mapping atau default ke 'kriteria'
+                                    $penilaianDi = $penilaianDiKriteriaMapping[$krit['kode']] ?? 'kriteria';
+
                                     $kriteriaId = DB::table('kriteria_komponen')->insertGetId([
                                         'kode' => $krit['kode'],
                                         'nama' => $krit['nama'] ?? '—',
                                         'sub_komponen_id' => $subId,
                                         'komponen_id' => $komponenId,
                                         'jenis_nilai_id' => $jenisNilaiId,
+                                        'penilaian_di' => $penilaianDi,
                                         'tahun_id' => $tahun_id,
                                     ]);
                                 }
