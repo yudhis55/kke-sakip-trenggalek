@@ -154,7 +154,7 @@
                                                             <td>{{ $sub_komponen->bobot }}%</td>
                                                             <td></td>
                                                             <td></td>
-                                                            <td>{{ $sub_komponen->penilaian_di }}</td>
+                                                            <td></td>
                                                             <td>
                                                                 <div class="dropdown">
                                                                     <button
@@ -209,7 +209,8 @@
                                                                 <td>{{ $kriteria_komponen->bobot }}%</td>
                                                                 <td>{{ $kriteria_komponen->jenis_nilai->nama }}</td>
                                                                 <td></td>
-                                                                <td></td>
+                                                                <td>{{ $kriteria_komponen->penilaian_di == 'kriteria' ? 'Kriteria Komponen' : 'Bukti Dukung' }}
+                                                                </td>
                                                                 <td>
                                                                     <div class="dropdown">
                                                                         <button
@@ -397,18 +398,6 @@
                                 placeholder="Masukkan nama sub komponen"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="penilaianDiAdd" class="form-label">Penilaian Di <span
-                                    class="text-danger">*</span></label>
-                            <select wire:model="penilaian_di_sub_komponen" class="form-select" id="penilaianDiAdd">
-                                <option value="">-- Pilih --</option>
-                                <option value="kriteria">Kriteria Komponen</option>
-                                <option value="bukti">Bukti Dukung</option>
-                            </select>
-                            @error('penilaian_di_sub_komponen')
-                                <span class="text-danger small">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
                             <label for="subBobot" class="form-label">Bobot <span class="text-danger">*</span></label>
                             <input wire:model="bobot_sub_komponen" type="number" step="0.01"
                                 class="form-control" id="subBobot" placeholder="Contoh: 10.00">
@@ -466,6 +455,18 @@
                                     <option value="{{ $jenisnilai->id }}">{{ $jenisnilai->nama }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="penilaianDiKriteria" class="form-label">Penilaian Di <span
+                                    class="text-danger">*</span></label>
+                            <select wire:model="penilaian_di_kriteria" class="form-select" id="penilaianDiKriteria">
+                                <option value="">-- Pilih --</option>
+                                <option value="kriteria">Kriteria Komponen</option>
+                                <option value="bukti">Bukti Dukung</option>
+                            </select>
+                            @error('penilaian_di_kriteria')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
                         </div>
                     </form>
                 </div>
@@ -623,18 +624,6 @@
                                 placeholder="Masukkan nama sub komponen"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="editPenilaianDi" class="form-label">Penilaian Di <span
-                                    class="text-danger">*</span></label>
-                            <select wire:model="penilaian_di_sub_komponen" class="form-select" id="editPenilaianDi">
-                                <option value="">-- Pilih --</option>
-                                <option value="kriteria">Kriteria Komponen</option>
-                                <option value="bukti">Bukti Dukung</option>
-                            </select>
-                            @error('penilaian_di_sub_komponen')
-                                <span class="text-danger small">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
                             <label for="editSubBobot" class="form-label">Bobot <span
                                     class="text-danger">*</span></label>
                             <input wire:model="bobot_sub_komponen" type="number" step="0.01"
@@ -694,6 +683,19 @@
                                     <option value="{{ $jenisnilai->id }}">{{ $jenisnilai->nama }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPenilaianDiKriteria" class="form-label">Penilaian Di <span
+                                    class="text-danger">*</span></label>
+                            <select wire:model="penilaian_di_kriteria" class="form-select"
+                                id="editPenilaianDiKriteria">
+                                <option value="">-- Pilih --</option>
+                                <option value="kriteria">Kriteria Komponen</option>
+                                <option value="bukti">Bukti Dukung</option>
+                            </select>
+                            @error('penilaian_di_kriteria')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
                         </div>
                     </form>
                 </div>
