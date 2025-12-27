@@ -1,4 +1,46 @@
 <div class="page-content">
+    <style>
+        .badge-pulsate {
+            display: inline-block;
+            background-color: red;
+            border-radius: 50%;
+            width: 5px;
+            height: 5px;
+            padding: 0;
+            /* margin-left: 0.8rem; */
+            position: relative;
+        }
+
+        .badge-pulsate::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            animation: pulse 1s ease infinite;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 100, 100, 0.6);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            60% {
+                transform: scale(1.3);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+    </style>
     <div x-data="{ tab: 'bukti_dukung', menu: 'dokumen' }" x-on:filter-changed.window="tab = 'bukti_dukung'; menu = 'dokumen'"
         class="container-fluid" x-cloak>
 
@@ -227,7 +269,7 @@
                                                 <tr>
                                                     <th scope="col" style="width: 5%">No.</th>
                                                     <th scope="col"
-                                                        style="width: {{ $isKriteriaLevel ? '30%' : '45%' }}">Nama</th>
+                                                        style="width: {{ $isKriteriaLevel ? '35%' : '50%' }}">Nama</th>
                                                     <th scope="col" style="width: 8%">Bobot</th>
 
                                                     {{-- Kolom penilaian HANYA untuk kriteria level --}}
@@ -247,7 +289,7 @@
                                                         @endif
                                                     @endif
 
-                                                    <th scope="col" style="width: 10%">Aksi</th>
+                                                    <th scope="col" style="width: 5%"></th>
 
                                                     {{-- Kolom Tracking HANYA untuk kriteria level dengan penilaian_di = kriteria --}}
                                                     @if ($isKriteriaLevel && in_array(Auth::user()->role->jenis, ['admin', 'opd']))
@@ -297,10 +339,92 @@
 
                                                     // Bobot sudah dihitung otomatis di model accessor untuk semua level
                                                     $bobotKriteria = $lembar_kerja->bobot;
+
+                                                    // Cek apakah ada penolakan
+                                                    if ($isKomponenLevel) {
+                                                        $hasRejection = $this->hasRejection($lembar_kerja, 'komponen');
+                                                        // Hitung jumlah sub komponen dan kriteria
+                                                        $jumlahSubKomponen = $lembar_kerja->sub_komponen()->count();
+                                                        $jumlahKriteria = \DB::table('kriteria_komponen')
+                                                            ->join(
+                                                                'sub_komponen',
+                                                                'kriteria_komponen.sub_komponen_id',
+                                                                '=',
+                                                                'sub_komponen.id',
+                                                            )
+                                                            ->where('sub_komponen.komponen_id', $lembar_kerja->id)
+                                                            ->count();
+                                                        $infoText = "Jumlah sub komponen: {$jumlahSubKomponen} | Jumlah kriteria: {$jumlahKriteria}";
+                                                    } elseif ($isSubKomponenLevel) {
+                                                        $hasRejection = $this->hasRejection(
+                                                            $lembar_kerja,
+                                                            'sub_komponen',
+                                                        );
+                                                        // Hitung jumlah kriteria dan bukti dukung
+                                                        $jumlahKriteria = $lembar_kerja->kriteria_komponen()->count();
+                                                        $jumlahBuktiDukung = \DB::table('bukti_dukung')
+                                                            ->join(
+                                                                'kriteria_komponen',
+                                                                'bukti_dukung.kriteria_komponen_id',
+                                                                '=',
+                                                                'kriteria_komponen.id',
+                                                            )
+                                                            ->where(
+                                                                'kriteria_komponen.sub_komponen_id',
+                                                                $lembar_kerja->id,
+                                                            )
+                                                            ->count();
+                                                        $infoText = "Jumlah kriteria: {$jumlahKriteria} | Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                    } else {
+                                                        $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
+                                                        // Hitung jumlah bukti dukung
+                                                        $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
+                                                        $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                    }
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
-                                                    <td>{{ $lembar_kerja->nama }}</td>
+                                                    <td>
+                                                        <span class="d-flex align-items-center">
+                                                            <span class="me-3">
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-outline-primary position-relative p-0 avatar-xs rounded-circle">
+                                                                    <span
+                                                                        class="avatar-title bg-transparent text-reset">
+                                                                        <i class="bx bx-menu"></i>
+                                                                    </span>
+                                                                    @if ($hasRejection)
+                                                                        <span
+                                                                            class="position-absolute top-0 start-100 translate-middle badge-pulsate"></span>
+                                                                    @endif
+                                                                    {{-- <span
+                                                                        class="position-absolute top-0 start-100 translate-middle badge border border-light rounded-circle bg-warning p-1"><span
+                                                                            class="visually-hidden">unread
+                                                                            messages</span></span> --}}
+                                                                </button>
+                                                            </span>
+                                                            <span>
+                                                                @if ($isKomponenLevel)
+                                                                    <span
+                                                                        wire:click="selectKomponen({{ $lembar_kerja->id }})"
+                                                                        class="d-inline-block text-primary fw-semibold"
+                                                                        style="cursor: pointer;">{{ $lembar_kerja->nama }}</span>
+                                                                @elseif ($isSubKomponenLevel)
+                                                                    <span
+                                                                        wire:click="selectSubKomponen({{ $lembar_kerja->id }})"
+                                                                        class="d-inline-block text-primary fw-semibold"
+                                                                        style="cursor: pointer;">{{ $lembar_kerja->nama }}</span>
+                                                                @else
+                                                                    <span
+                                                                        wire:click="selectKriteriaKomponen({{ $lembar_kerja->id }})"
+                                                                        class="d-inline-block text-primary fw-semibold"
+                                                                        style="cursor: pointer;">{{ $lembar_kerja->nama }}</span>
+                                                                @endif
+                                                                <span
+                                                                    class="d-block text-muted"><small>{{ $infoText }}</small></span>
+                                                            </span>
+                                                        </span>
+                                                    </td>
                                                     <td>
                                                         <span>{{ number_format($bobotKriteria, 2) }}%</span>
                                                     </td>
@@ -615,11 +739,25 @@
                                                             $totalNilaiOpd += $nilaiOpd;
                                                             $totalNilaiPenjamin += $nilaiPenjamin;
                                                             $totalNilaiPenilai += $nilaiPenilai;
+
+                                                            // Cek apakah bukti dukung ini ditolak
+                                                            $hasRejectionBukti = $this->hasRejection(
+                                                                $bukti_dukung,
+                                                                'bukti',
+                                                            );
                                                         @endphp
                                                         <tr wire:key="bukti-row-{{ $bukti_dukung->id }}">
                                                             <th scope="row"><a
                                                                     class="fw-medium">{{ $index + 1 }}</a></th>
-                                                            <td>{{ $bukti_dukung->nama }}</td>
+                                                            <td>
+                                                                <span class="position-relative">
+                                                                    {{ $bukti_dukung->nama }}
+                                                                    @if ($hasRejectionBukti)
+                                                                        <span
+                                                                            class="position-absolute top-0 start-100 translate-middle badge-pulsate ms-2"></span>
+                                                                    @endif
+                                                                </span>
+                                                            </td>
                                                             <td>
                                                                 <span>{{ number_format($this->bobotPerBukti, 2) }}%</span>
                                                             </td>
@@ -1671,7 +1809,8 @@
                                                                     <label class="form-check-label"
                                                                         for="verifikasiTidakSesuai">
                                                                         <i
-                                                                            class="ri-close-line text-danger me-1"></i>Tidak, belum ada kesesuaian
+                                                                            class="ri-close-line text-danger me-1"></i>Tidak,
+                                                                        belum ada kesesuaian
                                                                     </label>
                                                                 </div>
                                                                 <div class="mb-3 mt-3">

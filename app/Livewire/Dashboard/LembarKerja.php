@@ -731,7 +731,7 @@ class LembarKerja extends Component
         ]);
 
         if (!$this->bukti_dukung_id) {
-            flash()->error('Silakan pilih bukti dukung terlebih dahulu.');
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Silakan pilih bukti dukung terlebih dahulu.');
             return;
         }
 
@@ -798,7 +798,7 @@ class LembarKerja extends Component
             isPerubahan: $isPerubahan
         );
 
-        flash()->success('Bukti dukung berhasil diupload.');
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil diupload.');
 
         $this->file_bukti_dukung = [];
         $this->keterangan_upload = '';
@@ -856,7 +856,7 @@ class LembarKerja extends Component
             isPerubahan: $isPerubahan
         );
 
-        flash()->success('Penilaian berhasil disimpan.');
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Penilaian berhasil disimpan.');
 
         $this->tingkatan_nilai_id = null;
         $this->catatan_penilaian = '';
@@ -914,7 +914,7 @@ class LembarKerja extends Component
             isPerubahan: $isPerubahan
         );
 
-        flash()->success('Verifikasi berhasil disimpan.');
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Verifikasi berhasil disimpan.');
 
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
@@ -975,9 +975,9 @@ class LembarKerja extends Component
                 isPerubahan: true
             );
 
-            flash()->success('File bukti dukung berhasil dihapus.');
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File bukti dukung berhasil dihapus.');
         } else {
-            flash()->error('File tidak ditemukan.');
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
         }
     }
 
@@ -1105,6 +1105,89 @@ class LembarKerja extends Component
         }
 
         return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
+     * Cek apakah komponen memiliki penolakan dari verifikator/penjamin
+     * (is_verified = 0 atau false) pada dirinya atau anaknya
+     */
+    public function hasRejection($item, $type)
+    {
+        $opdId = $this->opd_session;
+
+        if (!$opdId) {
+            return false;
+        }
+
+        // Cek berdasarkan tipe
+        switch ($type) {
+            case 'komponen':
+                // Cek di semua kriteria komponen yang punya bukti dukung
+                // Hanya dari role verifikator atau penjamin
+                return \DB::table('penilaian')
+                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
+                    ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                    ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->where('sub_komponen.komponen_id', $item->id)
+                    ->where('penilaian.opd_id', $opdId)
+                    ->where('penilaian.is_verified', false)
+                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
+                    ->exists();
+
+            case 'sub_komponen':
+                // Cek di semua kriteria komponen dari sub komponen ini
+                // Hanya dari role verifikator atau penjamin
+                return \DB::table('penilaian')
+                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
+                    ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->where('kriteria_komponen.sub_komponen_id', $item->id)
+                    ->where('penilaian.opd_id', $opdId)
+                    ->where('penilaian.is_verified', false)
+                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
+                    ->exists();
+
+            case 'kriteria':
+                // Cek di penilaian level kriteria atau di bukti dukungnya
+                // Hanya dari role verifikator atau penjamin
+
+                // Level kriteria (penilaian_di = 'kriteria')
+                $hasRejectionKriteria = \DB::table('penilaian')
+                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->whereNull('penilaian.bukti_dukung_id')
+                    ->where('penilaian.kriteria_komponen_id', $item->id)
+                    ->where('penilaian.opd_id', $opdId)
+                    ->where('penilaian.is_verified', false)
+                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
+                    ->exists();
+
+                // Level bukti dukung (penilaian_di = 'bukti')
+                $hasRejectionBukti = \DB::table('penilaian')
+                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
+                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->where('bukti_dukung.kriteria_komponen_id', $item->id)
+                    ->where('penilaian.opd_id', $opdId)
+                    ->where('penilaian.is_verified', false)
+                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
+                    ->exists();
+
+                return $hasRejectionKriteria || $hasRejectionBukti;
+
+            case 'bukti':
+                // Cek langsung di penilaian bukti dukung ini
+                // Hanya dari role verifikator atau penjamin
+                return \DB::table('penilaian')
+                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->where('penilaian.bukti_dukung_id', $item->id)
+                    ->where('penilaian.opd_id', $opdId)
+                    ->where('penilaian.is_verified', false)
+                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
+                    ->exists();
+
+            default:
+                return false;
+        }
     }
 
     public function render()
