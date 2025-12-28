@@ -280,9 +280,14 @@
                                                     </th>
                                                     <th scope="col" style="width: 8%">Bobot</th>
 
-                                                    {{-- Kolom Penilaian Di (HANYA untuk kriteria level) --}}
-                                                    @if ($isKriteriaLevel)
-                                                        <th scope="col" style="width: 8%">Penilaian<br>Di</th>
+                                                    {{-- Kolom Progres Penilaian --}}
+                                                    @if (!$isKriteriaLevel)
+                                                        {{-- Komponen dan Sub Komponen level --}}
+                                                        <th scope="col" style="width: 8%">Progres<br>Kriteria</th>
+                                                        <th scope="col" style="width: 8%">Progres<br>Bukti</th>
+                                                    @else
+                                                        {{-- Kriteria level --}}
+                                                        <th scope="col" style="width: 8%">Progres<br>Bukti</th>
                                                     @endif
 
                                                     {{-- Kolom untuk semua level --}}
@@ -309,19 +314,20 @@
 
                                                     {{-- Verifikasi Penjamin (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
                                                     @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <th scope="col" style="width: 8%">Verifikasi<br>Penjamin
+                                                        <th scope="col" style="width: 8%">Verifikasi<br>Evaluator
                                                         </th>
                                                     @endif
 
                                                     {{-- Penjaminan Kualitas (nilai dari penjamin) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <th scope="col" style="width: 10%">Penjaminan<br>Kualitas
+                                                        <th scope="col" style="width: 10%">Evaluator
                                                         </th>
                                                     @endif
 
                                                     {{-- Evaluator (nilai dari penilai) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
-                                                        <th scope="col" style="width: 10%">Evaluator</th>
+                                                        <th scope="col" style="width: 10%">Penjamin<br>Kualitas
+                                                        </th>
                                                     @endif
 
                                                     <th scope="col" style="width: 5%"></th>
@@ -411,7 +417,11 @@
                                                     } else {
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
                                                         $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
-                                                        $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                        $penilaianDiText =
+                                                            $lembar_kerja->penilaian_di === 'kriteria'
+                                                                ? 'Kriteria'
+                                                                : 'Bukti';
+                                                        $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung} | Jenis Penilaian: {$penilaianDiText}";
                                                         $bobotKriteria = $lembar_kerja->bobot ?? 0;
                                                     }
                                                 @endphp
@@ -462,13 +472,273 @@
                                                         <span>{{ number_format($bobotKriteria, 2) }}%</span>
                                                     </td>
 
-                                                    {{-- Kolom Penilaian Di (HANYA untuk kriteria level) --}}
-                                                    @if ($isKriteriaLevel)
+                                                    {{-- Kolom Progres Penilaian --}}
+                                                    @php
+                                                        $userRole = Auth::user()->role->jenis;
+                                                        $roleId = Auth::user()->role->id;
+                                                    @endphp
+
+                                                    @if (!$isKriteriaLevel)
+                                                        {{-- Komponen atau Sub Komponen level --}}
+                                                        @if ($isKomponenLevel && !$komponen_session)
+                                                            {{-- Level Komponen: Hitung progres kriteria dan bukti dari semua sub komponen --}}
+                                                            @php
+                                                                // Total kriteria hanya yang penilaian_di='kriteria'
+                                                                $totalKriteria = \DB::table('kriteria_komponen')
+                                                                    ->where('komponen_id', $lembar_kerja->id)
+                                                                    ->where('penilaian_di', 'kriteria')
+                                                                    ->count();
+
+                                                                // Hitung kriteria dengan penilaian_di='kriteria' yang sudah dinilai/diverifikasi
+                                                                $selesaiKriteria = \DB::table('kriteria_komponen')
+                                                                    ->where('komponen_id', $lembar_kerja->id)
+                                                                    ->where('penilaian_di', 'kriteria')
+                                                                    ->whereExists(function ($query) use (
+                                                                        $roleId,
+                                                                        $userRole,
+                                                                    ) {
+                                                                        $query
+                                                                            ->select(\DB::raw(1))
+                                                                            ->from('penilaian')
+                                                                            ->whereColumn(
+                                                                                'penilaian.kriteria_komponen_id',
+                                                                                'kriteria_komponen.id',
+                                                                            )
+                                                                            ->where(
+                                                                                'penilaian.opd_id',
+                                                                                $this->opd_session,
+                                                                            )
+                                                                            ->where('penilaian.role_id', $roleId)
+                                                                            ->where(function ($q) use ($userRole) {
+                                                                                if ($userRole == 'opd') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                } elseif ($userRole == 'verifikator') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penjamin') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penilai') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                }
+                                                                            });
+                                                                    })
+                                                                    ->count();
+
+                                                                $totalBukti = \DB::table('bukti_dukung')
+                                                                    ->join(
+                                                                        'kriteria_komponen',
+                                                                        'bukti_dukung.kriteria_komponen_id',
+                                                                        '=',
+                                                                        'kriteria_komponen.id',
+                                                                    )
+                                                                    ->where(
+                                                                        'kriteria_komponen.komponen_id',
+                                                                        $lembar_kerja->id,
+                                                                    )
+                                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                                    ->count();
+
+                                                                $selesaiBukti = \DB::table('bukti_dukung')
+                                                                    ->join(
+                                                                        'kriteria_komponen',
+                                                                        'bukti_dukung.kriteria_komponen_id',
+                                                                        '=',
+                                                                        'kriteria_komponen.id',
+                                                                    )
+                                                                    ->where(
+                                                                        'kriteria_komponen.komponen_id',
+                                                                        $lembar_kerja->id,
+                                                                    )
+                                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                                    ->whereExists(function ($query) use (
+                                                                        $roleId,
+                                                                        $userRole,
+                                                                    ) {
+                                                                        $query
+                                                                            ->select(\DB::raw(1))
+                                                                            ->from('penilaian')
+                                                                            ->whereColumn(
+                                                                                'penilaian.bukti_dukung_id',
+                                                                                'bukti_dukung.id',
+                                                                            )
+                                                                            ->where(
+                                                                                'penilaian.opd_id',
+                                                                                $this->opd_session,
+                                                                            )
+                                                                            ->where('penilaian.role_id', $roleId)
+                                                                            ->where(function ($q) use ($userRole) {
+                                                                                if ($userRole == 'opd') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                } elseif ($userRole == 'verifikator') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penjamin') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penilai') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                }
+                                                                            });
+                                                                    })
+                                                                    ->count();
+                                                            @endphp
+                                                            <td>
+                                                                <span>{{ $selesaiKriteria }}/{{ $totalKriteria }}</span>
+                                                            </td>
+                                                            <td>
+                                                                <span>{{ $selesaiBukti }}/{{ $totalBukti }}</span>
+                                                            </td>
+                                                        @else
+                                                            {{-- Level Sub Komponen --}}
+                                                            @php
+                                                                // Total kriteria hanya yang penilaian_di='kriteria'
+                                                                $totalKriteria = $lembar_kerja
+                                                                    ->kriteria_komponen()
+                                                                    ->where('penilaian_di', 'kriteria')
+                                                                    ->count();
+
+                                                                $selesaiKriteria = $lembar_kerja
+                                                                    ->kriteria_komponen()
+                                                                    ->where('penilaian_di', 'kriteria')
+                                                                    ->whereHas('penilaian', function ($query) use (
+                                                                        $roleId,
+                                                                        $userRole,
+                                                                    ) {
+                                                                        $query
+                                                                            ->where('opd_id', $this->opd_session)
+                                                                            ->where('role_id', $roleId)
+                                                                            ->where(function ($q) use ($userRole) {
+                                                                                if ($userRole == 'opd') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                } elseif ($userRole == 'verifikator') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penjamin') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penilai') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                }
+                                                                            });
+                                                                    })
+                                                                    ->count();
+
+                                                                $totalBukti = \DB::table('bukti_dukung')
+                                                                    ->join(
+                                                                        'kriteria_komponen',
+                                                                        'bukti_dukung.kriteria_komponen_id',
+                                                                        '=',
+                                                                        'kriteria_komponen.id',
+                                                                    )
+                                                                    ->where(
+                                                                        'kriteria_komponen.sub_komponen_id',
+                                                                        $lembar_kerja->id,
+                                                                    )
+                                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                                    ->count();
+
+                                                                $selesaiBukti = \DB::table('bukti_dukung')
+                                                                    ->join(
+                                                                        'kriteria_komponen',
+                                                                        'bukti_dukung.kriteria_komponen_id',
+                                                                        '=',
+                                                                        'kriteria_komponen.id',
+                                                                    )
+                                                                    ->where(
+                                                                        'kriteria_komponen.sub_komponen_id',
+                                                                        $lembar_kerja->id,
+                                                                    )
+                                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                                    ->whereExists(function ($query) use (
+                                                                        $roleId,
+                                                                        $userRole,
+                                                                    ) {
+                                                                        $query
+                                                                            ->select(\DB::raw(1))
+                                                                            ->from('penilaian')
+                                                                            ->whereColumn(
+                                                                                'penilaian.bukti_dukung_id',
+                                                                                'bukti_dukung.id',
+                                                                            )
+                                                                            ->where(
+                                                                                'penilaian.opd_id',
+                                                                                $this->opd_session,
+                                                                            )
+                                                                            ->where('penilaian.role_id', $roleId)
+                                                                            ->where(function ($q) use ($userRole) {
+                                                                                if ($userRole == 'opd') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                } elseif ($userRole == 'verifikator') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penjamin') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penilai') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                }
+                                                                            });
+                                                                    })
+                                                                    ->count();
+                                                            @endphp
+                                                            <td>
+                                                                <span>{{ $selesaiKriteria }}/{{ $totalKriteria }}</span>
+                                                            </td>
+                                                            <td>
+                                                                <span>{{ $selesaiBukti }}/{{ $totalBukti }}</span>
+                                                            </td>
+                                                        @endif
+                                                    @else
+                                                        {{-- Level Kriteria Komponen --}}
+                                                        @php
+                                                            if ($lembar_kerja->penilaian_di === 'bukti') {
+                                                                $totalBukti = $lembar_kerja->bukti_dukung()->count();
+
+                                                                $selesaiBukti = $lembar_kerja
+                                                                    ->bukti_dukung()
+                                                                    ->whereHas('penilaian', function ($query) use (
+                                                                        $roleId,
+                                                                        $userRole,
+                                                                    ) {
+                                                                        $query
+                                                                            ->where('opd_id', $this->opd_session)
+                                                                            ->where('role_id', $roleId)
+                                                                            ->where(function ($q) use ($userRole) {
+                                                                                if ($userRole == 'opd') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                } elseif ($userRole == 'verifikator') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penjamin') {
+                                                                                    $q->whereNotNull('is_verified');
+                                                                                } elseif ($userRole == 'penilai') {
+                                                                                    $q->whereNotNull(
+                                                                                        'tingkatan_nilai_id',
+                                                                                    );
+                                                                                }
+                                                                            });
+                                                                    })
+                                                                    ->count();
+                                                            } else {
+                                                                $totalBukti = 0;
+                                                                $selesaiBukti = 0;
+                                                            }
+                                                        @endphp
                                                         <td>
-                                                            @if ($lembar_kerja->penilaian_di === 'kriteria')
-                                                                <span>Kriteria</span>
+                                                            @if ($lembar_kerja->penilaian_di === 'bukti')
+                                                                <span>{{ $selesaiBukti }}/{{ $totalBukti }}</span>
                                                             @else
-                                                                <span>Bukti</span>
+                                                                <span class="text-muted">-</span>
                                                             @endif
                                                         </td>
                                                     @endif
@@ -557,14 +827,14 @@
                                                     {{-- Kolom Penjaminan Kualitas (nilai dari penjamin - semua level) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                         <td>
-                                                            {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) : '-' }}
+                                                            {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) . '%' : '-' }}
                                                         </td>
                                                     @endif
 
                                                     {{-- Kolom Evaluator (nilai dari penilai - semua level) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
                                                         <td>
-                                                            {{ $nilaiPenilai > 0 ? number_format($nilaiPenilai, 2) : '-' }}
+                                                            {{ $nilaiPenilai > 0 ? number_format($nilaiPenilai, 2) . '%' : '-' }}
                                                         </td>
                                                     @endif
 
@@ -635,8 +905,15 @@
                                             {{-- Footer untuk semua level (Komponen, Sub Komponen, Kriteria) --}}
                                             <tfoot class="table-light">
                                                 <tr>
-                                                    <td colspan="{{ $isKriteriaLevel ? '4' : '3' }}"
-                                                        class="text-end"><strong>JUMLAH:</strong></td>
+                                                    @if ($isKomponenLevel || $isSubKomponenLevel)
+                                                        {{-- Komponen dan Sub Komponen: No + Nama + Bobot + Progres Kriteria + Progres Bukti = 5 kolom --}}
+                                                        <td colspan="5" class="text-end"><strong>JUMLAH:</strong>
+                                                        </td>
+                                                    @elseif ($isKriteriaLevel)
+                                                        {{-- Kriteria: No + Nama + Bobot + Progres Bukti = 4 kolom --}}
+                                                        <td colspan="4" class="text-end"><strong>JUMLAH:</strong>
+                                                        </td>
+                                                    @endif
 
                                                     {{-- Penilaian Mandiri --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
@@ -806,17 +1083,17 @@
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                 <th scope="col" style="width: 8%;">
-                                                                    Verifikasi<br>Penjamin</th>
+                                                                    Verifikasi<br>Evaluator</th>
                                                             @endif
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                                <th scope="col" style="width: 10%;">Penjaminan
-                                                                    <br>Kualitas
+                                                                <th scope="col" style="width: 10%;">Evaluator
                                                                 </th>
                                                             @endif
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
-                                                                <th scope="col" style="width: 10%;">Evaluator</th>
+                                                                <th scope="col" style="width: 10%;">
+                                                                    Penjamin<br>Kualitas</th>
                                                             @endif
                                                         @endif
 
@@ -2215,7 +2492,7 @@
                                 }
 
                                 .tracking-date {
-                                    color: #ff9800;
+                                    color: #6c757d;
                                     font-size: 0.875rem;
                                     font-weight: 500;
                                     margin-bottom: 0.5rem;
@@ -2260,6 +2537,9 @@
                                             @if ($item['nilai'])
                                                 <div class="tracking-desc">
                                                     <strong>Nilai:</strong> {{ $item['nilai'] }}
+                                                    @if ($item['nilai_numerik'])
+                                                        - {{ number_format($item['nilai_numerik'], 2) }}%
+                                                    @endif
                                                 </div>
                                             @endif
 

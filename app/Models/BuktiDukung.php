@@ -33,6 +33,11 @@ class BuktiDukung extends Model
         return $this->belongsTo(Tahun::class, 'tahun_id');
     }
 
+    public function penilaian(): HasMany
+    {
+        return $this->hasMany(Penilaian::class, 'bukti_dukung_id');
+    }
+
     // Deprecated: File storage now in penilaian table
     // public function file_bukti_dukung(): HasMany
     // {

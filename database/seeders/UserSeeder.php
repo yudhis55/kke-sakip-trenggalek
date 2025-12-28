@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
 
         // User Verifikator
         DB::table('users')->insert([
-            'name' => 'Verifikator',
+            'name' => 'Verifikator Bappeda',
             'email' => 'verifikator@bappeda.com',
             'password' => Hash::make('password'),
             'role_id' => 2,   // verifikator
@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
         ]);
 
         DB::table('users')->insert([
-            'name' => 'Verifikator',
+            'name' => 'Verifikator Bag Organisasi',
             'email' => 'verifikator@organisasi.com',
             'password' => Hash::make('password'),
             'role_id' => 3,   // verifikator
@@ -39,7 +39,7 @@ class UserSeeder extends Seeder
         ]);
 
         DB::table('users')->insert([
-            'name' => 'Verifikator',
+            'name' => 'Verifikator Inspektorat',
             'email' => 'verifikator@inspektorat.com',
             'password' => Hash::make('password'),
             'role_id' => 4,   // verifikator
@@ -47,16 +47,16 @@ class UserSeeder extends Seeder
         ]);
 
         DB::table('users')->insert([
-            'name' => 'Penjamin Kualitas',
-            'email' => 'penjamin@inspektorat.com',
+            'name' => 'Evaluator',
+            'email' => 'evaluator@inspektorat.com',
             'password' => Hash::make(value: 'password'),
             'role_id' => 5,   // penjamin
             'opd_id' => null,
         ]);
 
         DB::table('users')->insert([
-            'name' => 'Penilai Final',
-            'email' => 'penilai@inspektorat.com',
+            'name' => 'Penjamin Kualitas',
+            'email' => 'penjamin@inspektorat.com',
             'password' => Hash::make('password'),
             'role_id' => 6,   // penilai
             'opd_id' => null,

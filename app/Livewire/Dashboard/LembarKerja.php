@@ -1124,10 +1124,28 @@ class LembarKerja extends Component
         $penjaminPenilaian = $penilaianList->where('role.jenis', 'penjamin')->first();
         $penilaiPenilaian = $penilaianList->where('role.jenis', 'penilai')->first();
 
+        // Hitung nilai numerik untuk setiap role yang punya nilai
+        $calculateNilaiNumerik = function ($penilaian) use ($buktiDukungId) {
+            if (!$penilaian || !$penilaian->tingkatan_nilai) {
+                return null;
+            }
+
+            if ($this->penilaianDiKriteria) {
+                // Penilaian di kriteria: gunakan getNilai dari KriteriaKomponen
+                $kriteria = KriteriaKomponen::find($this->kriteria_komponen_session);
+                return $kriteria ? $kriteria->getNilai($this->opd_session, $penilaian->role_id) : null;
+            } else {
+                // Penilaian di bukti: gunakan getNilai dari BuktiDukung
+                $bukti = BuktiDukung::find($buktiDukungId);
+                return $bukti ? $bukti->getNilai($this->opd_session, $penilaian->role_id) : null;
+            }
+        };
+
         // Build tracking array dengan 4 tahap paten
         $tracking = [];
 
         // 1. OPD - Penilaian Mandiri
+        $nilaiNumerikOpd = $calculateNilaiNumerik($opdPenilaian);
         $tracking[] = [
             'role' => 'OPD',
             'title' => 'Penilaian Mandiri - OPD',
@@ -1135,6 +1153,7 @@ class LembarKerja extends Component
             'status' => $opdPenilaian ? ($opdPenilaian->tingkatan_nilai_id ? 'success' : 'null') : 'null',
             'date' => $opdPenilaian ? $opdPenilaian->created_at->format('D, d M Y | H:i') : null,
             'nilai' => $opdPenilaian && $opdPenilaian->tingkatan_nilai ? $opdPenilaian->tingkatan_nilai->kode_nilai : null,
+            'nilai_numerik' => $nilaiNumerikOpd,
             'keterangan' => $opdPenilaian ? $opdPenilaian->keterangan : null,
         ];
 
@@ -1146,28 +1165,33 @@ class LembarKerja extends Component
             'status' => $verifikatorPenilaian ? ($verifikatorPenilaian->is_verified ? 'success' : 'danger') : 'null',
             'date' => $verifikatorPenilaian ? $verifikatorPenilaian->updated_at->format('D, d M Y | H:i') : null,
             'nilai' => null,
+            'nilai_numerik' => null,
             'keterangan' => $verifikatorPenilaian ? $verifikatorPenilaian->keterangan : null,
         ];
 
         // 3. Penjamin - Verifikasi + Penilaian
+        $nilaiNumerikPenjamin = $calculateNilaiNumerik($penjaminPenilaian);
         $tracking[] = [
-            'role' => 'Penjamin',
-            'title' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'DITERIMA - Penjamin' : 'DITOLAK - Penjamin') : 'Penjamin Mutu',
+            'role' => 'Evaluator',
+            'title' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'DITERIMA - Evaluator' : 'DITOLAK - Evaluator') : 'Evaluator',
             'icon' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'ri-check-line' : 'ri-close-line') : 'ri-subtract-line',
             'status' => $penjaminPenilaian ? ($penjaminPenilaian->is_verified ? 'success' : 'danger') : 'null',
             'date' => $penjaminPenilaian ? $penjaminPenilaian->updated_at->format('D, d M Y | H:i') : null,
             'nilai' => $penjaminPenilaian && $penjaminPenilaian->tingkatan_nilai ? $penjaminPenilaian->tingkatan_nilai->kode_nilai : null,
+            'nilai_numerik' => $nilaiNumerikPenjamin,
             'keterangan' => $penjaminPenilaian ? $penjaminPenilaian->keterangan : null,
         ];
 
         // 4. Penilai
+        $nilaiNumerikPenilai = $calculateNilaiNumerik($penilaiPenilaian);
         $tracking[] = [
-            'role' => 'Penilai',
-            'title' => $penilaiPenilaian ? 'DINILAI - Penilai' : 'Penilai',
+            'role' => 'Penjamin Kualitas',
+            'title' => $penilaiPenilaian ? 'DINILAI - Penjamin Kualitas' : 'Penjamin Kualitas',
             'icon' => $penilaiPenilaian ? 'ri-check-line' : 'ri-subtract-line',
             'status' => $penilaiPenilaian ? 'success' : 'null',
             'date' => $penilaiPenilaian ? $penilaiPenilaian->updated_at->format('D, d M Y | H:i') : null,
             'nilai' => $penilaiPenilaian && $penilaiPenilaian->tingkatan_nilai ? $penilaiPenilaian->tingkatan_nilai->kode_nilai : null,
+            'nilai_numerik' => $nilaiNumerikPenilai,
             'keterangan' => null,
         ];
 
