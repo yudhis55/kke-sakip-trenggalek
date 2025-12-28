@@ -55,35 +55,6 @@ class Dashboard extends Component
     }
 
     /**
-     * Hitung total kriteria komponen dengan penilaian_di = 'kriteria'
-     */
-    #[Computed]
-    public function totalKriteriaKomponenDiKriteria()
-    {
-        return DB::table('kriteria_komponen')
-            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
-            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
-            ->where('komponen.tahun_id', $this->tahun_session)
-            ->where('kriteria_komponen.penilaian_di', 'kriteria')
-            ->count();
-    }
-
-    /**
-     * Hitung total bukti dukung dengan penilaian_di = 'bukti'
-     */
-    #[Computed]
-    public function totalBuktiDukungDiBukti()
-    {
-        return DB::table('bukti_dukung')
-            ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
-            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
-            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
-            ->where('komponen.tahun_id', $this->tahun_session)
-            ->where('kriteria_komponen.penilaian_di', 'bukti')
-            ->count();
-    }
-
-    /**
      * Hitung jumlah kriteria komponen yang telah dinilai
      * Berdasarkan role: OPD = penilaian mandiri, Verifikator = verifikasi, Penjamin = penjaminan, Penilai = evaluasi
      */
@@ -145,6 +116,20 @@ class Dashboard extends Component
         }
 
         return $count;
+    }
+
+    /**
+     * Hitung total kriteria komponen dengan penilaian_di = 'kriteria'
+     */
+    #[Computed]
+    public function totalKriteriaKomponenDiKriteria()
+    {
+        return DB::table('kriteria_komponen')
+            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+            ->where('komponen.tahun_id', $this->tahun_session)
+            ->where('kriteria_komponen.penilaian_di', 'kriteria')
+            ->count();
     }
 
     /**
@@ -210,5 +195,20 @@ class Dashboard extends Component
         }
 
         return $count;
+    }
+
+    /**
+     * Hitung total bukti dukung dengan penilaian_di = 'bukti'
+     */
+    #[Computed]
+    public function totalBuktiDukungDiBukti()
+    {
+        return DB::table('bukti_dukung')
+            ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+            ->where('komponen.tahun_id', $this->tahun_session)
+            ->where('kriteria_komponen.penilaian_di', 'bukti')
+            ->count();
     }
 }

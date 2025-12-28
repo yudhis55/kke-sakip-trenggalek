@@ -49,6 +49,7 @@ class LembarKerja extends Component
     public $file_bukti_dukung = [];
     public $keterangan_upload = '';
     public $is_perubahan = false;
+    public $ganti_semua_dokumen = false;
     public $is_final = false;
 
     // Penilaian properties
@@ -113,6 +114,7 @@ class LembarKerja extends Component
         $this->tingkatan_nilai_id = null;
         $this->catatan_penilaian = '';
         $this->is_editing_penilaian = false;
+        $this->is_final = false;
 
         // Reset verifikasi form
         $this->is_verified = null;
@@ -121,9 +123,34 @@ class LembarKerja extends Component
         // Reset file upload
         $this->file_bukti_dukung = [];
         $this->keterangan_upload = '';
+        $this->is_perubahan = false;
+        $this->ganti_semua_dokumen = false;
 
         // Dispatch event ke Alpine untuk reset tab
         $this->dispatch('filter-changed');
+    }
+
+    /**
+     * Reset form states after successful actions
+     * Keeps bukti_dukung_id intact so user stays on the same context
+     */
+    private function resetFormStates()
+    {
+        // Reset file upload states
+        $this->file_bukti_dukung = [];
+        $this->keterangan_upload = '';
+        $this->is_perubahan = false;
+        $this->ganti_semua_dokumen = false;
+
+        // Reset penilaian states
+        $this->tingkatan_nilai_id = null;
+        $this->catatan_penilaian = '';
+        $this->is_editing_penilaian = false;
+        $this->is_final = false;
+
+        // Reset verifikasi states
+        $this->is_verified = null;
+        $this->keterangan_verifikasi = '';
     }
 
     public function resetBuktiDukungId()
@@ -773,15 +800,29 @@ class LembarKerja extends Component
                 'is_perubahan' => $this->is_perubahan,
             ]);
         } else {
-            // Gabungkan dengan file lama
-            $oldFiles = $penilaian->link_file ?? [];
+            // Jika ganti_semua_dokumen dicentang, hapus file lama dari storage
+            if ($this->ganti_semua_dokumen) {
+                $oldFiles = $penilaian->link_file ?? [];
+                if (is_array($oldFiles)) {
+                    foreach ($oldFiles as $oldFile) {
+                        if (isset($oldFile['path'])) {
+                            Storage::disk('public')->delete($oldFile['path']);
+                        }
+                    }
+                }
+                // Ganti dengan file baru saja
+                $mergedFiles = $uploadedFiles;
+            } else {
+                // Gabungkan dengan file lama
+                $oldFiles = $penilaian->link_file ?? [];
 
-            // Pastikan $oldFiles adalah array (handle jika data lama masih string)
-            if (!is_array($oldFiles)) {
-                $oldFiles = [];
+                // Pastikan $oldFiles adalah array (handle jika data lama masih string)
+                if (!is_array($oldFiles)) {
+                    $oldFiles = [];
+                }
+
+                $mergedFiles = array_merge($oldFiles, $uploadedFiles);
             }
-
-            $mergedFiles = array_merge($oldFiles, $uploadedFiles);
 
             $penilaian->update([
                 'link_file' => $mergedFiles,
@@ -805,9 +846,8 @@ class LembarKerja extends Component
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil diupload.');
 
-        $this->file_bukti_dukung = [];
-        $this->keterangan_upload = '';
-        $this->is_perubahan = false;
+        // Reset all form states after successful upload
+        $this->resetFormStates();
     }
 
     /**
@@ -834,6 +874,9 @@ class LembarKerja extends Component
 
         $isPerubahan = $existingPenilaian !== null;
 
+        // Update/create penilaian
+        // Keterangan tidak di-update di sini, karena keterangan hanya dari upload dokumen
+        // Ini untuk preserve keterangan yang sudah ada dari proses upload
         $penilaian = Penilaian::updateOrCreate(
             [
                 'kriteria_komponen_id' => $this->kriteria_komponen_session,
@@ -843,7 +886,6 @@ class LembarKerja extends Component
             ],
             [
                 'tingkatan_nilai_id' => $this->tingkatan_nilai_id,
-                'keterangan' => $this->catatan_penilaian,
                 'is_final' => $this->is_final,
             ]
         );
@@ -857,14 +899,76 @@ class LembarKerja extends Component
             buktiDukungId: $buktiDukungId,
             tingkatanNilaiId: $this->tingkatan_nilai_id,
             isVerified: null,
-            keterangan: $this->catatan_penilaian,
+            keterangan: $isPerubahan ? 'Update penilaian' : 'Penilaian awal',
             isPerubahan: $isPerubahan
         );
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Penilaian berhasil disimpan.');
 
+        // Reset penilaian form states
         $this->tingkatan_nilai_id = null;
         $this->catatan_penilaian = '';
+        $this->is_editing_penilaian = false;
+        $this->is_final = false;
+    }
+
+    /**
+     * Hapus nilai penilaian (set tingkatan_nilai_id ke null)
+     * Keterangan dari upload dokumen tetap tersimpan
+     */
+    public function hapusNilai()
+    {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
+        $jenis = Auth::user()->role->jenis;
+        $roleId = Auth::user()->role_id;
+
+        $buktiDukungId = $this->penilaianDiKriteria ? null : $this->bukti_dukung_id;
+
+        // Cari penilaian existing
+        $penilaian = Penilaian::where([
+            'kriteria_komponen_id' => $this->kriteria_komponen_session,
+            'bukti_dukung_id' => $buktiDukungId,
+            'opd_id' => $this->opd_session,
+            'role_id' => $roleId,
+        ])->first();
+
+        if (!$penilaian || !$penilaian->tingkatan_nilai_id) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Tidak ada nilai yang dapat dihapus.');
+            return;
+        }
+
+        $oldTingkatanNilaiId = $penilaian->tingkatan_nilai_id;
+
+        // Hapus nilai penilaian (set ke null), keterangan tetap tersimpan
+        $penilaian->update([
+            'tingkatan_nilai_id' => null,
+            'is_final' => false,
+        ]);
+
+        // Record history
+        $penilaian->recordHistory(
+            userId: Auth::id(),
+            roleId: $roleId,
+            opdId: $this->opd_session,
+            kriteriaKomponenId: $this->kriteria_komponen_session,
+            buktiDukungId: $buktiDukungId,
+            tingkatanNilaiId: null,
+            isVerified: null,
+            keterangan: 'Menghapus penilaian',
+            isPerubahan: true
+        );
+
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Nilai penilaian berhasil dihapus.');
+
+        // Reset form states
+        $this->tingkatan_nilai_id = null;
+        $this->is_editing_penilaian = false;
         $this->is_final = false;
     }
 
@@ -921,6 +1025,7 @@ class LembarKerja extends Component
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Verifikasi berhasil disimpan.');
 
+        // Reset verifikasi form states
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
     }
@@ -960,27 +1065,29 @@ class LembarKerja extends Component
                 }
             }
 
-            // Update record - hapus link_file dan reset data upload
+            // Update record - hapus link_file, reset data upload, dan hapus nilai penilaian
             $penilaian->update([
                 'link_file' => null,
                 'is_perubahan' => false,
                 'keterangan' => null,
+                'tingkatan_nilai_id' => null,  // Reset nilai penilaian juga
+                'is_final' => false,
             ]);
 
-            // Record history - Hapus dokumen
+            // Record history - Hapus dokumen dan nilai
             $penilaian->recordHistory(
                 userId: Auth::id(),
                 roleId: Auth::user()->role_id,
                 opdId: $this->opd_session,
                 kriteriaKomponenId: $this->kriteria_komponen_session,
                 buktiDukungId: $this->bukti_dukung_id,
-                tingkatanNilaiId: $penilaian->tingkatan_nilai_id,
+                tingkatanNilaiId: null,
                 isVerified: $penilaian->is_verified,
-                keterangan: 'Menghapus semua file bukti dukung',
+                keterangan: 'Menghapus semua file bukti dukung dan penilaian',
                 isPerubahan: true
             );
 
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File bukti dukung berhasil dihapus.');
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File bukti dukung dan penilaian berhasil dihapus.');
         } else {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
         }
@@ -1083,6 +1190,7 @@ class LembarKerja extends Component
     /**
      * Get history penilaian untuk ditampilkan di tabel
      */
+    #[Computed]
     public function getHistoryPenilaian()
     {
         if (!$this->kriteria_komponen_session || !$this->opd_session) {

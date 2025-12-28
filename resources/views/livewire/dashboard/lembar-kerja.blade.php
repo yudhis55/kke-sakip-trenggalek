@@ -195,7 +195,7 @@
                                         <select wire:model.live="kriteria_komponen_session"
                                             wire:change="$dispatch('filter-changed')" class="form-select"
                                             id="inputGroupSelect01">
-                                            <option selected>Pilih kriteria komponen...</option>
+                                            <option value="" selected>Pilih kriteria komponen...</option>
                                             @foreach ($this->kriteriaKomponenList() as $kriteriaKomponen)
                                                 <option value="{{ $kriteriaKomponen->id }}">
                                                     {{ $kriteriaKomponen->nama }}
@@ -221,7 +221,7 @@
                 </div>
             </div>
 
-            @if ($kriteria_komponen_session == [])
+            @if (!$kriteria_komponen_session)
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -270,33 +270,58 @@
                                                     <th scope="col" style="width: 5%">No.</th>
                                                     <th scope="col"
                                                         style="width: {{ $isKriteriaLevel ? '35%' : '50%' }}">
-                                                        @if ($isKomponenLevel && !$komponen_session)
+                                                        @if ($isKomponenLevel)
                                                             Komponen
-                                                        @elseif ($isKomponenLevel)
-                                                            Sub Komponen
                                                         @elseif ($isSubKomponenLevel)
+                                                            Sub Komponen
+                                                        @elseif ($isKriteriaLevel)
                                                             Kriteria Komponen
-                                                        @else
-                                                            Bukti Dukung
                                                         @endif
                                                     </th>
                                                     <th scope="col" style="width: 8%">Bobot</th>
 
-                                                    {{-- Kolom penilaian HANYA untuk kriteria level --}}
+                                                    {{-- Kolom Penilaian Di (HANYA untuk kriteria level) --}}
                                                     @if ($isKriteriaLevel)
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
-                                                            <th scope="col" style="width: 10%">Penilaian<br>Mandiri
-                                                            </th>
-                                                        @endif
+                                                        <th scope="col" style="width: 8%">Penilaian<br>Di</th>
+                                                    @endif
 
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
-                                                            <th scope="col" style="width: 10%">
-                                                                Penjaminan<br>Kualitas</th>
-                                                        @endif
+                                                    {{-- Kolom untuk semua level --}}
+                                                    {{-- Penilaian Mandiri (semua role bisa lihat) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
+                                                        <th scope="col" style="width: 10%">Penilaian<br>Mandiri
+                                                        </th>
+                                                    @endif
 
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
-                                                            <th scope="col" style="width: 10%">Evaluator</th>
-                                                        @endif
+                                                    @php
+                                                        // Cek apakah ada item dengan penilaian_di = 'kriteria' untuk menampilkan kolom verifikasi
+                                                        $showVerifikasiKolom =
+                                                            $isKriteriaLevel &&
+                                                            $this->lembarKerjaList()->contains(
+                                                                fn($item) => $item->penilaian_di === 'kriteria',
+                                                            );
+                                                    @endphp
+
+                                                    {{-- Verifikasi Verifikator (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
+                                                    @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
+                                                        <th scope="col" style="width: 8%">Verifikasi<br>Verifikator
+                                                        </th>
+                                                    @endif
+
+                                                    {{-- Verifikasi Penjamin (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
+                                                    @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                        <th scope="col" style="width: 8%">Verifikasi<br>Penjamin
+                                                        </th>
+                                                    @endif
+
+                                                    {{-- Penjaminan Kualitas (nilai dari penjamin) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                        <th scope="col" style="width: 10%">Penjaminan<br>Kualitas
+                                                        </th>
+                                                    @endif
+
+                                                    {{-- Evaluator (nilai dari penilai) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
+                                                        <th scope="col" style="width: 10%">Evaluator</th>
                                                     @endif
 
                                                     <th scope="col" style="width: 5%"></th>
@@ -311,12 +336,44 @@
                                         <tbody>
                                             @php
                                                 $totalNilaiOpd = 0;
+                                                $totalNilaiVerifikator = 0;
                                                 $totalNilaiPenjamin = 0;
                                                 $totalNilaiPenilai = 0;
+
+                                                // Role IDs untuk perhitungan nilai
+                                                $opdRoleId = \App\Models\Role::where('jenis', 'opd')->first()?->id;
+                                                $verifikatorRoleId = \App\Models\Role::where(
+                                                    'jenis',
+                                                    'verifikator',
+                                                )->first()?->id;
+                                                $penjaminRoleId = \App\Models\Role::where('jenis', 'penjamin')->first()
+                                                    ?->id;
+                                                $penilaiRoleId = \App\Models\Role::where('jenis', 'penilai')->first()
+                                                    ?->id;
                                             @endphp
                                             @forelse ($this->lembarKerjaList() as $index => $lembar_kerja)
                                                 @php
-                                                    // Default: Komponen
+                                                    // Hitung nilai untuk semua level
+                                                    $nilaiOpd = $lembar_kerja->getNilai($this->opd_session, $opdRoleId);
+                                                    $nilaiVerifikator = $lembar_kerja->getNilai(
+                                                        $this->opd_session,
+                                                        $verifikatorRoleId,
+                                                    );
+                                                    $nilaiPenjamin = $lembar_kerja->getNilai(
+                                                        $this->opd_session,
+                                                        $penjaminRoleId,
+                                                    );
+                                                    $nilaiPenilai = $lembar_kerja->getNilai(
+                                                        $this->opd_session,
+                                                        $penilaiRoleId,
+                                                    );
+
+                                                    $totalNilaiOpd += $nilaiOpd;
+                                                    $totalNilaiVerifikator += $nilaiVerifikator;
+                                                    $totalNilaiPenjamin += $nilaiPenjamin;
+                                                    $totalNilaiPenilai += $nilaiPenilai;
+
+                                                    // Info dan metadata per level
                                                     if ($isKomponenLevel && !$komponen_session) {
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'komponen');
                                                         $jumlahSubKomponen = $lembar_kerja->sub_komponen()->count();
@@ -347,42 +404,11 @@
                                                         $bobotKriteria = $lembar_kerja->bobot ?? 0;
                                                     } elseif ($isSubKomponenLevel) {
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
+                                                        $jumlahKriteria = $lembar_kerja->kriteria_komponen()->count();
                                                         $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
-                                                        $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                        $infoText = "Jumlah kriteria: {$jumlahKriteria} | Jumlah bukti dukung: {$jumlahBuktiDukung}";
                                                         $bobotKriteria = $lembar_kerja->bobot ?? 0;
                                                     } else {
-                                                        // Kriteria level
-                                                        if ($isKriteriaLevel) {
-                                                            $opdRoleId = \App\Models\Role::where(
-                                                                'jenis',
-                                                                'opd',
-                                                            )->first()?->id;
-                                                            $penjaminRoleId = \App\Models\Role::where(
-                                                                'jenis',
-                                                                'penjamin',
-                                                            )->first()?->id;
-                                                            $penilaiRoleId = \App\Models\Role::where(
-                                                                'jenis',
-                                                                'penilai',
-                                                            )->first()?->id;
-
-                                                            $nilaiOpd = $lembar_kerja->getNilai(
-                                                                $this->opd_session,
-                                                                $opdRoleId,
-                                                            );
-                                                            $nilaiPenjamin = $lembar_kerja->getNilai(
-                                                                $this->opd_session,
-                                                                $penjaminRoleId,
-                                                            );
-                                                            $nilaiPenilai = $lembar_kerja->getNilai(
-                                                                $this->opd_session,
-                                                                $penilaiRoleId,
-                                                            );
-
-                                                            $totalNilaiOpd += $nilaiOpd;
-                                                            $totalNilaiPenjamin += $nilaiPenjamin;
-                                                            $totalNilaiPenilai += $nilaiPenilai;
-                                                        }
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
                                                         $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
                                                         $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
@@ -436,28 +462,110 @@
                                                         <span>{{ number_format($bobotKriteria, 2) }}%</span>
                                                     </td>
 
-                                                    {{-- Kolom Penilaian HANYA untuk kriteria level --}}
+                                                    {{-- Kolom Penilaian Di (HANYA untuk kriteria level) --}}
                                                     @if ($isKriteriaLevel)
-                                                        {{-- Kolom Penilaian Mandiri --}}
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
-                                                            <td>
-                                                                {{ $nilaiOpd > 0 ? number_format($nilaiOpd, 2) . '%' : '-' }}
-                                                            </td>
-                                                        @endif
+                                                        <td>
+                                                            @if ($lembar_kerja->penilaian_di === 'kriteria')
+                                                                <span>Kriteria</span>
+                                                            @else
+                                                                <span>Bukti</span>
+                                                            @endif
+                                                        </td>
+                                                    @endif
 
-                                                        {{-- Kolom Penjaminan Kualitas --}}
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
-                                                            <td>
-                                                                {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) . '%' : '-' }}
-                                                            </td>
-                                                        @endif
+                                                    {{-- Kolom Penilaian Mandiri (semua level) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
+                                                        <td>
+                                                            {{ $nilaiOpd > 0 ? number_format($nilaiOpd, 2) . '%' : '-' }}
+                                                        </td>
+                                                    @endif
 
-                                                        {{-- Kolom Evaluator --}}
-                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
-                                                            <td>
-                                                                {{ $nilaiPenilai > 0 ? number_format($nilaiPenilai, 2) . '%' : '-' }}
-                                                            </td>
-                                                        @endif
+                                                    {{-- Kolom Verifikasi Verifikator (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
+                                                    @if (
+                                                        $isKriteriaLevel &&
+                                                            in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']) &&
+                                                            ($showVerifikasiKolom ?? false))
+                                                        <td>
+                                                            @if ($lembar_kerja->penilaian_di === 'kriteria')
+                                                                @php
+                                                                    $verifikatorRoleId = \App\Models\Role::where(
+                                                                        'jenis',
+                                                                        'verifikator',
+                                                                    )->first()?->id;
+                                                                    $isVerifiedByVerifikator = \App\Models\Penilaian::where(
+                                                                        'opd_id',
+                                                                        $this->opd_session,
+                                                                    )
+                                                                        ->where(
+                                                                            'kriteria_komponen_id',
+                                                                            $lembar_kerja->id,
+                                                                        )
+                                                                        ->where('role_id', $verifikatorRoleId)
+                                                                        ->where('is_verified', true)
+                                                                        ->exists();
+                                                                @endphp
+                                                                @if ($isVerifiedByVerifikator)
+                                                                    <i
+                                                                        class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                                @else
+                                                                    <span class="text-muted">-</span>
+                                                                @endif
+                                                            @else
+                                                                <small class="text-muted fst-italic">di bukti
+                                                                    dukung</small>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+
+                                                    {{-- Kolom Verifikasi Penjamin (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
+                                                    @if (
+                                                        $isKriteriaLevel &&
+                                                            in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']) &&
+                                                            ($showVerifikasiKolom ?? false))
+                                                        <td>
+                                                            @if ($lembar_kerja->penilaian_di === 'kriteria')
+                                                                @php
+                                                                    $penjaminRoleId = \App\Models\Role::where(
+                                                                        'jenis',
+                                                                        'penjamin',
+                                                                    )->first()?->id;
+                                                                    $isVerifiedByPenjamin = \App\Models\Penilaian::where(
+                                                                        'opd_id',
+                                                                        $this->opd_session,
+                                                                    )
+                                                                        ->where(
+                                                                            'kriteria_komponen_id',
+                                                                            $lembar_kerja->id,
+                                                                        )
+                                                                        ->where('role_id', $penjaminRoleId)
+                                                                        ->where('is_verified', true)
+                                                                        ->exists();
+                                                                @endphp
+                                                                @if ($isVerifiedByPenjamin)
+                                                                    <i
+                                                                        class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                                @else
+                                                                    <span class="text-muted">-</span>
+                                                                @endif
+                                                            @else
+                                                                <small class="text-muted fst-italic">di bukti
+                                                                    dukung</small>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+
+                                                    {{-- Kolom Penjaminan Kualitas (nilai dari penjamin - semua level) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                        <td>
+                                                            {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) : '-' }}
+                                                        </td>
+                                                    @endif
+
+                                                    {{-- Kolom Evaluator (nilai dari penilai - semua level) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
+                                                        <td>
+                                                            {{ $nilaiPenilai > 0 ? number_format($nilaiPenilai, 2) : '-' }}
+                                                        </td>
                                                     @endif
 
                                                     <td>
@@ -523,34 +631,55 @@
                                                 </tr>
                                             @endforelse
                                         </tbody>
-                                        @if ($this->lembarKerjaList() != [] && $isKriteriaLevel)
-                                            {{-- Footer HANYA untuk kriteria level --}}
+                                        @if ($this->lembarKerjaList() != [])
+                                            {{-- Footer untuk semua level (Komponen, Sub Komponen, Kriteria) --}}
                                             <tfoot class="table-light">
                                                 <tr>
-                                                    <td colspan="3" class="text-end"><strong>JUMLAH:</strong></td>
+                                                    <td colspan="{{ $isKriteriaLevel ? '4' : '3' }}"
+                                                        class="text-end"><strong>JUMLAH:</strong></td>
 
+                                                    {{-- Penilaian Mandiri --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
                                                         <td>
                                                             <strong>{{ number_format($totalNilaiOpd, 2) }}%</strong>
                                                         </td>
                                                     @endif
 
-                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
+                                                    {{-- Verifikasi Verifikator (kosong, tidak ada total) - HANYA kriteria level --}}
+                                                    @if (
+                                                        $isKriteriaLevel &&
+                                                            ($showVerifikasiKolom ?? false) &&
+                                                            in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
+                                                        <td></td>
+                                                    @endif
+
+                                                    {{-- Verifikasi Penjamin (kosong, tidak ada total) - HANYA kriteria level --}}
+                                                    @if (
+                                                        $isKriteriaLevel &&
+                                                            ($showVerifikasiKolom ?? false) &&
+                                                            in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                        <td></td>
+                                                    @endif
+
+                                                    {{-- Penjaminan Kualitas --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                         <td>
                                                             <strong>{{ number_format($totalNilaiPenjamin, 2) }}%</strong>
                                                         </td>
                                                     @endif
 
+                                                    {{-- Evaluator --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
                                                         <td>
                                                             <strong>{{ number_format($totalNilaiPenilai, 2) }}%</strong>
                                                         </td>
                                                     @endif
 
+                                                    {{-- Kolom Aksi: kosong --}}
                                                     <td></td>
 
-                                                    {{-- Kolom Tracking: kosong --}}
-                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']))
+                                                    {{-- Kolom Tracking: kosong (HANYA kriteria level) --}}
+                                                    @if ($isKriteriaLevel && in_array(Auth::user()->role->jenis, ['admin', 'opd']))
                                                         <td></td>
                                                     @endif
                                                 </tr>
@@ -564,7 +693,9 @@
                         </div>
                     </div>
                 </div>
-            @else
+            @endif
+
+            @if ($kriteria_komponen_session)
                 <div x-show="tab == 'bukti_dukung'" class="row" wire:key="bukti-dukung-tab">
                     <div class="col-12">
                         <div class="card">
@@ -639,12 +770,12 @@
                                 @endif
 
                                 <!-- Buttons with Label -->
-                                {{-- <div class="flex-shrink-0" style="min-width: 110px;">
+                                <div class="flex-shrink-0" style="min-width: 110px;">
                                     <button wire:click="navigateBack" type="button"
                                         class="btn btn-sm btn-soft-primary btn-label waves-effect waves-light"><i
                                             class=" ri-arrow-go-back-line label-icon align-middle fs-16 me-2"></i>
                                         Kembali</button>
-                                </div> --}}
+                                </div>
                             </div>
                             <div class="card-body">
                                 @if ($this->kriteriaKomponen)
@@ -668,11 +799,17 @@
                                                                 </th>
                                                             @endif
 
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']))
-                                                                <th scope="col" style="width: 8%;">Verval</th>
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
+                                                                <th scope="col" style="width: 8%;">
+                                                                    Verifikasi<br>Verifikator</th>
                                                             @endif
 
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                                <th scope="col" style="width: 8%;">
+                                                                    Verifikasi<br>Penjamin</th>
+                                                            @endif
+
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                 <th scope="col" style="width: 10%;">Penjaminan
                                                                     <br>Kualitas
                                                                 </th>
@@ -782,55 +919,37 @@
                                                                     </td>
                                                                 @endif
 
-                                                                {{-- Kolom Verval (Status) --}}
-                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']))
+                                                                {{-- Kolom Verifikasi Verifikator --}}
+                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
                                                                     <td>
-                                                                        @if ($bukti_dukung->penilaian_verifikator)
-                                                                            @if ($bukti_dukung->penilaian_verifikator->is_verified === true)
-                                                                                <button
-                                                                                    class="btn btn-sm btn-soft-success btn-icon"
-                                                                                    title="Terverifikasi">
-                                                                                    <i
-                                                                                        class="ri-check-fill fw-bold"></i>
-                                                                                </button>
-                                                                            @elseif ($bukti_dukung->penilaian_verifikator->is_verified === false)
-                                                                                <button
-                                                                                    class="btn btn-sm btn-soft-danger btn-icon"
-                                                                                    title="Ditolak">
-                                                                                    <i
-                                                                                        class="ri-close-fill fw-bold"></i>
-                                                                                </button>
-                                                                            @endif
+                                                                        @if ($bukti_dukung->penilaian_verifikator && $bukti_dukung->penilaian_verifikator->is_verified === true)
+                                                                            <i
+                                                                                class="ri-checkbox-circle-fill text-success fs-18"></i>
                                                                         @else
                                                                             <span class="text-muted">-</span>
                                                                         @endif
                                                                     </td>
                                                                 @endif
 
-                                                                {{-- Kolom Penjaminan Kualitas (Nilai) --}}
-                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
+                                                                {{-- Kolom Verifikasi Penjamin --}}
+                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                     <td>
-                                                                        @if ($bukti_dukung->penilaian_penjamin)
-                                                                            @if ($bukti_dukung->penilaian_penjamin->tingkatan_nilai)
-                                                                                <span>
-                                                                                    {{ number_format($nilaiPenjamin, 2) }}%
-                                                                                </span>
-                                                                            @endif
-                                                                            @if ($bukti_dukung->penilaian_penjamin->is_verified === true)
-                                                                                <button
-                                                                                    class="btn btn-sm btn-soft-success btn-icon ms-1"
-                                                                                    title="Terverifikasi">
-                                                                                    <i
-                                                                                        class="ri-check-fill fw-bold"></i>
-                                                                                </button>
-                                                                            @elseif ($bukti_dukung->penilaian_penjamin->is_verified === false)
-                                                                                <button
-                                                                                    class="btn btn-sm btn-soft-danger btn-icon ms-1"
-                                                                                    title="Ditolak">
-                                                                                    <i
-                                                                                        class="ri-close-fill fw-bold"></i>
-                                                                                </button>
-                                                                            @endif
+                                                                        @if ($bukti_dukung->penilaian_penjamin && $bukti_dukung->penilaian_penjamin->is_verified === true)
+                                                                            <i
+                                                                                class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                @endif
+
+                                                                {{-- Kolom Penjaminan Kualitas (Nilai saja) --}}
+                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                                    <td>
+                                                                        @if ($bukti_dukung->penilaian_penjamin && $bukti_dukung->penilaian_penjamin->tingkatan_nilai)
+                                                                            <span>
+                                                                                {{ number_format($nilaiPenjamin, 2) }}%
+                                                                            </span>
                                                                         @else
                                                                             <span class="text-muted">-</span>
                                                                         @endif
@@ -920,26 +1039,31 @@
                                                                 <strong>JUMLAH:</strong>
                                                             </td>
 
-                                                            {{-- Penilaian Mandiri (untuk semua role) --}}
+                                                            {{-- Penilaian Mandiri --}}
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'opd', 'verifikator', 'penjamin', 'penilai']))
                                                                 <td>
                                                                     <strong>{{ number_format($totalNilaiOpd, 2) }}%</strong>
                                                                 </td>
                                                             @endif
 
-                                                            {{-- Verval Status (kosong, tidak ada total) --}}
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']))
+                                                            {{-- Verifikasi Verifikator (kosong, tidak ada total) --}}
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
                                                                 <td></td>
                                                             @endif
 
-                                                            {{-- Penjaminan Kualitas Nilai --}}
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin']))
+                                                            {{-- Verifikasi Penjamin (kosong, tidak ada total) --}}
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                                <td></td>
+                                                            @endif
+
+                                                            {{-- Penjaminan Kualitas --}}
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                 <td>
                                                                     <strong>{{ number_format($totalNilaiPenjamin, 2) }}%</strong>
                                                                 </td>
                                                             @endif
 
-                                                            {{-- Evaluator Nilai --}}
+                                                            {{-- Evaluator --}}
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
                                                                 <td>
                                                                     <strong>{{ number_format($totalNilaiPenilai, 2) }}%</strong>
@@ -949,7 +1073,7 @@
                                                             {{-- Kolom Aksi: kosong --}}
                                                             <td></td>
 
-                                                            {{-- Kolom Tracking: kosong, hanya untuk mode bukti --}}
+                                                            {{-- Kolom Tracking: kosong --}}
                                                             @if (!$this->penilaianDiKriteria && in_array(Auth::user()->role->jenis, ['admin', 'opd']))
                                                                 <td></td>
                                                             @endif
@@ -961,17 +1085,14 @@
                                         </div>
                                         <!-- end table responsive -->
                                     </div>
-                                @else
-                                    <div class="alert alert-warning text-center">
-                                        <i class="ri-alert-line fs-3"></i>
-                                        <p class="mb-0">Silakan pilih kriteria komponen terlebih dahulu.</p>
-                                    </div>
                                 @endif
                             </div>
                         </div>
                     </div>
                 </div>
+            @endif
 
+            @if ($kriteria_komponen_session)
                 <div x-show="tab == 'penilaian'" class="row" wire:key="penilaian-tab">
                     <div class="col-12">
                         <div class="card">
@@ -1048,19 +1169,6 @@
                                                         class="ri-upload-line me-1 align-middle"></i>Unggah</a>
                                             @endif
 
-                                            {{-- Menu Penilaian: Validasi upload bukti dukung --}}
-                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd', 'penjamin']) && $this->dalamRentangAkses)
-                                                @php $canDoPenilaian = $this->canDoPenilaian; @endphp
-                                                <a @click="@if ($canDoPenilaian['allowed']) menu = 'penilaian' @endif"
-                                                    :class="menu === 'penilaian' ? 'active' : ''"
-                                                    href="javascript:void(0)"
-                                                    class="nav-link mb-2 {{ !$canDoPenilaian['allowed'] ? 'disabled' : '' }}"
-                                                    style="{{ !$canDoPenilaian['allowed'] ? 'cursor: not-allowed; opacity: 0.5;' : '' }}"
-                                                    title="{{ !$canDoPenilaian['allowed'] ? $canDoPenilaian['message'] : '' }}">
-                                                    <i class="ri-file-edit-line me-1 align-middle"></i>Penilaian
-                                                </a>
-                                            @endif
-
                                             {{-- Menu Verifikasi: Validasi upload bukti dukung --}}
                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']) && $this->dalamRentangAkses)
                                                 @php $canDoPenilaian = $this->canDoPenilaian; @endphp
@@ -1071,6 +1179,19 @@
                                                     style="{{ !$canDoPenilaian['allowed'] ? 'cursor: not-allowed; opacity: 0.5;' : '' }}"
                                                     title="{{ !$canDoPenilaian['allowed'] ? $canDoPenilaian['message'] : '' }}">
                                                     <i class="ri-check-double-line me-1 align-middle"></i>Verifikasi
+                                                </a>
+                                            @endif
+
+                                            {{-- Menu Penilaian: Validasi upload bukti dukung --}}
+                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd', 'penjamin']) && $this->dalamRentangAkses)
+                                                @php $canDoPenilaian = $this->canDoPenilaian; @endphp
+                                                <a @click="@if ($canDoPenilaian['allowed']) menu = 'penilaian' @endif"
+                                                    :class="menu === 'penilaian' ? 'active' : ''"
+                                                    href="javascript:void(0)"
+                                                    class="nav-link mb-2 {{ !$canDoPenilaian['allowed'] ? 'disabled' : '' }}"
+                                                    style="{{ !$canDoPenilaian['allowed'] ? 'cursor: not-allowed; opacity: 0.5;' : '' }}"
+                                                    title="{{ !$canDoPenilaian['allowed'] ? $canDoPenilaian['message'] : '' }}">
+                                                    <i class="ri-file-edit-line me-1 align-middle"></i>Penilaian
                                                 </a>
                                             @endif
 
@@ -1401,9 +1522,10 @@
                                                                 </div>
                                                                 @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
                                                                     <button wire:click="deleteFileBuktiDukung"
-                                                                        onclick="return confirm('Yakin ingin menghapus file ini?')"
+                                                                        wire:confirm="Yakin ingin menghapus semua dokumen? Tindakan ini tidak dapat dibatalkan."
                                                                         class="btn btn-sm btn-danger">
                                                                         <i class="ri-delete-bin-line me-1"></i>Hapus
+                                                                        Dokumen
                                                                     </button>
                                                                 @endif
                                                             </div>
@@ -1558,7 +1680,7 @@
                                                         </div>
                                                     @else
                                                         <div class="mb-3">
-                                                            @if ($this->penilaianTersimpan && !$is_editing_penilaian)
+                                                            @if ($this->penilaianTersimpan && $this->penilaianTersimpan->tingkatan_nilai_id && !$is_editing_penilaian)
                                                                 {{-- Preview Mode: Tampilkan nilai tersimpan --}}
                                                                 <div class="card border-success">
                                                                     <div class="card-body">
@@ -1569,11 +1691,21 @@
                                                                                     class="ri-checkbox-circle-fill text-success me-2"></i>
                                                                                 Penilaian Tersimpan
                                                                             </h5>
-                                                                            <button wire:click="editPenilaian"
-                                                                                class="btn btn-sm btn-warning">
-                                                                                <i class="ri-edit-line me-1"></i>Ubah
-                                                                                Penilaian
-                                                                            </button>
+                                                                            <div>
+                                                                                <button wire:click="editPenilaian"
+                                                                                    class="btn btn-sm btn-warning me-1">
+                                                                                    <i
+                                                                                        class="ri-edit-line me-1"></i>Ubah
+                                                                                </button>
+                                                                                @if ($this->dalamRentangAkses)
+                                                                                    <button wire:click="hapusNilai"
+                                                                                        wire:confirm="Yakin ingin menghapus nilai penilaian? Keterangan dari upload dokumen akan tetap tersimpan."
+                                                                                        class="btn btn-sm btn-danger">
+                                                                                        <i
+                                                                                            class="ri-delete-bin-line me-1"></i>Hapus
+                                                                                    </button>
+                                                                                @endif
+                                                                            </div>
                                                                         </div>
 
                                                                         <div class="row align-items-center">
@@ -1597,6 +1729,12 @@
                                                                                     <p class="text-muted mb-1">
                                                                                         <strong>Deskripsi:</strong>
                                                                                         {{ $this->penilaianTersimpan->tingkatan_nilai->deskripsi }}
+                                                                                    </p>
+                                                                                @endif
+                                                                                @if ($this->penilaianTersimpan->keterangan)
+                                                                                    <p class="text-muted mb-1">
+                                                                                        <strong>Keterangan:</strong>
+                                                                                        {{ $this->penilaianTersimpan->keterangan }}
                                                                                     </p>
                                                                                 @endif
                                                                                 <p class="text-muted small mb-0">
@@ -1847,7 +1985,7 @@
                                             <div x-show="menu === 'history'" aria-labelledby="v-pills-history-tab">
                                                 <div>
                                                     @php
-                                                        $historyData = $this->getHistoryPenilaian();
+                                                        $historyData = $this->getHistoryPenilaian;
                                                     @endphp
 
                                                     @if ($historyData->isEmpty())
