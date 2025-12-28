@@ -2396,11 +2396,9 @@
                                                                                                         <i
                                                                                                             class="ri-check-line me-1"></i>Terverifikasi
                                                                                                     </span>
-                                                                                                    @elseif
-                                                                                                    ($verifikasi->role->nama == 'opd')
+                                                                                                    @elseif ($verifikasi->role->nama == 'opd')
                                                                                                     <span>-</span>
-                                                                                                    @elseif
-                                                                                                    ($verifikasi->is_verified == false)
+                                                                                                    @elseif ($verifikasi->is_verified == false)
                                                                                                     <span
                                                                                                         class="badge bg-danger">
                                                                                                         <i
@@ -2599,8 +2597,7 @@
                                                                                         <i
                                                                                             class="ri-check-line me-1"></i>Disetujui
                                                                                     </span>
-                                                                                    @elseif
-                                                                                    ($history->is_verified === false)
+                                                                                    @elseif ($history->is_verified === false)
                                                                                     <span class="badge bg-danger">
                                                                                         <i
                                                                                             class="ri-close-line me-1"></i>Ditolak
