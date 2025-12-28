@@ -31,6 +31,14 @@ class TahunDropdown extends Component
 
     public function updatedTahunSession()
     {
+        // Hapus semua session variables dari Livewire
+        session()->forget([
+            'opd_session',
+            'komponen_session',
+            'sub_komponen_session',
+            'kriteria_komponen_session',
+        ]);
+
         $currentRoute = Url::currentRoute();
 
         if (str_starts_with($currentRoute, 'lembar-kerja')) {

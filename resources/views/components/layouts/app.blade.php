@@ -218,13 +218,16 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a wire:current="active" class="nav-link menu-link" href="/monitoring" role="button"
-                                aria-expanded="false" aria-controls="sidebarLayouts">
-                                <i class="mdi mdi-chart-box-outline"></i> <span data-key="t-layouts">Monitoring</span>
-                            </a>
-                        </li>
-                        <!-- end Dashboard Menu -->
+                        @if (Auth::user()->role->jenis == 'admin')
+                            <li class="nav-item">
+                                <a wire:current="active" class="nav-link menu-link" href="/monitoring"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                    <i class="mdi mdi-chart-box-outline"></i> <span
+                                        data-key="t-layouts">Monitoring</span>
+                                </a>
+                            </li>
+                            <!-- end Dashboard Menu -->
+                        @endif
 
                         {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Pages</span>
                         </li> --}}

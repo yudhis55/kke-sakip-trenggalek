@@ -31,6 +31,8 @@ class LembarKerja extends Component
 
     protected $paginationTheme = 'bootstrap';
 
+    #[Session(key: 'tahun_session')]
+    public $tahun_session;
     #[Session(key: 'opd_session')]
     public $opd_session;
     #[Session(key: 'komponen_session')]
@@ -77,6 +79,16 @@ class LembarKerja extends Component
     public function updatedSearchOpd()
     {
         $this->resetPage();
+    }
+
+    public function updatedTahunSession()
+    {
+        // Reset semua session filter saat tahun diubah
+        $this->opd_session = null;
+        $this->komponen_session = null;
+        $this->sub_komponen_session = null;
+        $this->kriteria_komponen_session = null;
+        $this->bukti_dukung_id = null;
     }
 
     // Reset state saat filter berubah

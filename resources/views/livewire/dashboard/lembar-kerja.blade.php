@@ -81,16 +81,137 @@
                                 <table class="table align-middle table-nowrap mb-0">
                                     <thead class="table-light">
                                         <tr>
-                                            <th scope="col">No</th>
-                                            <th scope="col">OPD</th>
-                                            <th scope="col">Aksi</th>
+                                            <th scope="col" style="width: 5%">No</th>
+                                            <th scope="col" style="width: 50%">OPD</th>
+                                            <th scope="col" style="width: 15%">Progres Kriteria</th>
+                                            <th scope="col" style="width: 15%">Progres Bukti</th>
+                                            <th scope="col" style="width: 15%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        @php
+                                            $userRole = Auth::user()->role->jenis;
+                                            $roleId = Auth::user()->role->id;
+                                        @endphp
                                         @forelse ($this->opdList as $index => $opd)
+                                            @php
+                                                // Hitung total kriteria dengan penilaian_di='kriteria'
+                                                $totalKriteria = \DB::table('kriteria_komponen')
+                                                    ->where('tahun_id', $this->tahun_id)
+                                                    ->where('penilaian_di', 'kriteria')
+                                                    ->count();
+
+                                                // Hitung kriteria yang sudah dinilai/diverifikasi
+                                                $selesaiKriteria = \DB::table('kriteria_komponen')
+                                                    ->where('tahun_id', $this->tahun_id)
+                                                    ->where('penilaian_di', 'kriteria')
+                                                    ->whereExists(function ($query) use ($opd, $roleId, $userRole) {
+                                                        $query
+                                                            ->select(\DB::raw(1))
+                                                            ->from('penilaian')
+                                                            ->whereColumn(
+                                                                'penilaian.kriteria_komponen_id',
+                                                                'kriteria_komponen.id',
+                                                            )
+                                                            ->where('penilaian.opd_id', $opd->id)
+                                                            ->where('penilaian.role_id', $roleId)
+                                                            ->where(function ($q) use ($userRole) {
+                                                                if ($userRole == 'opd') {
+                                                                    $q->whereNotNull('tingkatan_nilai_id');
+                                                                } elseif ($userRole == 'verifikator') {
+                                                                    $q->whereNotNull('is_verified');
+                                                                } elseif ($userRole == 'penjamin') {
+                                                                    $q->whereNotNull('is_verified');
+                                                                } elseif ($userRole == 'penilai') {
+                                                                    $q->whereNotNull('tingkatan_nilai_id');
+                                                                }
+                                                            });
+                                                    })
+                                                    ->count();
+
+                                                // Hitung total bukti dari kriteria dengan penilaian_di='bukti'
+                                                $totalBukti = \DB::table('bukti_dukung')
+                                                    ->join(
+                                                        'kriteria_komponen',
+                                                        'bukti_dukung.kriteria_komponen_id',
+                                                        '=',
+                                                        'kriteria_komponen.id',
+                                                    )
+                                                    ->where('kriteria_komponen.tahun_id', $this->tahun_id)
+                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                    ->count();
+
+                                                // Hitung bukti yang sudah dinilai/diverifikasi
+                                                $selesaiBukti = \DB::table('bukti_dukung')
+                                                    ->join(
+                                                        'kriteria_komponen',
+                                                        'bukti_dukung.kriteria_komponen_id',
+                                                        '=',
+                                                        'kriteria_komponen.id',
+                                                    )
+                                                    ->where('kriteria_komponen.tahun_id', $this->tahun_id)
+                                                    ->where('kriteria_komponen.penilaian_di', 'bukti')
+                                                    ->whereExists(function ($query) use ($opd, $roleId, $userRole) {
+                                                        $query
+                                                            ->select(\DB::raw(1))
+                                                            ->from('penilaian')
+                                                            ->whereColumn(
+                                                                'penilaian.bukti_dukung_id',
+                                                                'bukti_dukung.id',
+                                                            )
+                                                            ->where('penilaian.opd_id', $opd->id)
+                                                            ->where('penilaian.role_id', $roleId)
+                                                            ->where(function ($q) use ($userRole) {
+                                                                if ($userRole == 'opd') {
+                                                                    $q->whereNotNull('tingkatan_nilai_id');
+                                                                } elseif ($userRole == 'verifikator') {
+                                                                    $q->whereNotNull('is_verified');
+                                                                } elseif ($userRole == 'penjamin') {
+                                                                    $q->whereNotNull('is_verified');
+                                                                } elseif ($userRole == 'penilai') {
+                                                                    $q->whereNotNull('tingkatan_nilai_id');
+                                                                }
+                                                            });
+                                                    })
+                                                    ->count();
+
+                                                // Hitung persentase
+                                                $persenKriteria =
+                                                    $totalKriteria > 0
+                                                        ? round(($selesaiKriteria / $totalKriteria) * 100)
+                                                        : 0;
+                                                $persenBukti =
+                                                    $totalBukti > 0 ? round(($selesaiBukti / $totalBukti) * 100) : 0;
+                                            @endphp
                                             <tr>
                                                 <td>{{ $this->opdList->firstItem() + $index }}</td>
                                                 <td>{{ $opd->nama }}</td>
+                                                <td>
+                                                    <div
+                                                        class="progress animated-progress custom-progress progress-label">
+                                                        <div class="progress-bar bg-success" role="progressbar"
+                                                            style="width: {{ $persenKriteria }}%"
+                                                            aria-valuenow="{{ $persenKriteria }}" aria-valuemin="0"
+                                                            aria-valuemax="100">
+                                                            <div class="label">{{ $persenKriteria }}%</div>
+                                                        </div>
+                                                    </div>
+                                                    <small
+                                                        class="text-muted">{{ $selesaiKriteria }}/{{ $totalKriteria }}</small>
+                                                </td>
+                                                <td>
+                                                    <div
+                                                        class="progress animated-progress custom-progress progress-label">
+                                                        <div class="progress-bar bg-info" role="progressbar"
+                                                            style="width: {{ $persenBukti }}%"
+                                                            aria-valuenow="{{ $persenBukti }}" aria-valuemin="0"
+                                                            aria-valuemax="100">
+                                                            <div class="label">{{ $persenBukti }}%</div>
+                                                        </div>
+                                                    </div>
+                                                    <small
+                                                        class="text-muted">{{ $selesaiBukti }}/{{ $totalBukti }}</small>
+                                                </td>
                                                 <td>
                                                     <a wire:click="selectOpd({{ $opd->id }})"
                                                         href="javascript:void(0);" class="btn btn-sm btn-primary">
@@ -100,7 +221,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="3" class="text-center">Tidak ada data OPD.</td>
+                                                <td colspan="5" class="text-center">Tidak ada data OPD.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -304,23 +425,53 @@
                                                             $this->lembarKerjaList()->contains(
                                                                 fn($item) => $item->penilaian_di === 'kriteria',
                                                             );
+
+                                                        // Ambil nama role verifikator dari komponen
+                                                        $verifikatorRoleName = 'Verifikator';
+                                                        if ($showVerifikasiKolom && $this->komponen_session) {
+                                                            $komponen = \App\Models\Komponen::with('role')->find(
+                                                                $this->komponen_session,
+                                                            );
+                                                            if (
+                                                                $komponen &&
+                                                                $komponen->role &&
+                                                                $komponen->role->jenis === 'verifikator'
+                                                            ) {
+                                                                $verifikatorRoleName = $komponen->role->nama;
+                                                            }
+                                                        }
                                                     @endphp
 
                                                     {{-- Verifikasi Verifikator (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
                                                     @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
-                                                        <th scope="col" style="width: 8%">Verifikasi<br>Verifikator
+                                                        <th scope="col" style="width: 8%">Verifikator<br>
+                                                            @switch($verifikatorRoleName)
+                                                                @case('verifikator_bappeda')
+                                                                    Bappeda
+                                                                @break
+
+                                                                @case('verifikator_bag_organisasi')
+                                                                    Bagian Organisasi
+                                                                @break
+
+                                                                @case('verifikator_inspektorat')
+                                                                    Inspektorat
+                                                                @break
+
+                                                                @default
+                                                                    -;
+                                                            @endswitch
                                                         </th>
                                                     @endif
 
-                                                    {{-- Verifikasi Penjamin (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
-                                                    @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <th scope="col" style="width: 8%">Verifikasi<br>Evaluator
-                                                        </th>
-                                                    @endif
-
-                                                    {{-- Penjaminan Kualitas (nilai dari penjamin) --}}
+                                                    {{-- Evaluator (gabungan nilai dan verifikasi penjamin) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <th scope="col" style="width: 10%">Evaluator
+                                                        <th scope="col" style="width: 10%">
+                                                            @if ($showVerifikasiKolom)
+                                                                Evaluator
+                                                            @else
+                                                                Evaluator
+                                                            @endif
                                                         </th>
                                                     @endif
 
@@ -771,7 +922,7 @@
                                                                             $lembar_kerja->id,
                                                                         )
                                                                         ->where('role_id', $verifikatorRoleId)
-                                                                        ->where('is_verified', true)
+                                                                        ->where('is_verified', 1) // Cek dengan integer
                                                                         ->exists();
                                                                 @endphp
                                                                 @if ($isVerifiedByVerifikator)
@@ -787,19 +938,17 @@
                                                         </td>
                                                     @endif
 
-                                                    {{-- Kolom Verifikasi Penjamin (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
-                                                    @if (
-                                                        $isKriteriaLevel &&
-                                                            in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']) &&
-                                                            ($showVerifikasiKolom ?? false))
+                                                    {{-- Kolom Evaluator (gabungan nilai dan verifikasi penjamin) --}}
+                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                         <td>
-                                                            @if ($lembar_kerja->penilaian_di === 'kriteria')
+                                                            @if ($isKriteriaLevel && ($showVerifikasiKolom ?? false) && $lembar_kerja->penilaian_di === 'kriteria')
+                                                                {{-- Level Kriteria dengan penilaian_di='kriteria': Tampilkan Nilai - (Status Verifikasi) --}}
                                                                 @php
                                                                     $penjaminRoleId = \App\Models\Role::where(
                                                                         'jenis',
                                                                         'penjamin',
                                                                     )->first()?->id;
-                                                                    $isVerifiedByPenjamin = \App\Models\Penilaian::where(
+                                                                    $penilaianPenjamin = \App\Models\Penilaian::where(
                                                                         'opd_id',
                                                                         $this->opd_session,
                                                                     )
@@ -808,26 +957,59 @@
                                                                             $lembar_kerja->id,
                                                                         )
                                                                         ->where('role_id', $penjaminRoleId)
-                                                                        ->where('is_verified', true)
-                                                                        ->exists();
-                                                                @endphp
-                                                                @if ($isVerifiedByPenjamin)
-                                                                    <i
-                                                                        class="ri-checkbox-circle-fill text-success fs-18"></i>
-                                                                @else
-                                                                    <span class="text-muted">-</span>
-                                                                @endif
-                                                            @else
-                                                                <small class="text-muted fst-italic">di bukti
-                                                                    dukung</small>
-                                                            @endif
-                                                        </td>
-                                                    @endif
+                                                                        ->first();
 
-                                                    {{-- Kolom Penjaminan Kualitas (nilai dari penjamin - semua level) --}}
-                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <td>
-                                                            {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) . '%' : '-' }}
+                                                                    $nilaiText = null;
+                                                                    $statusVerifikasi = null;
+
+                                                                    if ($penilaianPenjamin) {
+                                                                        // Cek nilai
+                                                                        if ($penilaianPenjamin->tingkatan_nilai_id) {
+                                                                            $nilaiText =
+                                                                                number_format($nilaiPenjamin, 2) . '%';
+                                                                        }
+
+                                                                        // Cek status verifikasi - handle semua kemungkinan nilai
+                                                                        $isVerified = $penilaianPenjamin->is_verified;
+                                                                        if (!is_null($isVerified)) {
+                                                                            if (
+                                                                                $isVerified == 1 ||
+                                                                                $isVerified === true ||
+                                                                                $isVerified === '1'
+                                                                            ) {
+                                                                                $statusVerifikasi =
+                                                                                    '<i class="ri-checkbox-circle-fill text-success"></i>';
+                                                                            } elseif (
+                                                                                $isVerified == 0 ||
+                                                                                $isVerified === false ||
+                                                                                $isVerified === '0'
+                                                                            ) {
+                                                                                $statusVerifikasi =
+                                                                                    '<i class="ri-close-circle-fill text-danger"></i>';
+                                                                            }
+                                                                        }
+                                                                    }
+
+                                                                    // Jika keduanya kosong, tampilkan - saja
+                                                                    if (!$nilaiText && !$statusVerifikasi) {
+                                                                        $displayText = '-';
+                                                                    } else {
+                                                                        $displayText =
+                                                                            ($nilaiText ?: '-') .
+                                                                            ' | ' .
+                                                                            ($statusVerifikasi ?: '-');
+                                                                    }
+                                                                @endphp
+                                                                {!! $displayText !!}
+                                                            @else
+                                                                {{-- Level lainnya atau penilaian_di='bukti': Hanya tampilkan nilai --}}
+                                                                @if ($isKriteriaLevel && $lembar_kerja->penilaian_di === 'bukti')
+                                                                    <small class="text-muted fst-italic">di bukti
+                                                                        dukung</small>
+                                                                @else
+                                                                    {{ $nilaiPenjamin > 0 ? number_format($nilaiPenjamin, 2) . '%' : '-' }}
+                                                                @endif
+                                                            @endif
                                                         </td>
                                                     @endif
 
@@ -930,15 +1112,7 @@
                                                         <td></td>
                                                     @endif
 
-                                                    {{-- Verifikasi Penjamin (kosong, tidak ada total) - HANYA kriteria level --}}
-                                                    @if (
-                                                        $isKriteriaLevel &&
-                                                            ($showVerifikasiKolom ?? false) &&
-                                                            in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                        <td></td>
-                                                    @endif
-
-                                                    {{-- Penjaminan Kualitas --}}
+                                                    {{-- Evaluator (gabungan nilai dan verifikasi penjamin) --}}
                                                     @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                         <td>
                                                             <strong>{{ number_format($totalNilaiPenjamin, 2) }}%</strong>
@@ -1077,18 +1251,48 @@
                                                             @endif
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
+                                                                @php
+                                                                    // Ambil nama role verifikator dari komponen
+                                                                    $verifikatorRoleNameBukti = 'Verifikator';
+                                                                    if ($this->komponen_session) {
+                                                                        $komponenBukti = \App\Models\Komponen::with(
+                                                                            'role',
+                                                                        )->find($this->komponen_session);
+                                                                        if (
+                                                                            $komponenBukti &&
+                                                                            $komponenBukti->role &&
+                                                                            $komponenBukti->role->jenis ===
+                                                                                'verifikator'
+                                                                        ) {
+                                                                            $verifikatorRoleNameBukti =
+                                                                                $komponenBukti->role->nama;
+                                                                        }
+                                                                    }
+                                                                @endphp
                                                                 <th scope="col" style="width: 8%;">
-                                                                    Verifikasi<br>Verifikator</th>
-                                                            @endif
+                                                                    Verifikator<br>
+                                                                    @switch($verifikatorRoleNameBukti)
+                                                                        @case('verifikator_bappeda')
+                                                                            Bappeda
+                                                                        @break
 
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                                <th scope="col" style="width: 8%;">
-                                                                    Verifikasi<br>Evaluator</th>
-                                                            @endif
+                                                                        @case('verifikator_bag_organisasi')
+                                                                            Bagian Organisasi
+                                                                        @break
 
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                                <th scope="col" style="width: 10%;">Evaluator
+                                                                        @case('verifikator_inspektorat')
+                                                                            Inspektorat
+                                                                        @break
+
+                                                                        @default
+                                                                            -
+                                                                    @endswitch
                                                                 </th>
+                                                            @endif
+
+                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
+                                                                <th scope="col" style="width: 10%;">
+                                                                    Evaluator</th>
                                                             @endif
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai']))
@@ -1199,7 +1403,10 @@
                                                                 {{-- Kolom Verifikasi Verifikator --}}
                                                                 @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
                                                                     <td>
-                                                                        @if ($bukti_dukung->penilaian_verifikator && $bukti_dukung->penilaian_verifikator->is_verified === true)
+                                                                        @if (
+                                                                            $bukti_dukung->penilaian_verifikator &&
+                                                                                ($bukti_dukung->penilaian_verifikator->is_verified == 1 ||
+                                                                                    $bukti_dukung->penilaian_verifikator->is_verified === true))
                                                                             <i
                                                                                 class="ri-checkbox-circle-fill text-success fs-18"></i>
                                                                         @else
@@ -1208,28 +1415,60 @@
                                                                     </td>
                                                                 @endif
 
-                                                                {{-- Kolom Verifikasi Penjamin --}}
+                                                                {{-- Kolom Evaluator (gabungan nilai dan verifikasi penjamin) --}}
                                                                 @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                     <td>
-                                                                        @if ($bukti_dukung->penilaian_penjamin && $bukti_dukung->penilaian_penjamin->is_verified === true)
-                                                                            <i
-                                                                                class="ri-checkbox-circle-fill text-success fs-18"></i>
-                                                                        @else
-                                                                            <span class="text-muted">-</span>
-                                                                        @endif
-                                                                    </td>
-                                                                @endif
+                                                                        @php
+                                                                            $nilaiText = null;
+                                                                            $statusVerifikasi = null;
 
-                                                                {{-- Kolom Penjaminan Kualitas (Nilai saja) --}}
-                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                                    <td>
-                                                                        @if ($bukti_dukung->penilaian_penjamin && $bukti_dukung->penilaian_penjamin->tingkatan_nilai)
-                                                                            <span>
-                                                                                {{ number_format($nilaiPenjamin, 2) }}%
-                                                                            </span>
-                                                                        @else
-                                                                            <span class="text-muted">-</span>
-                                                                        @endif
+                                                                            if ($bukti_dukung->penilaian_penjamin) {
+                                                                                // Cek nilai
+                                                                                if (
+                                                                                    $bukti_dukung->penilaian_penjamin
+                                                                                        ->tingkatan_nilai_id
+                                                                                ) {
+                                                                                    $nilaiText =
+                                                                                        number_format(
+                                                                                            $nilaiPenjamin,
+                                                                                            2,
+                                                                                        ) . '%';
+                                                                                }
+
+                                                                                // Cek status verifikasi - handle semua kemungkinan nilai
+                                                                                $isVerified =
+                                                                                    $bukti_dukung->penilaian_penjamin
+                                                                                        ->is_verified;
+                                                                                if (!is_null($isVerified)) {
+                                                                                    if (
+                                                                                        $isVerified == 1 ||
+                                                                                        $isVerified === true ||
+                                                                                        $isVerified === '1'
+                                                                                    ) {
+                                                                                        $statusVerifikasi =
+                                                                                            '<i class="ri-checkbox-circle-fill text-success"></i>';
+                                                                                    } elseif (
+                                                                                        $isVerified == 0 ||
+                                                                                        $isVerified === false ||
+                                                                                        $isVerified === '0'
+                                                                                    ) {
+                                                                                        $statusVerifikasi =
+                                                                                            '<i class="ri-close-circle-fill text-danger"></i>';
+                                                                                    }
+                                                                                }
+                                                                            }
+
+                                                                            // Jika keduanya kosong, tampilkan - saja
+                                                                            if (!$nilaiText && !$statusVerifikasi) {
+                                                                                $displayText = '-';
+                                                                            } else {
+                                                                                $displayText =
+                                                                                    ($nilaiText ?: '-') .
+                                                                                    ' | ' .
+                                                                                    ($statusVerifikasi ?: '-');
+                                                                            }
+                                                                        @endphp
+                                                                        {!! $displayText !!}
                                                                     </td>
                                                                 @endif
 
@@ -1328,12 +1567,7 @@
                                                                 <td></td>
                                                             @endif
 
-                                                            {{-- Verifikasi Penjamin (kosong, tidak ada total) --}}
-                                                            @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
-                                                                <td></td>
-                                                            @endif
-
-                                                            {{-- Penjaminan Kualitas --}}
+                                                            {{-- Evaluator (gabungan nilai dan verifikasi penjamin) --}}
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
                                                                 <td>
                                                                     <strong>{{ number_format($totalNilaiPenjamin, 2) }}%</strong>
@@ -2162,9 +2396,11 @@
                                                                                                         <i
                                                                                                             class="ri-check-line me-1"></i>Terverifikasi
                                                                                                     </span>
-                                                                                                    @elseif ($verifikasi->role->nama == 'opd')
+                                                                                                    @elseif
+                                                                                                    ($verifikasi->role->nama == 'opd')
                                                                                                     <span>-</span>
-                                                                                                    @elseif ($verifikasi->is_verified == false)
+                                                                                                    @elseif
+                                                                                                    ($verifikasi->is_verified == false)
                                                                                                     <span
                                                                                                         class="badge bg-danger">
                                                                                                         <i
@@ -2363,7 +2599,8 @@
                                                                                         <i
                                                                                             class="ri-check-line me-1"></i>Disetujui
                                                                                     </span>
-                                                                                    @elseif ($history->is_verified === false)
+                                                                                    @elseif
+                                                                                    ($history->is_verified === false)
                                                                                     <span class="badge bg-danger">
                                                                                         <i
                                                                                             class="ri-close-line me-1"></i>Ditolak
