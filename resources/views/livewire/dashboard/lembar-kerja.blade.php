@@ -269,7 +269,17 @@
                                                 <tr>
                                                     <th scope="col" style="width: 5%">No.</th>
                                                     <th scope="col"
-                                                        style="width: {{ $isKriteriaLevel ? '35%' : '50%' }}">Nama</th>
+                                                        style="width: {{ $isKriteriaLevel ? '35%' : '50%' }}">
+                                                        @if ($isKomponenLevel && !$komponen_session)
+                                                            Komponen
+                                                        @elseif ($isKomponenLevel)
+                                                            Sub Komponen
+                                                        @elseif ($isSubKomponenLevel)
+                                                            Kriteria Komponen
+                                                        @else
+                                                            Bukti Dukung
+                                                        @endif
+                                                    </th>
                                                     <th scope="col" style="width: 8%">Bobot</th>
 
                                                     {{-- Kolom penilaian HANYA untuk kriteria level --}}
@@ -306,61 +316,20 @@
                                             @endphp
                                             @forelse ($this->lembarKerjaList() as $index => $lembar_kerja)
                                                 @php
-                                                    // Hitung nilai HANYA untuk kriteria level
-                                                    if ($isKriteriaLevel) {
-                                                        $opdRoleId = \App\Models\Role::where('jenis', 'opd')->first()
-                                                            ?->id;
-                                                        $penjaminRoleId = \App\Models\Role::where(
-                                                            'jenis',
-                                                            'penjamin',
-                                                        )->first()?->id;
-                                                        $penilaiRoleId = \App\Models\Role::where(
-                                                            'jenis',
-                                                            'penilai',
-                                                        )->first()?->id;
-
-                                                        $nilaiOpd = $lembar_kerja->getNilai(
-                                                            $this->opd_session,
-                                                            $opdRoleId,
-                                                        );
-                                                        $nilaiPenjamin = $lembar_kerja->getNilai(
-                                                            $this->opd_session,
-                                                            $penjaminRoleId,
-                                                        );
-                                                        $nilaiPenilai = $lembar_kerja->getNilai(
-                                                            $this->opd_session,
-                                                            $penilaiRoleId,
-                                                        );
-
-                                                        $totalNilaiOpd += $nilaiOpd;
-                                                        $totalNilaiPenjamin += $nilaiPenjamin;
-                                                        $totalNilaiPenilai += $nilaiPenilai;
-                                                    }
-
-                                                    // Bobot sudah dihitung otomatis di model accessor untuk semua level
-                                                    $bobotKriteria = $lembar_kerja->bobot;
-
-                                                    // Cek apakah ada penolakan
-                                                    if ($isKomponenLevel) {
+                                                    // Default: Komponen
+                                                    if ($isKomponenLevel && !$komponen_session) {
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'komponen');
-                                                        // Hitung jumlah sub komponen dan kriteria
                                                         $jumlahSubKomponen = $lembar_kerja->sub_komponen()->count();
                                                         $jumlahKriteria = \DB::table('kriteria_komponen')
-                                                            ->join(
-                                                                'sub_komponen',
-                                                                'kriteria_komponen.sub_komponen_id',
-                                                                '=',
-                                                                'sub_komponen.id',
-                                                            )
-                                                            ->where('sub_komponen.komponen_id', $lembar_kerja->id)
+                                                            ->where('komponen_id', $lembar_kerja->id)
                                                             ->count();
                                                         $infoText = "Jumlah sub komponen: {$jumlahSubKomponen} | Jumlah kriteria: {$jumlahKriteria}";
-                                                    } elseif ($isSubKomponenLevel) {
+                                                        $bobotKriteria = $lembar_kerja->bobot ?? 0;
+                                                    } elseif ($isKomponenLevel) {
                                                         $hasRejection = $this->hasRejection(
                                                             $lembar_kerja,
                                                             'sub_komponen',
                                                         );
-                                                        // Hitung jumlah kriteria dan bukti dukung
                                                         $jumlahKriteria = $lembar_kerja->kriteria_komponen()->count();
                                                         $jumlahBuktiDukung = \DB::table('bukti_dukung')
                                                             ->join(
@@ -375,11 +344,49 @@
                                                             )
                                                             ->count();
                                                         $infoText = "Jumlah kriteria: {$jumlahKriteria} | Jumlah bukti dukung: {$jumlahBuktiDukung}";
-                                                    } else {
+                                                        $bobotKriteria = $lembar_kerja->bobot ?? 0;
+                                                    } elseif ($isSubKomponenLevel) {
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
-                                                        // Hitung jumlah bukti dukung
                                                         $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
                                                         $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                        $bobotKriteria = $lembar_kerja->bobot ?? 0;
+                                                    } else {
+                                                        // Kriteria level
+                                                        if ($isKriteriaLevel) {
+                                                            $opdRoleId = \App\Models\Role::where(
+                                                                'jenis',
+                                                                'opd',
+                                                            )->first()?->id;
+                                                            $penjaminRoleId = \App\Models\Role::where(
+                                                                'jenis',
+                                                                'penjamin',
+                                                            )->first()?->id;
+                                                            $penilaiRoleId = \App\Models\Role::where(
+                                                                'jenis',
+                                                                'penilai',
+                                                            )->first()?->id;
+
+                                                            $nilaiOpd = $lembar_kerja->getNilai(
+                                                                $this->opd_session,
+                                                                $opdRoleId,
+                                                            );
+                                                            $nilaiPenjamin = $lembar_kerja->getNilai(
+                                                                $this->opd_session,
+                                                                $penjaminRoleId,
+                                                            );
+                                                            $nilaiPenilai = $lembar_kerja->getNilai(
+                                                                $this->opd_session,
+                                                                $penilaiRoleId,
+                                                            );
+
+                                                            $totalNilaiOpd += $nilaiOpd;
+                                                            $totalNilaiPenjamin += $nilaiPenjamin;
+                                                            $totalNilaiPenilai += $nilaiPenilai;
+                                                        }
+                                                        $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
+                                                        $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
+                                                        $infoText = "Jumlah bukti dukung: {$jumlahBuktiDukung}";
+                                                        $bobotKriteria = $lembar_kerja->bobot ?? 0;
                                                     }
                                                 @endphp
                                                 <tr>

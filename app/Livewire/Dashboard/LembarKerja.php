@@ -257,7 +257,12 @@ class LembarKerja extends Component
             $komponen = Komponen::find($this->komponen_session);
             return $komponen ? $komponen->sub_komponen : collect();
         } else {
-            return [];
+            // Default: tampilkan semua komponen (khusus verifikator: filter role_id)
+            $query = Komponen::where('tahun_id', $this->tahun_id);
+            if (Auth::user()->role->jenis == 'verifikator') {
+                $query->where('role_id', Auth::user()->role_id);
+            }
+            return $query->get();
         }
     }
 
@@ -726,7 +731,7 @@ class LembarKerja extends Component
     {
         $this->validate([
             'file_bukti_dukung' => 'required|array',
-            'file_bukti_dukung.*' => 'file|max:10240',
+            'file_bukti_dukung.*' => 'file|mimes:pdf',
             'keterangan_upload' => 'nullable|string',
         ]);
 
