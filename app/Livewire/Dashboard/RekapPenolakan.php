@@ -10,6 +10,9 @@ use Livewire\Component;
 
 class RekapPenolakan extends Component
 {
+    // Modal keterangan
+    public $selectedKeterangan = null;
+
     #[Computed]
     public function rekapPenolakan()
     {

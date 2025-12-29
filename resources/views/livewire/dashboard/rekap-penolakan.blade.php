@@ -99,10 +99,9 @@
                                             </td>
                                             <td>
                                                 @if ($penolakan->keterangan)
-                                                    <button tabindex="0" class="btn btn-sm btn-primary" role="button"
-                                                        data-bs-toggle="popover" data-bs-trigger="focus"
-                                                        data-bs-placement="top" title="Alasan Penolakan"
-                                                        data-bs-content="{{ $penolakan->keterangan }}">
+                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                        data-bs-toggle="modal" data-bs-target="#keteranganModal"
+                                                        wire:click="$set('selectedKeterangan', '{{ addslashes($penolakan->keterangan) }}')">
                                                         <i class="ri-information-line"></i> Lihat
                                                     </button>
                                                 @else
@@ -129,27 +128,40 @@
                 </div>
             </div>
         </div>
+
+        <!-- Keterangan Modal -->
+        <div wire:ignore.self id="keteranganModal" class="modal fade" tabindex="-1" aria-labelledby="keteranganModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="keteranganModalLabel">Alasan Penolakan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">{{ $selectedKeterangan ?? 'Tidak ada keterangan' }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /.modal -->
     </div>
 
     @push('scripts')
         <script>
-            // Initialize Bootstrap Popovers
+            // Re-initialize feather icons after Livewire navigation
             document.addEventListener('livewire:navigated', function() {
-                initPopovers();
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
             });
 
             document.addEventListener('DOMContentLoaded', function() {
-                initPopovers();
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
             });
-
-            function initPopovers() {
-                var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-                popoverTriggerList.map(function(popoverTriggerEl) {
-                    return new bootstrap.Popover(popoverTriggerEl, {
-                        html: true,
-                        sanitize: false
-                    });
-                });
-            }
         </script>
     @endpush
