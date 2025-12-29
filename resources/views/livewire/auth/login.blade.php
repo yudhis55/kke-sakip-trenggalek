@@ -1,12 +1,16 @@
 <!-- auth-page content -->
-<div class="d-flex min-vh-100">
-    <div class="col-sm-7 bg-white d-flex flex-column justify-content-center">
-        <div class="ps-4 my-auto d-flex align-items-center position-absolute" style="height: 73px; top: 0;">
-            <img src="{{ asset('assets/images/logo-kke-sakip.svg') }}" alt="" height="50">
+<div class="d-flex min-vh-100 flex-column flex-sm-row">
+    <div class="col-12 col-sm-7 bg-white d-flex flex-column justify-content-center position-relative">
+        <div class="ps-4 my-auto d-flex align-items-center position-absolute" style="height: 73px; top: 0; z-index: 10;">
+            <img src="{{ asset('assets/images/logo-kke-sakip.svg') }}" alt="" height="50"
+                class="d-none d-sm-block">
+            <img src="{{ asset('assets/images/logo-kke-sakip.svg') }}" alt="" height="40"
+                class="d-block d-sm-none">
         </div>
-        <div class="mx-auto bg-white border border-1 rounded shadow-lg" style="width: 500px">
-            <div class="p-5 ">
-                <div>
+        <div class="mx-auto bg-white border border-1 rounded shadow-lg px-3 px-sm-0"
+            style="width: 100%; max-width: 500px">
+            <div class="p-3 p-sm-5">
+                <div class="mt-5 mt-sm-0">
                     <h5 class="text-primary fw-bold">Selamat Datang Kembali !</h5>
                     <p class="text-muted">Masuk untuk melanjutkan ke Dashboard KKE SAKIP</p>
                 </div>
@@ -44,7 +48,7 @@
         </div>
     </div>
 
-    <div class="col-sm-5 bg-soft-light d-flex flex-column justify-content-center">
+    <div class="col-sm-5 bg-soft-light d-none d-sm-flex flex-column justify-content-center">
         <div class="p-lg-5 p-4">
             {{-- <iframe class="col-sm-12" style="width:100%;height:400px"
                 src="https://lottie.host/embed/df3bd7c4-a39b-4937-9ed7-c0b83f3ff6f7/INn471r6gz.lottie"></iframe> --}}
