@@ -25,7 +25,7 @@ class Login extends Component
         if (Auth::attempt($credentials)) {
             session()->regenerate();
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Berhasil login.');
-            return $this->redirectIntended('/dashboard');;
+            return $this->redirectIntended('/dashboard');
         }
         // $this->addError('email', 'Email atau password salah.');
         flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Email atau password salah.');

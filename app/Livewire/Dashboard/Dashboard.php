@@ -65,75 +65,89 @@ class Dashboard extends Component
 
         // Tentukan role_id yang akan dicek
         if ($userRoleJenis == 'admin') {
-            // Admin: Lihat semua penilaian mandiri OPD
             $targetRoleId = Role::where('jenis', 'opd')->first()->id;
         } else {
-            // Role lain: Lihat penilaian mereka sendiri
             $targetRoleId = Auth::user()->role_id;
         }
 
-        // Query kriteria komponen dengan penilaian_di = 'kriteria'
-        $query = DB::table('kriteria_komponen')
-            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
-            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
-            ->where('komponen.tahun_id', $this->tahun_session)
-            ->where('kriteria_komponen.penilaian_di', 'kriteria');
-
-        // Filter OPD jika role adalah OPD
+        // Filter OPD jika role adalah OPD (per OPD saja)
         if ($userRoleJenis == 'opd') {
             $opdId = Auth::user()->opd_id;
 
-            // Hitung kriteria yang sudah dinilai oleh OPD ini
-            $count = $query->whereExists(function ($subquery) use ($targetRoleId, $opdId) {
-                $subquery->select(DB::raw(1))
-                    ->from('penilaian')
-                    ->whereColumn('penilaian.kriteria_komponen_id', 'kriteria_komponen.id')
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.role_id', $targetRoleId)
-                    ->whereNotNull('penilaian.tingkatan_nilai_id');
-            })->count();
-        } else {
-            // Admin, Verifikator, Penjamin, Penilai: Hitung total di semua OPD
-            if ($userRoleJenis == 'verifikator') {
-                // Verifikator: Cek is_verified
-                $count = $query->whereExists(function ($subquery) use ($targetRoleId) {
+            return DB::table('kriteria_komponen')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'kriteria')
+                ->whereExists(function ($subquery) use ($targetRoleId, $opdId) {
                     $subquery->select(DB::raw(1))
                         ->from('penilaian')
                         ->whereColumn('penilaian.kriteria_komponen_id', 'kriteria_komponen.id')
-                        ->where('penilaian.role_id', $targetRoleId)
-                        ->whereNotNull('penilaian.is_verified');
-                })->count();
-            } else {
-                // Admin, Penjamin, Penilai: Cek tingkatan_nilai_id
-                $count = $query->whereExists(function ($subquery) use ($targetRoleId) {
-                    $subquery->select(DB::raw(1))
-                        ->from('penilaian')
-                        ->whereColumn('penilaian.kriteria_komponen_id', 'kriteria_komponen.id')
+                        ->where('penilaian.opd_id', $opdId)
                         ->where('penilaian.role_id', $targetRoleId)
                         ->whereNotNull('penilaian.tingkatan_nilai_id');
                 })->count();
-            }
         }
 
-        return $count;
+        // Admin, Verifikator, Penjamin, Penilai: Hitung total penilaian yang sudah ada (akumulasi semua OPD)
+        if ($userRoleJenis == 'verifikator') {
+            // Verifikator: Hitung semua record penilaian yang sudah diverifikasi
+            return DB::table('penilaian')
+                ->join('kriteria_komponen', 'penilaian.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'kriteria')
+                ->where('penilaian.role_id', $targetRoleId)
+                ->whereNotNull('penilaian.is_verified')
+                ->count();
+        } else {
+            // Admin, Penjamin, Penilai: Hitung semua record penilaian yang punya nilai
+            return DB::table('penilaian')
+                ->join('kriteria_komponen', 'penilaian.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'kriteria')
+                ->where('penilaian.role_id', $targetRoleId)
+                ->whereNotNull('penilaian.tingkatan_nilai_id')
+                ->count();
+        }
     }
 
     /**
-     * Hitung total kriteria komponen dengan penilaian_di = 'kriteria'
+     * Hitung total kriteria komponen dengan penilaian_di = 'kriteria' x jumlah OPD
      */
     #[Computed]
     public function totalKriteriaKomponenDiKriteria()
     {
-        return DB::table('kriteria_komponen')
+        $userRoleJenis = Auth::user()->role->jenis;
+
+        // Untuk OPD: hanya hitung total kriteria (tidak dikali jumlah OPD)
+        if ($userRoleJenis == 'opd') {
+            return DB::table('kriteria_komponen')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'kriteria')
+                ->count();
+        }
+
+        // Untuk role lain: total kriteria x jumlah OPD
+        $totalKriteria = DB::table('kriteria_komponen')
             ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
             ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
             ->where('komponen.tahun_id', $this->tahun_session)
             ->where('kriteria_komponen.penilaian_di', 'kriteria')
             ->count();
+
+        $jumlahOpd = DB::table('opd')->count();
+
+        return $totalKriteria * $jumlahOpd;
     }
 
     /**
-     * Hitung jumlah bukti dukung yang telah dinilai
+     * Hitung jumlah bukti dukung yang telah dinilai (Akumulasi semua OPD)
      * Berdasarkan role: OPD = penilaian mandiri, Verifikator = verifikasi, Penjamin = penjaminan, Penilai = evaluasi
      */
     #[Computed]
@@ -143,72 +157,89 @@ class Dashboard extends Component
 
         // Tentukan role_id yang akan dicek
         if ($userRoleJenis == 'admin') {
-            // Admin: Lihat semua penilaian mandiri OPD
             $targetRoleId = Role::where('jenis', 'opd')->first()->id;
         } else {
-            // Role lain: Lihat penilaian mereka sendiri
             $targetRoleId = Auth::user()->role_id;
         }
 
-        // Query bukti dukung dengan penilaian_di = 'bukti'
-        $query = DB::table('bukti_dukung')
-            ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
-            ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
-            ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
-            ->where('komponen.tahun_id', $this->tahun_session)
-            ->where('kriteria_komponen.penilaian_di', 'bukti');
-
-        // Filter OPD jika role adalah OPD
+        // Filter OPD jika role adalah OPD (per OPD saja)
         if ($userRoleJenis == 'opd') {
             $opdId = Auth::user()->opd_id;
 
-            // Hitung bukti dukung yang sudah dinilai oleh OPD ini
-            $count = $query->whereExists(function ($subquery) use ($targetRoleId, $opdId) {
-                $subquery->select(DB::raw(1))
-                    ->from('penilaian')
-                    ->whereColumn('penilaian.bukti_dukung_id', 'bukti_dukung.id')
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.role_id', $targetRoleId)
-                    ->whereNotNull('penilaian.tingkatan_nilai_id');
-            })->count();
-        } else {
-            // Admin, Verifikator, Penjamin, Penilai: Hitung total di semua OPD
-            if ($userRoleJenis == 'verifikator') {
-                // Verifikator: Cek is_verified
-                $count = $query->whereExists(function ($subquery) use ($targetRoleId) {
+            return DB::table('bukti_dukung')
+                ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'bukti')
+                ->whereExists(function ($subquery) use ($targetRoleId, $opdId) {
                     $subquery->select(DB::raw(1))
                         ->from('penilaian')
                         ->whereColumn('penilaian.bukti_dukung_id', 'bukti_dukung.id')
-                        ->where('penilaian.role_id', $targetRoleId)
-                        ->whereNotNull('penilaian.is_verified');
-                })->count();
-            } else {
-                // Admin, Penjamin, Penilai: Cek tingkatan_nilai_id
-                $count = $query->whereExists(function ($subquery) use ($targetRoleId) {
-                    $subquery->select(DB::raw(1))
-                        ->from('penilaian')
-                        ->whereColumn('penilaian.bukti_dukung_id', 'bukti_dukung.id')
+                        ->where('penilaian.opd_id', $opdId)
                         ->where('penilaian.role_id', $targetRoleId)
                         ->whereNotNull('penilaian.tingkatan_nilai_id');
                 })->count();
-            }
         }
 
-        return $count;
+        // Admin, Verifikator, Penjamin, Penilai: Hitung total penilaian yang sudah ada (akumulasi semua OPD)
+        if ($userRoleJenis == 'verifikator') {
+            // Verifikator: Hitung semua record penilaian yang sudah diverifikasi
+            return DB::table('penilaian')
+                ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
+                ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'bukti')
+                ->where('penilaian.role_id', $targetRoleId)
+                ->whereNotNull('penilaian.is_verified')
+                ->count();
+        } else {
+            // Admin, Penjamin, Penilai: Hitung semua record penilaian yang punya nilai
+            return DB::table('penilaian')
+                ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
+                ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'bukti')
+                ->where('penilaian.role_id', $targetRoleId)
+                ->whereNotNull('penilaian.tingkatan_nilai_id')
+                ->count();
+        }
     }
 
     /**
-     * Hitung total bukti dukung dengan penilaian_di = 'bukti'
+     * Hitung total bukti dukung dengan penilaian_di = 'bukti' x jumlah OPD
      */
     #[Computed]
     public function totalBuktiDukungDiBukti()
     {
-        return DB::table('bukti_dukung')
+        $userRoleJenis = Auth::user()->role->jenis;
+
+        // Untuk OPD: hanya hitung total bukti dukung (tidak dikali jumlah OPD)
+        if ($userRoleJenis == 'opd') {
+            return DB::table('bukti_dukung')
+                ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
+                ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
+                ->where('komponen.tahun_id', $this->tahun_session)
+                ->where('kriteria_komponen.penilaian_di', 'bukti')
+                ->count();
+        }
+
+        // Untuk role lain: total bukti dukung x jumlah OPD
+        $totalBuktiDukung = DB::table('bukti_dukung')
             ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
             ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
             ->join('komponen', 'sub_komponen.komponen_id', '=', 'komponen.id')
             ->where('komponen.tahun_id', $this->tahun_session)
             ->where('kriteria_komponen.penilaian_di', 'bukti')
             ->count();
+
+        $jumlahOpd = DB::table('opd')->count();
+
+        return $totalBuktiDukung * $jumlahOpd;
     }
 }
