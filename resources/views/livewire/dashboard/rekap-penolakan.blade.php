@@ -101,7 +101,7 @@
                                                 @if ($penolakan->keterangan)
                                                     <button type="button" class="btn btn-sm btn-primary"
                                                         data-bs-toggle="modal" data-bs-target="#keteranganModal"
-                                                        wire:click="$set('selectedKeterangan', '{{ addslashes($penolakan->keterangan) }}')">
+                                                        wire:click="showKeterangan({{ $penolakan->id }})">
                                                         <i class="ri-information-line"></i> Lihat
                                                     </button>
                                                 @else
@@ -129,7 +129,28 @@
             </div>
         </div>
 
-        <!-- Keterangan Modal -->
+        <!-- Default Modals -->
+        <div wire:ignore.self id="keteranganModal" class="modal fade" tabindex="-1" aria-labelledby="keteranganModalLabel"
+            aria-hidden="true" style="display: none;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="myModalLabel">Alasan Penolakan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0" style="word-wrap: break-word; white-space: pre-wrap;">
+                            {{ $selectedKeterangan ?? 'Tidak ada keterangan' }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        {{-- <!-- Keterangan Modal -->
         <div wire:ignore.self id="keteranganModal" class="modal fade" tabindex="-1" aria-labelledby="keteranganModalLabel"
             aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -146,10 +167,10 @@
                     </div>
                 </div>
             </div>
-        </div><!-- /.modal -->
+        </div><!-- /.modal --> --}}
     </div>
 
-    @push('scripts')
+    {{-- @push('scripts')
         <script>
             // Re-initialize feather icons after Livewire navigation
             document.addEventListener('livewire:navigated', function() {
@@ -164,4 +185,4 @@
                 }
             });
         </script>
-    @endpush
+    @endpush --}}

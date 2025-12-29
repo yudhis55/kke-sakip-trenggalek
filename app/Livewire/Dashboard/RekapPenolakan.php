@@ -13,6 +13,12 @@ class RekapPenolakan extends Component
     // Modal keterangan
     public $selectedKeterangan = null;
 
+    public function showKeterangan($penilaianId)
+    {
+        $penilaian = Penilaian::find($penilaianId);
+        $this->selectedKeterangan = $penilaian?->keterangan ?? 'Tidak ada keterangan';
+    }
+
     #[Computed]
     public function rekapPenolakan()
     {
