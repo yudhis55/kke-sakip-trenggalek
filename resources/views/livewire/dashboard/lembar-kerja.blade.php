@@ -1403,12 +1403,20 @@
                                                                 {{-- Kolom Verifikasi Verifikator --}}
                                                                 @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
                                                                     <td>
-                                                                        @if (
-                                                                            $bukti_dukung->penilaian_verifikator &&
-                                                                                ($bukti_dukung->penilaian_verifikator->is_verified == 1 ||
-                                                                                    $bukti_dukung->penilaian_verifikator->is_verified === true))
-                                                                            <i
-                                                                                class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                                        @if ($bukti_dukung->penilaian_verifikator)
+                                                                            @if (
+                                                                                $bukti_dukung->penilaian_verifikator->is_verified == 1 ||
+                                                                                    $bukti_dukung->penilaian_verifikator->is_verified === true)
+                                                                                <i
+                                                                                    class="ri-checkbox-circle-fill text-success fs-18"></i>
+                                                                            @elseif (
+                                                                                $bukti_dukung->penilaian_verifikator->is_verified == 0 ||
+                                                                                    $bukti_dukung->penilaian_verifikator->is_verified === false)
+                                                                                <i
+                                                                                    class="ri-close-circle-fill text-danger fs-18"></i>
+                                                                            @else
+                                                                                <span class="text-muted">-</span>
+                                                                            @endif
                                                                         @else
                                                                             <span class="text-muted">-</span>
                                                                         @endif
