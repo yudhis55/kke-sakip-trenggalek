@@ -218,6 +218,16 @@
                             </a>
                         </li>
 
+                        @if (Auth::user()->role->jenis == 'opd')
+                            <li class="nav-item">
+                                <a wire:current="active" class="nav-link menu-link" href="/rekap-penolakan"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                    <i class="mdi mdi-file-cancel-outline"></i> <span data-key="t-layouts">Rekap
+                                        Penolakan</span>
+                                </a>
+                            </li>
+                        @endif
+
                         @if (Auth::user()->role->jenis == 'admin')
                             <li class="nav-item">
                                 <a wire:current="active" class="nav-link menu-link" href="/monitoring"

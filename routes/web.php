@@ -9,6 +9,7 @@ use App\Livewire\Dashboard\Monitoring\KriteriaKomponen\BuktiDukung;
 use App\Livewire\Dashboard\Mapping;
 use App\Livewire\Dashboard\Pengaturan;
 use App\Livewire\Dashboard\LembarKerja;
+use App\Livewire\Dashboard\RekapPenolakan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -40,6 +41,7 @@ Route::middleware([EnsureUserHasRole::class . ':admin,verifikator_bappeda,verifi
     Route::get('/monitoring/sub-komponen/{sub_komponen_id}/kriteria-komponen/{kriteria_komponen_id}/bukti-dukung', BuktiDukung::class)->name('monitoring.kriteria-komponen.bukti-dukung');
     Route::get('/monitoring/sub-komponen/{sub_komponen_id}/kriteria-komponen', KriteriaKomponen::class)->name('monitoring.kriteria-komponen');
     Route::get('/lembar-kerja', LembarKerja::class)->name('lembar-kerja');
+    Route::get('/rekap-penolakan', RekapPenolakan::class)->name('rekap-penolakan');
     Route::get('/pengaturan', Pengaturan::class)->name('pengaturan');
 });
 
