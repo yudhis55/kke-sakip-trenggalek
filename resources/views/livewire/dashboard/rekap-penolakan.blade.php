@@ -139,7 +139,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="mb-0" style="word-wrap: break-word; white-space: pre-wrap;">
+                        <p class="mb-0" style="word-wrap: break-word;">
                             {{ $selectedKeterangan ?? 'Tidak ada keterangan' }}</p>
                     </div>
                     <div class="modal-footer">
