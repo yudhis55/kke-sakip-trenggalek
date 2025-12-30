@@ -1538,8 +1538,7 @@
                                                                     @endif
                                                                 @else
                                                                     {{-- Mode kriteria: Tidak ada tombol untuk Verifikator/Penjamin/Penilai --}}
-                                                                    <span class="fst-italic text-muted">Lihat tab
-                                                                        penilaian</span>
+                                                                    <span class="fst-italic text-muted">Lihat lembar penilaian</span>
                                                                 @endif
                                                             </td>
                                                             @if (!$this->penilaianDiKriteria && in_array(Auth::user()->role->jenis, ['admin', 'opd']))
@@ -1648,7 +1647,7 @@
                                 </ul>
                             </div>
                             <div class="card-header align-items-center d-flex">
-                                <p class="mb-sm-0 text-dark fw-semibold">
+                                <p class="mb-sm-0 text-dark fw-semibold flex-grow-1">
                                     @if ($this->kriteriaKomponen)
                                         @if ($this->penilaianDiKriteria)
                                             Kriteria Komponen: {{ $this->kriteriaKomponen->kode }} -
@@ -1662,6 +1661,29 @@
                                             dahulu</span>
                                     @endif
                                 </p>
+
+                                {{-- Navigasi Bukti Dukung: Hanya tampil jika mode bukti (penilaian di bukti) --}}
+                                @if (!$this->penilaianDiKriteria && $bukti_dukung_id && $this->totalBuktiDukung > 1)
+                                    <div class="flex-shrink-0 me-2">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary"
+                                                wire:click="previousBuktiDukung"
+                                                {{ !$this->hasPreviousBukti ? 'disabled' : '' }}
+                                                title="Bukti Dukung Sebelumnya">
+                                                <i class="ri-arrow-left-s-line"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-light" disabled style="min-width: 60px;">
+                                                {{ $this->currentBuktiIndex }}/{{ $this->totalBuktiDukung }}
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary"
+                                                wire:click="nextBuktiDukung"
+                                                {{ !$this->hasNextBukti ? 'disabled' : '' }}
+                                                title="Bukti Dukung Berikutnya">
+                                                <i class="ri-arrow-right-s-line"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                             <div class="card-body">
                                 <div class="row">

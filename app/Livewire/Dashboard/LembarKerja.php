@@ -209,6 +209,99 @@ class LembarKerja extends Component
         $this->bukti_dukung_id = null;
     }
 
+    // Navigasi bukti dukung: Previous
+    public function previousBuktiDukung()
+    {
+        if (!$this->kriteria_komponen_session) {
+            return;
+        }
+
+        $buktiDukungList = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->orderBy('id')
+            ->pluck('id')
+            ->toArray();
+
+        $currentIndex = array_search($this->bukti_dukung_id, $buktiDukungList);
+
+        if ($currentIndex !== false && $currentIndex > 0) {
+            $this->bukti_dukung_id = $buktiDukungList[$currentIndex - 1];
+            $this->resetPenilaianForm();
+        }
+    }
+
+    // Navigasi bukti dukung: Next
+    public function nextBuktiDukung()
+    {
+        if (!$this->kriteria_komponen_session) {
+            return;
+        }
+
+        $buktiDukungList = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->orderBy('id')
+            ->pluck('id')
+            ->toArray();
+
+        $currentIndex = array_search($this->bukti_dukung_id, $buktiDukungList);
+
+        if ($currentIndex !== false && $currentIndex < count($buktiDukungList) - 1) {
+            $this->bukti_dukung_id = $buktiDukungList[$currentIndex + 1];
+            $this->resetPenilaianForm();
+        }
+    }
+
+    // Reset form penilaian saat pindah bukti dukung
+    private function resetPenilaianForm()
+    {
+        $this->tingkatan_nilai_id = null;
+        $this->catatan_penilaian = '';
+        $this->is_editing_penilaian = false;
+        $this->is_verified = null;
+        $this->keterangan_verifikasi = '';
+    }
+
+    // Total bukti dukung dalam kriteria komponen
+    #[Computed]
+    public function totalBuktiDukung()
+    {
+        if (!$this->kriteria_komponen_session) {
+            return 0;
+        }
+
+        return BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)->count();
+    }
+
+    // Index bukti dukung saat ini (1-based)
+    #[Computed]
+    public function currentBuktiIndex()
+    {
+        if (!$this->kriteria_komponen_session || !$this->bukti_dukung_id) {
+            return 0;
+        }
+
+        $buktiDukungList = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->orderBy('id')
+            ->pluck('id')
+            ->toArray();
+
+        $currentIndex = array_search($this->bukti_dukung_id, $buktiDukungList);
+
+        return $currentIndex !== false ? $currentIndex + 1 : 0;
+    }
+
+    // Cek apakah ada bukti dukung sebelumnya
+    #[Computed]
+    public function hasPreviousBukti()
+    {
+        return $this->currentBuktiIndex > 1;
+    }
+
+    // Cek apakah ada bukti dukung selanjutnya
+    #[Computed]
+    public function hasNextBukti()
+    {
+        return $this->currentBuktiIndex < $this->totalBuktiDukung;
+    }
+
     public function selectOpd($opdId)
     {
         $this->opd_session = $opdId;
