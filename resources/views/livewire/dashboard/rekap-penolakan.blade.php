@@ -99,14 +99,19 @@
                                             </td>
                                             <td>
                                                 @if ($penolakan->keterangan)
-                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                    <button type="button" class="btn btn-sm btn-primary me-1"
                                                         data-bs-toggle="modal" data-bs-target="#keteranganModal"
-                                                        wire:click="showKeterangan({{ $penolakan->id }})">
-                                                        <i class="ri-information-line"></i> Lihat
+                                                        wire:click="showKeterangan({{ $penolakan->id }})"
+                                                        title="Lihat Keterangan">
+                                                        <i class="ri-information-line"></i>
                                                     </button>
-                                                @else
-                                                    <span class="text-muted">-</span>
                                                 @endif
+                                                <button wire:click="redirectToBuktiDukung({{ $penolakan->id }})"
+                                                    type="button"
+                                                    class="btn btn-sm btn-primary"
+                                                    title="Buka di Lembar Kerja">
+                                                    <i class="ri-external-link-line"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                         @empty

@@ -2,16 +2,30 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\BuktiDukung;
 use App\Models\Penilaian;
 use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 
 class RekapPenolakan extends Component
 {
     // Modal keterangan
     public $selectedKeterangan = null;
+
+    // Session untuk redirect ke lembar kerja
+    #[Session(key: 'tahun_session')]
+    public $tahun_session;
+    #[Session(key: 'opd_session')]
+    public $opd_session;
+    #[Session(key: 'komponen_session')]
+    public $komponen_session;
+    #[Session(key: 'sub_komponen_session')]
+    public $sub_komponen_session;
+    #[Session(key: 'kriteria_komponen_session')]
+    public $kriteria_komponen_session;
 
     public function showKeterangan($penilaianId)
     {
@@ -45,6 +59,27 @@ class RekapPenolakan extends Component
             ])
             ->orderBy('updated_at', 'desc')
             ->get();
+    }
+
+    public function redirectToBuktiDukung($penilaianId)
+    {
+        // $penilaian = Penilaian::with(['bukti_dukung', 'kriteria_komponen'])->find($penilaianId);
+        $penilaian = Penilaian::with(['bukti_dukung', 'kriteria_komponen.sub_komponen.komponen'])
+            ->find($penilaianId);
+
+        if (!$penilaian || !$penilaian->kriteria_komponen) {
+            flash()->error('Data penilaian tidak ditemukan');
+            return;
+        }
+
+        // Set semua session yang diperlukan untuk lembar kerja
+        $this->tahun_session = $penilaian->kriteria_komponen;
+        $this->opd_session = Auth::user()->opd_id;
+
+        $this->komponen_session = $penilaian->kriteria_komponen->sub_komponen->komponen_id;
+        $this->sub_komponen_session = $penilaian->kriteria_komponen->sub_komponen_id;
+        $this->kriteria_komponen_session = $penilaian->kriteria_komponen_id;
+        $this->redirectRoute('lembar-kerja');
     }
 
     public function render()
