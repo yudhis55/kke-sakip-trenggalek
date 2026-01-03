@@ -11,6 +11,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.7",
         "php-flasher/flasher-laravel": "^2.3",
+        "phpoffice/phpword": "^1.4",
         "ralphjsmit/livewire-urls": "^1.5",
         "spatie/livewire-filepond": "^1.5"
     },
