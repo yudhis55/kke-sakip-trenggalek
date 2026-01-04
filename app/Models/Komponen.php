@@ -154,4 +154,36 @@ class Komponen extends Model
 
         return round(($stats->dinilai / $stats->total) * 100, 2);
     }
+
+    /**
+     * Relationship: Has many KontenLaporan (catatan & rekomendasi)
+     */
+    public function kontenLaporan(): HasMany
+    {
+        return $this->hasMany(KontenLaporan::class, 'komponen_id');
+    }
+
+    /**
+     * Get catatan for specific OPD and Tahun
+     */
+    public function getCatatanForOpdTahun($opdId, $tahunId)
+    {
+        return $this->kontenLaporan()
+            ->catatan()
+            ->forOpdTahun($opdId, $tahunId)
+            ->pluck('konten')
+            ->toArray();
+    }
+
+    /**
+     * Get rekomendasi for specific OPD and Tahun
+     */
+    public function getRekomendasiForOpdTahun($opdId, $tahunId)
+    {
+        return $this->kontenLaporan()
+            ->rekomendasi()
+            ->forOpdTahun($opdId, $tahunId)
+            ->pluck('konten')
+            ->toArray();
+    }
 }

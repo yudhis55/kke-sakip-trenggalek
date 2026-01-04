@@ -127,4 +127,23 @@ class SubKomponen extends Model
 
         return round(($stats->dinilai / $stats->total) * 100, 2);
     }
+
+    /**
+     * Relationship: Has many KontenLaporan (deskripsi)
+     */
+    public function kontenLaporan(): HasMany
+    {
+        return $this->hasMany(KontenLaporan::class, 'sub_komponen_id');
+    }
+
+    /**
+     * Get deskripsi for specific OPD and Tahun
+     */
+    public function getDeskripsiForOpdTahun($opdId, $tahunId)
+    {
+        return $this->kontenLaporan()
+            ->deskripsi()
+            ->forOpdTahun($opdId, $tahunId)
+            ->first()?->konten ?? '';
+    }
 }
