@@ -85,7 +85,7 @@
         {{-- ========================================
              TAMPILAN UNTUK ADMIN & VERIFIKATOR (CARD BASED setelah pilih OPD)
              ======================================== --}}
-        @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator']))
+        @if (in_array(Auth::user()->role->jenis, ['verifikator']))
 
             {{-- TIER 1: TABEL OPD --}}
             @if (!$opd_session)
@@ -334,7 +334,7 @@
         {{-- ========================================
              TAMPILAN UNTUK PENJAMIN & PENILAI (TABLE BASED)
              ======================================== --}}
-        @if (in_array(Auth::user()->role->jenis, ['penjamin', 'penilai']))
+        @if (in_array(Auth::user()->role->jenis, ['admin', 'penjamin', 'penilai']))
 
             {{-- TIER 1: TABEL OPD --}}
             @if (!$opd_session)
@@ -544,8 +544,8 @@
                                                 <th scope="col" style="width: 7%;">Verval</th>
                                                 <th scope="col" style="width: 8%;">Evaluator</th>
                                                 <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
-                                                <th scope="col" style="width: 8%;">Jumlah</th>
-                                                <th scope="col" style="width: 8%;">Skor</th>
+                                                <th scope="col" style="width: 8%;">Penilaian<br>Final</th>
+                                                <th scope="col" style="width: 8%;">Rata-Rata</th>
                                                 <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>
@@ -757,8 +757,8 @@
                                                 <th scope="col" style="width: 7%;">Verval</th>
                                                 <th scope="col" style="width: 8%;">Evaluator</th>
                                                 <th scope="col" style="width: 8%;">Penjaminan<br>Kualitas</th>
-                                                <th scope="col" style="width: 8%;">Jumlah</th>
-                                                <th scope="col" style="width: 8%;">Skor</th>
+                                                <th scope="col" style="width: 8%;">Penilaian<br>Final</th>
+                                                <th scope="col" style="width: 8%;">Rata-Rata</th>
                                                 <th scope="col" style="width: 10%;">Aksi</th>
                                             </tr>
                                         </thead>

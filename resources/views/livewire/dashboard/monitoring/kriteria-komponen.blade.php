@@ -62,24 +62,25 @@
                     <div class="card-body">
                         <div class="live-preview">
                             <div class="table-responsive">
-                                <table class="table align-middle mb-0" style="table-layout: fixed;">
+                                <table class="table align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
                                             {{-- <th></th> --}}
                                             <th scope="col" style="width: 3%;">No</th>
-                                            <th scope="col" style="width: 7%;">Kode</th>
-                                            <th scope="col" style="width: 25%;">Kriteria Komponen</th>
-                                            <th scope="col" style="width: 6%;">Bobot</th>
-                                            <th scope="col" style="width: 8%;">Bukti Dukung</th>
-                                            <th scope="col" style="width: 10%;">Penilaian <br>Mandiri</th>
+                                            <th scope="col" style="width: 6%;">Kode</th>
+                                            <th scope="col" style="width: 24%;">Kriteria Komponen</th>
+                                            <th scope="col" style="width: 5%;">Bobot</th>
+                                            <th scope="col" style="width: 7%;">Bukti Dukung</th>
+                                            <th scope="col" style="width: 9%;">Penilaian <br>Mandiri</th>
                                             <th scope="col" style="width: 6%;">Verval</th>
                                             <th scope="col" style="width: 9%;">Evaluator</th>
-                                            <th scope="col" style="width: 10%;">Penjaminan <br>Kualitas</th>
+                                            <th scope="col" style="width: 9%;">Penjaminan <br>Kualitas</th>
                                             <th scope="col" style="width: 6%;">Jumlah</th>
                                             <th scope="col" style="width: 6%;">Skor</th>
                                             @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
                                                 <th scope="col" style="width: 5%;">Lacak</th>
                                             @endif
+                                            <th scope="col" style="width: 10%;">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -194,8 +195,7 @@
                                                                     <i class="ri-check-fill fw-bold"></i>
                                                                 </button>
                                                             @elseif ($kriteria_komponen->penilaian_penjamin->is_verified === false)
-                                                                <button
-                                                                    class="btn btn-sm btn-soft-danger btn-icon ms-1"
+                                                                <button class="btn btn-sm btn-soft-danger btn-icon ms-1"
                                                                     title="Ditolak">
                                                                     <i class="ri-close-fill fw-bold"></i>
                                                                 </button>
@@ -272,14 +272,16 @@
                                                         $totalJumlah += $jumlah;
                                                     @endphp
                                                     @if ($jumlah > 0)
-                                                        <span class="fw-semibold">{{ number_format($jumlah, 2) }}%</span>
+                                                        <span
+                                                            class="fw-semibold">{{ number_format($jumlah, 2) }}%</span>
                                                     @else
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if ($nilaiRataRata > 0)
-                                                        <span class="fw-semibold">{{ number_format($nilaiRataRata, 2) }}%</span>
+                                                        <span
+                                                            class="fw-semibold">{{ number_format($nilaiRataRata, 2) }}%</span>
                                                     @else
                                                         <span class="text-muted">-</span>
                                                     @endif
@@ -295,6 +297,13 @@
                                                         </button>
                                                     </td>
                                                 @endif
+                                                <td>
+                                                    <a href="{{ route('monitoring.kriteria-komponen.bukti-dukung', ['sub_komponen_id' => $sub_komponen_id, 'kriteria_komponen_id' => $kriteria_komponen->id]) }}"
+                                                        class="btn btn-sm btn-primary waves-effect waves-light"
+                                                        title="Evaluasi">
+                                                        <i class="ri-file-list-line align-middle"></i> Evaluasi
+                                                    </a>
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -363,12 +372,14 @@
                                                     $opdId = Auth::user()->opd_id ?? session('opd_session');
                                                     $nilaiRataRata = $this->subKomponen->getNilaiRataRata($opdId);
                                                 @endphp
-                                                <span class="fw-semibold">{{ number_format($nilaiRataRata, 2) }}%</span>
+                                                <span
+                                                    class="fw-semibold">{{ number_format($nilaiRataRata, 2) }}%</span>
                                             </td>
 
                                             @if ($this->penilaianDiKriteria && (Auth::user()->role->jenis == 'admin' || Auth::user()->role->jenis == 'opd'))
                                                 <td></td>
                                             @endif
+                                            <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>

@@ -390,8 +390,8 @@
                                                             @if ($bukti_dukung->penilaian_opd && $bukti_dukung->penilaian_opd->link_file)
                                                                 <i class="ri-eye-line align-bottom me-1"></i>Lihat
                                                             @elseif ($this->dalamRentangAkses)
-                                                                <i
-                                                                    class="ri-upload-2-line align-bottom me-1"></i>Unggah
+                                                                {{-- <i class="ri-upload-2-line align-bottom me-1"></i>Unggah --}}
+                                                                <i class="ri-eye-line align-bottom me-1"></i>Lihat
                                                             @else
                                                                 <i class="ri-eye-line align-bottom me-1"></i>Lihat
                                                             @endif
@@ -600,14 +600,14 @@
 
                                     {{-- Menu Unggah: Hanya admin dan opd, dan dalam rentang akses --}}
                                     {{-- Di mode kriteria + tab penilaian: Hide menu unggah karena user harus pilih bukti dukung dulu --}}
-                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses && $bukti_dukung_id)
+                                    {{-- @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses && $bukti_dukung_id)
                                         <a @click="menu = 'unggah'" :class="menu === 'unggah' ? 'active' : ''"
                                             href="javascript:void(0)" class="nav-link mb-2"><i
                                                 class="ri-upload-line me-1 align-middle"></i>Unggah</a>
-                                    @endif
+                                    @endif --}}
 
                                     {{-- Menu Penilaian: Validasi upload bukti dukung --}}
-                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd', 'penjamin']) && $this->dalamRentangAkses)
+                                    {{-- @if (in_array(Auth::user()->role->jenis, ['admin', 'penilai', 'opd', 'penjamin']) && $this->dalamRentangAkses)
                                         @php $canDoPenilaian = $this->canDoPenilaian; @endphp
                                         <a @click="@if ($canDoPenilaian['allowed']) menu = 'penilaian' @endif"
                                             :class="menu === 'penilaian' ? 'active' : ''" href="javascript:void(0)"
@@ -616,10 +616,10 @@
                                             title="{{ !$canDoPenilaian['allowed'] ? $canDoPenilaian['message'] : '' }}">
                                             <i class="ri-file-edit-line me-1 align-middle"></i>Penilaian
                                         </a>
-                                    @endif
+                                    @endif --}}
 
                                     {{-- Menu Verifikasi: Validasi upload bukti dukung --}}
-                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']) && $this->dalamRentangAkses)
+                                    {{-- @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin']) && $this->dalamRentangAkses)
                                         @php $canDoPenilaian = $this->canDoPenilaian; @endphp
                                         <a @click="@if ($canDoPenilaian['allowed']) menu = 'verifikasi' @endif"
                                             :class="menu === 'verifikasi' ? 'active' : ''" href="javascript:void(0)"
@@ -628,7 +628,7 @@
                                             title="{{ !$canDoPenilaian['allowed'] ? $canDoPenilaian['message'] : '' }}">
                                             <i class="ri-check-double-line me-1 align-middle"></i>Verifikasi
                                         </a>
-                                    @endif
+                                    @endif --}}
                                 </div>
                             </div><!-- end col -->
                             <div class="col-md-10">

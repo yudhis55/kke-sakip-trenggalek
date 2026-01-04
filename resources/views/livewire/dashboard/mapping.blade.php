@@ -73,17 +73,18 @@
 
                                 <div class="live-preview">
                                     <div class="table-responsive">
-                                        <table class="table align-middle table-nowrap mb-0">
+                                        <table class="table align-middle mb-0">
                                             <thead class="table-light">
                                                 <tr>
-                                                    <th scope="col">Kode</th>
-                                                    <th scope="col">Komponen/Sub Komponen/Kriteria Komponen/Bukti
+                                                    <th scope="col" style="width: 13%;">Kode</th>
+                                                    <th scope="col" style="width: 35%;">Komponen/Sub
+                                                        Komponen/Kriteria Komponen/Bukti
                                                         Dukung</th>
-                                                    <th scope="col">Bobot</th>
-                                                    <th scope="col">Kriteria Penilaian</th>
-                                                    <th scope="col">Verifikator/Penilai</th>
-                                                    <th scope="col">Penilaian Di</th>
-                                                    <th scope="col" style="width: 120px;">Aksi</th>
+                                                    <th scope="col" style="width: 8%;">Bobot</th>
+                                                    <th scope="col" style="width: 10%;">Kriteria Penilaian</th>
+                                                    <th scope="col" style="width: 12%;">Verifikator/Penilai</th>
+                                                    <th scope="col" style="width: 12%;">Penilaian Di</th>
+                                                    <th scope="col" style="width: 10%;">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

@@ -585,7 +585,13 @@
                                                                     class="btn btn-sm btn-outline-primary position-relative p-0 avatar-xs rounded-circle">
                                                                     <span
                                                                         class="avatar-title bg-transparent text-reset">
+                                                                        @if ($isKomponenLevel)
+                                                                        <i class="bx bx-folder"></i>
+                                                                        @elseif ($isSubKomponenLevel)
+                                                                        <i class="bx bx-file-blank"></i>
+                                                                        @else
                                                                         <i class="bx bx-menu"></i>
+                                                                        @endif
                                                                     </span>
                                                                     @if ($hasRejection)
                                                                         <span
@@ -1232,7 +1238,7 @@
                                 @if ($this->kriteriaKomponen)
                                     <div class="live-preview">
                                         <div class="table-responsive">
-                                            <table class="table align-middle mb-0" style="table-layout: fixed;"
+                                            <table class="table align-middle mb-0"
                                                 wire:key="table-bukti-{{ $kriteria_komponen_session }}">
                                                 <thead class="table-light">
                                                     <tr>
