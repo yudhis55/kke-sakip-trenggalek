@@ -59,7 +59,7 @@
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
-                            <div class="col-12">
+                            <div class="col-lg-8">
                                 <button wire:click="export" class="btn btn-primary w-100"
                                     @if (!$opd_selected_id) disabled @endif wire:loading.attr="disabled"
                                     wire:target="export">
@@ -71,6 +71,20 @@
                                             aria-hidden="true"></span>
                                         Memproses...
                                     </span>
+                                </button>
+                            </div>
+                            <div class="col-lg-2">
+                                <button type="button" class="btn btn-outline-primary w-100"
+                                    @if (!$opd_selected_id) disabled @endif data-bs-toggle="modal"
+                                    data-bs-target="#simpanTemplateModal">
+                                    <i class="ri-save-line me-1"></i>Jadikan Template
+                                </button>
+                            </div>
+                            <div class="col-lg-2">
+                                <button type="button" class="btn btn-outline-primary w-100"
+                                    @if (!$opd_selected_id) disabled @endif data-bs-toggle="modal"
+                                    data-bs-target="#loadTemplateModal">
+                                    <i class="ri-file-list-line me-1"></i>Load Template
                                 </button>
                             </div>
                         </div>
@@ -95,21 +109,33 @@
                                 <strong>Total Nilai OPD:</strong>
                                 <span
                                     class="fs-5 fw-bold">{{ number_format($this->previewData['persentase_total'], 2, ',', '.') }}%</span>
-                                <span class="badge bg-primary ms-2">Kategori: {{ $this->previewData['kategori_nilai'] }}</span>
+                                <span class="badge bg-primary ms-2">Kategori:
+                                    {{ $this->previewData['kategori_nilai'] }}</span>
                             </div>
 
                             <div x-data="{
-                                openAccordion: sessionStorage.getItem('openAccordion') ? parseInt(sessionStorage.getItem('openAccordion')) : 0
-                            }" x-init="$watch('openAccordion', value => sessionStorage.setItem('openAccordion', value))" class="accordion"
-                                id="accordionKomponen" wire:ignore.self>
+                                openAccordion: null,
+                                init() {
+                                    // Restore accordion state dari sessionStorage
+                                    const saved = sessionStorage.getItem('openAccordion');
+                                    if (saved !== null) {
+                                        this.openAccordion = parseInt(saved);
+                                    } else {
+                                        this.openAccordion = 0; // Default item pertama
+                                    }
+                                }
+                            }" class="accordion" id="accordionKomponen">
                                 @foreach ($this->previewData['komponens'] as $index => $komponen)
-                                    <div class="accordion-item">
+                                    <div class="accordion-item" wire:key="accordion-item-{{ $index }}">
                                         <h2 class="accordion-header" id="heading{{ $index }}">
                                             <button
-                                                @click="openAccordion = openAccordion === {{ $index }} ? null : {{ $index }}"
+                                                @click="openAccordion = {{ $index }}; sessionStorage.setItem('openAccordion', {{ $index }})"
                                                 class="accordion-button"
                                                 :class="{ 'collapsed': openAccordion !== {{ $index }} }"
-                                                type="button">
+                                                type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse{{ $index }}"
+                                                :aria-expanded="openAccordion === {{ $index }} ? 'true' : 'false'"
+                                                aria-controls="collapse{{ $index }}">
                                                 <strong>{{ $index + 1 }}. {{ $komponen['nama'] }}</strong>
                                                 <span class="badge bg-primary ms-2">
                                                     Nilai: {{ number_format($komponen['nilai'], 2, ',', '.') }} /
@@ -118,8 +144,10 @@
                                             </button>
                                         </h2>
                                         <div id="collapse{{ $index }}" class="accordion-collapse collapse"
-                                            :class="{ 'show': openAccordion === {{ $index }} }">
-                                            <div class="accordion-body">
+                                            :class="{ 'show': openAccordion === {{ $index }} }"
+                                            aria-labelledby="heading{{ $index }}">
+                                            <div class="accordion-body"
+                                                wire:key="accordion-body-{{ $index }}">
                                                 <div class="table-responsive">
                                                     <table class="table table-sm table-bordered">
                                                         <thead class="table-light">
@@ -239,14 +267,155 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                 @endforeach
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        @endif
-
     </div>
+    @endif
+</div>
+
+{{-- Modal Simpan Template --}}
+<div wire:ignore.self class="modal fade" id="simpanTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Simpan Sebagai Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="namaTemplate" class="form-label">Nama Template <span
+                            class="text-danger">*</span></label>
+                    <input type="text" wire:model="namaTemplate" id="namaTemplate" class="form-control"
+                        placeholder="Contoh: Template Dinas 2025" maxlength="100">
+                    @error('namaTemplate')
+                        <div class="text-danger mt-1 small">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="alert alert-info small mb-0">
+                    <i class="ri-information-line me-1"></i>
+                    Template akan menyimpan semua deskripsi, catatan, dan rekomendasi saat ini
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button wire:click="simpanTemplate" type="button" class="btn btn-success" data-bs-dismiss="modal">
+                    <i class="ri-save-line me-1"></i>Simpan Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Load Template (List) --}}
+<div wire:ignore.self class="modal fade" id="loadTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pilih Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (count($this->templateList) > 0)
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nama Template</th>
+                                    <th>Dibuat</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($this->templateList as $template)
+                                    <tr>
+                                        <td>
+                                            <i class="ri-file-text-line text-primary me-2"></i>
+                                            {{ $template->nama }}
+                                        </td>
+                                        <td>
+                                            <small
+                                                class="text-muted">{{ $template->created_at->format('d M Y H:i') }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <button wire:click="selectTemplate({{ $template->id }})" type="button"
+                                                class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                                data-bs-target="#konfirmasiLoadModal" data-bs-dismiss="modal">
+                                                <i class="ri-check-line me-1"></i>Pilih
+                                            </button>
+                                            <button wire:click="hapusTemplate({{ $template->id }})" type="button"
+                                                class="btn btn-sm btn-danger"
+                                                onclick="confirm('Hapus template ini?') || event.stopImmediatePropagation()">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-center py-4">
+                        <lord-icon src="https://cdn.lordicon.com/msoeawqm.json" trigger="loop"
+                            colors="primary:#405189,secondary:#0ab39c" style="width:72px;height:72px">
+                        </lord-icon>
+                        <h5 class="mt-3">Belum Ada Template</h5>
+                        <p class="text-muted">Simpan form saat ini sebagai template untuk digunakan kembali</p>
+                    </div>
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Konfirmasi Load Template --}}
+<div wire:ignore.self class="modal fade zoomIn" id="konfirmasiLoadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mt-2 text-center">
+                    <lord-icon src="https://cdn.lordicon.com/tdrtiskw.json" trigger="loop"
+                        colors="primary:#f7b84b,secondary:#405189" style="width:100px;height:100px"></lord-icon>
+                    <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                        <h4>Terapkan Template</h4>
+                        <p class="text-muted mx-4 mb-0">Apakah anda yakin ingin menerapkan template ini? Form saat
+                            ini akan diisi dengan data dari template.</p>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button wire:click="applyTemplate" type="button" class="btn w-sm btn-info"
+                        data-bs-dismiss="modal">
+                        Terapkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- @push('scripts')
+        <script>
+            // Close modal setelah simpan template berhasil
+            Livewire.on('templateSaved', () => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('simpanTemplateModal'));
+                if (modal) modal.hide();
+            });
+
+            // Close modal setelah apply template
+            Livewire.on('templateApplied', () => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('konfirmasiLoadModal'));
+                if (modal) modal.hide();
+            });
+        </script>
+    @endpush --}}
 </div>
