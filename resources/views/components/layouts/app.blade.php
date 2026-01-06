@@ -253,6 +253,14 @@
 
                         @if (Auth::user()->role->jenis == 'admin')
                             <li class="nav-item">
+                                <a wire:current="active" class="nav-link menu-link" href="/sinkron-data" role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                    <i class="mdi mdi-sync"></i> <span data-key="t-layouts">Sinkron Data</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        @if (Auth::user()->role->jenis == 'admin')
+                            <li class="nav-item">
                                 <a wire:current="active" class="nav-link menu-link" href="{{ route('pengaturan') }}"
                                     role="button" aria-expanded="false" aria-controls="sidebarAuth">
                                     <i class="mdi mdi-cog-outline"></i> <span
