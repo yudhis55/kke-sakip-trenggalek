@@ -8,7 +8,7 @@ use App\Models\Tahun;
 use App\Models\Opd;
 use App\Models\RiwayatSinkron;
 
-class SinkronData extends Component
+class SinkronDokumen extends Component
 {
     // Filter properties
     public $selected_tahun;
@@ -162,6 +162,6 @@ class SinkronData extends Component
 
     public function render()
     {
-        return view('livewire.dashboard.sinkron-data');
+        return view('livewire.dashboard.sinkron-dokumen');
     }
 }
