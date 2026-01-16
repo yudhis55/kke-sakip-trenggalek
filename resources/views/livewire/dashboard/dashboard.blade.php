@@ -444,7 +444,7 @@
             </div><!-- end col -->
         </div>
 
-        <div class="row">
+        {{-- <div class="row">
             <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
@@ -473,7 +473,7 @@
                 </div><!-- end card -->
             </div>
             <!-- end col -->
-        </div>
+        </div> --}}
 
     </div>
     <!-- container-fluid -->

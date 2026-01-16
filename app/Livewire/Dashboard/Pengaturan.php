@@ -165,6 +165,12 @@ class Pengaturan extends Component
         return \App\Models\TingkatanNilai::with('jenis_nilai')->get();
     }
 
+    #[Computed]
+    public function buktiDukungList()
+    {
+        return \App\Models\BuktiDukung::with('kriteria_komponen', 'role')->paginate(10, ['*'], 'buktiDukungPage');
+    }
+
     // ========== MAKS BOBOT KOMPONEN ==========
     public function saveMaksBobotKomponen()
     {

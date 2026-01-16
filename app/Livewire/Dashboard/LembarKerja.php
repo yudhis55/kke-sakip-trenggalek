@@ -23,6 +23,7 @@ use Livewire\Attributes\Computed;
 use Spatie\LivewireFilepond\WithFilePond;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use function Flasher\Prime\flash;
 
 class LembarKerja extends Component
@@ -50,6 +51,7 @@ class LembarKerja extends Component
     public $bukti_dukung_id;
     public $file_bukti_dukung = [];
     public $keterangan_upload = '';
+    public $page_number = null;
     public $is_perubahan = false;
     public $ganti_semua_dokumen = false;
     public $is_final = false;
@@ -151,6 +153,7 @@ class LembarKerja extends Component
         // Reset file upload states
         $this->file_bukti_dukung = [];
         $this->keterangan_upload = '';
+        $this->page_number = null;
         $this->is_perubahan = false;
         $this->ganti_semua_dokumen = false;
 
@@ -346,9 +349,11 @@ class LembarKerja extends Component
     {
         $query = Komponen::where('tahun_id', $this->tahun_id);
 
-        // Filter untuk verifikator: hanya tampilkan komponen sesuai role_id
+        // Filter untuk verifikator: hanya tampilkan komponen yang memiliki bukti_dukung sesuai role_id
         if (Auth::user()->role->jenis == 'verifikator') {
-            $query->where('role_id', Auth::user()->role_id);
+            $query->whereHas('bukti_dukung', function ($q) {
+                $q->where('role_id', Auth::user()->role_id);
+            });
         }
 
         return $query->get();
@@ -376,23 +381,57 @@ class LembarKerja extends Component
     public function lembarKerjaList()
     {
         if ($this->kriteria_komponen_session) {
-            return BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)->get();
+            // Level kriteria: tampilkan bukti dukung
+            $query = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session);
+
+            // Filter untuk verifikator: hanya bukti dengan role_id sesuai
+            if (Auth::user()->role->jenis == 'verifikator') {
+                $query->where('role_id', Auth::user()->role_id);
+            }
+
+            return $query->get();
         } elseif ($this->sub_komponen_session) {
+            // Level sub komponen: tampilkan kriteria komponen
             $subKomponen = SubKomponen::withCount('kriteria_komponen')->find($this->sub_komponen_session);
             if ($subKomponen) {
-                return $subKomponen->kriteria_komponen()->with(['sub_komponen' => function ($query) {
+                $query = $subKomponen->kriteria_komponen()->with(['sub_komponen' => function ($query) {
                     $query->withCount('kriteria_komponen');
-                }])->get();
+                }]);
+
+                // Filter untuk verifikator: hanya kriteria yang punya bukti_dukung dengan role_id sesuai
+                if (Auth::user()->role->jenis == 'verifikator') {
+                    $query->whereHas('bukti_dukung', function ($q) {
+                        $q->where('role_id', Auth::user()->role_id);
+                    });
+                }
+
+                return $query->get();
             }
             return collect();
         } elseif ($this->komponen_session) {
+            // Level komponen: tampilkan sub komponen
             $komponen = Komponen::find($this->komponen_session);
-            return $komponen ? $komponen->sub_komponen : collect();
+            if (!$komponen) {
+                return collect();
+            }
+
+            $query = $komponen->sub_komponen();
+
+            // Filter untuk verifikator: hanya sub komponen yang punya bukti_dukung dengan role_id sesuai
+            if (Auth::user()->role->jenis == 'verifikator') {
+                $query->whereHas('bukti_dukung', function ($q) {
+                    $q->where('role_id', Auth::user()->role_id);
+                });
+            }
+
+            return $query->get();
         } else {
-            // Default: tampilkan semua komponen (khusus verifikator: filter role_id)
+            // Default: tampilkan semua komponen (khusus verifikator: filter berdasarkan role_id di bukti_dukung)
             $query = Komponen::where('tahun_id', $this->tahun_id);
             if (Auth::user()->role->jenis == 'verifikator') {
-                $query->where('role_id', Auth::user()->role_id);
+                $query->whereHas('bukti_dukung', function ($q) {
+                    $q->where('role_id', Auth::user()->role_id);
+                });
             }
             return $query->get();
         }
@@ -495,8 +534,14 @@ class LembarKerja extends Component
             return collect();
         }
 
-        $buktiDukungList = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session)
-            ->get();
+        $query = BuktiDukung::where('kriteria_komponen_id', $this->kriteria_komponen_session);
+
+        // Filter untuk verifikator: hanya bukti dengan role_id sesuai
+        if (Auth::user()->role->jenis == 'verifikator') {
+            $query->where('role_id', Auth::user()->role_id);
+        }
+
+        $buktiDukungList = $query->get();
 
         // Get role IDs
         $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
@@ -865,6 +910,7 @@ class LembarKerja extends Component
             'file_bukti_dukung' => 'required|array',
             'file_bukti_dukung.*' => 'file|mimes:pdf',
             'keterangan_upload' => 'nullable|string',
+            'page_number' => 'nullable|integer|min:1',
         ]);
 
         if (!$this->bukti_dukung_id) {
@@ -902,6 +948,7 @@ class LembarKerja extends Component
                 'role_id' => $opdRoleId,
                 'link_file' => $uploadedFiles,
                 'keterangan' => $this->keterangan_upload,
+                'page_number' => $this->page_number,
                 'is_perubahan' => $this->is_perubahan,
             ]);
         } else {
@@ -932,6 +979,7 @@ class LembarKerja extends Component
             $penilaian->update([
                 'link_file' => $mergedFiles,
                 'keterangan' => $this->keterangan_upload,
+                'page_number' => $this->page_number,
                 'is_perubahan' => $this->is_perubahan,
             ]);
         }
@@ -948,6 +996,58 @@ class LembarKerja extends Component
             keterangan: $this->keterangan_upload ?: 'Upload ' . count($uploadedFiles) . ' file bukti dukung',
             isPerubahan: $isPerubahan
         );
+
+        // FITUR BARU: Cek apakah ada bukti dukung dengan nama sama di tahun yang sama
+        // Jika ada dan belum memiliki dokumen, copy dokumen yang diupload
+        $currentBuktiDukung = BuktiDukung::find($this->bukti_dukung_id);
+        if ($currentBuktiDukung && !empty($currentBuktiDukung->bukti_dukung)) {
+            // Cari bukti dukung dengan nama sama di tahun yang sama
+            $similarBuktiDukung = BuktiDukung::where('tahun_id', $currentBuktiDukung->tahun_id)
+                ->where('bukti_dukung', $currentBuktiDukung->bukti_dukung)
+                ->where('id', '!=', $this->bukti_dukung_id) // Exclude yang sedang diupload
+                ->get();
+
+            $copiedCount = 0;
+            foreach ($similarBuktiDukung as $otherBuktiDukung) {
+                // Cek apakah bukti dukung ini sudah memiliki penilaian dengan dokumen untuk OPD ini
+                $existingPenilaianOther = Penilaian::where('kriteria_komponen_id', $otherBuktiDukung->kriteria_komponen_id)
+                    ->where('bukti_dukung_id', $otherBuktiDukung->id)
+                    ->where('opd_id', $this->opd_session)
+                    ->where('role_id', $opdRoleId)
+                    ->first();
+
+                // Jika belum ada penilaian atau penilaian belum memiliki dokumen
+                if (!$existingPenilaianOther || empty($existingPenilaianOther->link_file)) {
+                    if (!$existingPenilaianOther) {
+                        // Buat penilaian baru dengan dokumen yang sama
+                        Penilaian::create([
+                            'kriteria_komponen_id' => $otherBuktiDukung->kriteria_komponen_id,
+                            'bukti_dukung_id' => $otherBuktiDukung->id,
+                            'opd_id' => $this->opd_session,
+                            'role_id' => $opdRoleId,
+                            'link_file' => $uploadedFiles,
+                            'keterangan' => $this->keterangan_upload . ' (Auto-copy dari bukti dukung serupa)',
+                            'page_number' => $this->page_number,
+                            'is_perubahan' => false,
+                        ]);
+                    } else {
+                        // Update penilaian existing dengan dokumen
+                        $existingPenilaianOther->update([
+                            'link_file' => $uploadedFiles,
+                            'keterangan' => $this->keterangan_upload . ' (Auto-copy dari bukti dukung serupa)',
+                            'page_number' => $this->page_number,
+                        ]);
+                    }
+                    $copiedCount++;
+                }
+            }
+
+            if ($copiedCount > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->info(
+                    'Dokumen juga disalin ke ' . $copiedCount . ' bukti dukung serupa yang belum memiliki dokumen.'
+                );
+            }
+        }
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil diupload.');
 
@@ -1366,7 +1466,7 @@ class LembarKerja extends Component
             case 'komponen':
                 // Cek di semua kriteria komponen yang punya bukti dukung
                 // Hanya dari role verifikator atau penjamin
-                return \DB::table('penilaian')
+                return DB::table('penilaian')
                     ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
                     ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
                     ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')

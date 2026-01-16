@@ -1,3 +1,28 @@
+@php
+    /**
+     * Helper function to get file URL from either local upload or E-SAKIP sync
+     * @param array $file File array with either 'path' (local) or 'url' (E-SAKIP)
+     * @return string Full URL to the file
+     */
+    function getFileUrl($file)
+    {
+        if (isset($file['from_esakip']) && $file['from_esakip']) {
+            return $file['url'] ?? '';
+        }
+        return isset($file['path']) ? asset('storage/' . $file['path']) : '';
+    }
+
+    /**
+     * Helper function to get file name from either source
+     * @param array $file File array
+     * @return string File name
+     */
+    function getFileName($file)
+    {
+        return $file['original_name'] ?? basename($file['path'] ?? ($file['url'] ?? 'Dokumen'));
+    }
+@endphp
+
 <div class="page-content">
     <style>
         .badge-pulsate {
@@ -426,41 +451,52 @@
                                                                 fn($item) => $item->penilaian_di === 'kriteria',
                                                             );
 
-                                                        // Ambil nama role verifikator dari komponen
+                                                        // Ambil nama role verifikator dari bukti_dukung dengan logic dinamis
                                                         $verifikatorRoleName = 'Verifikator';
-                                                        if ($showVerifikasiKolom && $this->komponen_session) {
-                                                            $komponen = \App\Models\Komponen::with('role')->find(
-                                                                $this->komponen_session,
-                                                            );
-                                                            if (
-                                                                $komponen &&
-                                                                $komponen->role &&
-                                                                $komponen->role->jenis === 'verifikator'
-                                                            ) {
-                                                                $verifikatorRoleName = $komponen->role->nama;
+                                                        if ($showVerifikasiKolom && $this->kriteria_komponen_session) {
+                                                            $buktis = \App\Models\BuktiDukung::with('role')
+                                                                ->where(
+                                                                    'kriteria_komponen_id',
+                                                                    $this->kriteria_komponen_session,
+                                                                )
+                                                                ->get();
+
+                                                            // Ambil semua role_id yang unik (exclude null)
+                                                            $roleIds = $buktis
+                                                                ->whereNotNull('role_id')
+                                                                ->pluck('role_id')
+                                                                ->unique();
+
+                                                            // Jika hanya ada 1 role_id yang sama untuk semua bukti, tampilkan nama spesifik
+                                                            if ($roleIds->count() === 1) {
+                                                                $firstBukti = $buktis
+                                                                    ->where('role_id', $roleIds->first())
+                                                                    ->first();
+                                                                if (
+                                                                    $firstBukti &&
+                                                                    $firstBukti->role &&
+                                                                    $firstBukti->role->jenis === 'verifikator'
+                                                                ) {
+                                                                    $verifikatorRoleName = $firstBukti->role->nama;
+                                                                }
                                                             }
+                                                            // Jika berbeda-beda atau ada yang null, tetap tampilkan 'Verifikator' (generik)
                                                         }
                                                     @endphp
 
                                                     {{-- Verifikasi Verifikator (HANYA untuk kriteria dengan penilaian_di='kriteria') --}}
                                                     @if ($showVerifikasiKolom && in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
+                                                        @php
+                                                            // Konversi nama role ke display name
+                                                            $displayName = match ($verifikatorRoleName) {
+                                                                'verifikator_bappeda' => 'Bappeda',
+                                                                'verifikator_bag_organisasi' => 'Bag. Organisasi',
+                                                                'verifikator_inspektorat' => 'Inspektorat',
+                                                                default => '',
+                                                            };
+                                                        @endphp
                                                         <th scope="col" style="width: 8%">Verifikator<br>
-                                                            @switch($verifikatorRoleName)
-                                                                @case('verifikator_bappeda')
-                                                                    Bappeda
-                                                                @break
-
-                                                                @case('verifikator_bag_organisasi')
-                                                                    Bagian Organisasi
-                                                                @break
-
-                                                                @case('verifikator_inspektorat')
-                                                                    Inspektorat
-                                                                @break
-
-                                                                @default
-                                                                    -;
-                                                            @endswitch
+                                                            {{ $displayName }}
                                                         </th>
                                                     @endif
 
@@ -586,11 +622,11 @@
                                                                     <span
                                                                         class="avatar-title bg-transparent text-reset">
                                                                         @if ($isKomponenLevel)
-                                                                        <i class="bx bx-folder"></i>
+                                                                            <i class="bx bx-folder"></i>
                                                                         @elseif ($isSubKomponenLevel)
-                                                                        <i class="bx bx-file-blank"></i>
+                                                                            <i class="bx bx-file-blank"></i>
                                                                         @else
-                                                                        <i class="bx bx-menu"></i>
+                                                                            <i class="bx bx-menu"></i>
                                                                         @endif
                                                                     </span>
                                                                     @if ($hasRejection)
@@ -1258,41 +1294,54 @@
 
                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'verifikator', 'penjamin', 'penilai']))
                                                                 @php
-                                                                    // Ambil nama role verifikator dari komponen
+                                                                    // Ambil nama role verifikator dari bukti_dukung dengan logic dinamis
                                                                     $verifikatorRoleNameBukti = 'Verifikator';
-                                                                    if ($this->komponen_session) {
-                                                                        $komponenBukti = \App\Models\Komponen::with(
-                                                                            'role',
-                                                                        )->find($this->komponen_session);
-                                                                        if (
-                                                                            $komponenBukti &&
-                                                                            $komponenBukti->role &&
-                                                                            $komponenBukti->role->jenis ===
-                                                                                'verifikator'
-                                                                        ) {
-                                                                            $verifikatorRoleNameBukti =
-                                                                                $komponenBukti->role->nama;
+                                                                    if ($this->kriteria_komponen_session) {
+                                                                        $buktis = \App\Models\BuktiDukung::with('role')
+                                                                            ->where(
+                                                                                'kriteria_komponen_id',
+                                                                                $this->kriteria_komponen_session,
+                                                                            )
+                                                                            ->get();
+
+                                                                        // Ambil semua role_id yang unik (exclude null)
+                                                                        $roleIds = $buktis
+                                                                            ->whereNotNull('role_id')
+                                                                            ->pluck('role_id')
+                                                                            ->unique();
+
+                                                                        // Jika hanya ada 1 role_id yang sama untuk semua bukti, tampilkan nama spesifik
+                                                                        if ($roleIds->count() === 1) {
+                                                                            $firstBukti = $buktis
+                                                                                ->where('role_id', $roleIds->first())
+                                                                                ->first();
+                                                                            if (
+                                                                                $firstBukti &&
+                                                                                $firstBukti->role &&
+                                                                                $firstBukti->role->jenis ===
+                                                                                    'verifikator'
+                                                                            ) {
+                                                                                $verifikatorRoleNameBukti =
+                                                                                    $firstBukti->role->nama;
+                                                                            }
                                                                         }
+                                                                        // Jika berbeda-beda atau ada yang null, tetap tampilkan 'Verifikator' (generik)
                                                                     }
                                                                 @endphp
-                                                                <th scope="col" style="width: 8%;">
-                                                                    Verifikator<br>
-                                                                    @switch($verifikatorRoleNameBukti)
-                                                                        @case('verifikator_bappeda')
-                                                                            Bappeda
-                                                                        @break
-
-                                                                        @case('verifikator_bag_organisasi')
-                                                                            Bagian Organisasi
-                                                                        @break
-
-                                                                        @case('verifikator_inspektorat')
-                                                                            Inspektorat
-                                                                        @break
-
-                                                                        @default
-                                                                            -
-                                                                    @endswitch
+                                                                @php
+                                                                    // Konversi nama role ke display name
+                                                                    $displayNameBukti = match (
+                                                                        $verifikatorRoleNameBukti
+                                                                    ) {
+                                                                        'verifikator_bappeda' => 'Bappeda',
+                                                                        'verifikator_bag_organisasi'
+                                                                            => 'Bag. Organisasi',
+                                                                        'verifikator_inspektorat' => 'Inspektorat',
+                                                                        default => '',
+                                                                    };
+                                                                @endphp
+                                                                <th scope="col" style="width: 8%;">Verifikator<br>
+                                                                    {{ $displayNameBukti }}
                                                                 </th>
                                                             @endif
 
@@ -1544,7 +1593,8 @@
                                                                     @endif
                                                                 @else
                                                                     {{-- Mode kriteria: Tidak ada tombol untuk Verifikator/Penjamin/Penilai --}}
-                                                                    <span class="fst-italic text-muted">Lihat lembar penilaian</span>
+                                                                    <span class="fst-italic text-muted">Lihat lembar
+                                                                        penilaian</span>
                                                                 @endif
                                                             </td>
                                                             @if (!$this->penilaianDiKriteria && in_array(Auth::user()->role->jenis, ['admin', 'opd']))
@@ -1678,7 +1728,8 @@
                                                 title="Bukti Dukung Sebelumnya">
                                                 <i class="ri-arrow-left-s-line"></i>
                                             </button>
-                                            <button type="button" class="btn btn-light" disabled style="min-width: 60px;">
+                                            <button type="button" class="btn btn-light" disabled
+                                                style="min-width: 60px;">
                                                 {{ $this->currentBuktiIndex }}/{{ $this->totalBuktiDukung }}
                                             </button>
                                             <button type="button" class="btn btn-outline-primary"
@@ -1841,37 +1892,83 @@
 
                                                                             <div class="tab-content mb-3">
                                                                                 @foreach ($files as $fileIndex => $file)
+                                                                                    @php
+                                                                                        $fileUrl = getFileUrl($file);
+                                                                                        $fileName = getFileName($file);
+                                                                                    @endphp
                                                                                     <div class="tab-pane {{ $fileIndex === 0 ? 'show active' : '' }}"
                                                                                         id="selected-bukti-file-{{ $fileIndex }}"
                                                                                         role="tabpanel">
-                                                                                        @if (str_ends_with(strtolower($file['path'] ?? ''), '.pdf'))
+                                                                                        @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                                            <div
+                                                                                                class="d-flex align-items-center mb-2">
+                                                                                                <a href="{{ $fileUrl }}{{ $penilaianOpd->page_number ? '#page=' . $penilaianOpd->page_number : '' }}"
+                                                                                                    target="_blank"
+                                                                                                    class="btn btn-sm btn-primary me-2">
+                                                                                                    <i
+                                                                                                        class="ri-external-link-line me-1"></i>
+                                                                                                    Buka di Tab Baru
+                                                                                                </a>
+                                                                                                @if ($penilaianOpd->page_number)
+                                                                                                    <span
+                                                                                                        class="badge bg-info">
+                                                                                                        <i
+                                                                                                            class="ri-bookmark-line me-1"></i>
+                                                                                                        Hal.
+                                                                                                        {{ $penilaianOpd->page_number }}
+                                                                                                    </span>
+                                                                                                @endif
+                                                                                            </div>
                                                                                             <embed
-                                                                                                src="{{ asset('storage/' . $file['path']) }}"
+                                                                                                src="{{ $fileUrl }}{{ $penilaianOpd->page_number ? '#page=' . $penilaianOpd->page_number : '' }}"
                                                                                                 type="application/pdf"
                                                                                                 width="100%"
                                                                                                 height="500" />
                                                                                         @else
-                                                                                            <img src="{{ asset('storage/' . ($file['path'] ?? '')) }}"
+                                                                                            <img src="{{ $fileUrl }}"
                                                                                                 class="img-fluid"
-                                                                                                alt="{{ $file['original_name'] ?? 'Dokumen' }}" />
+                                                                                                alt="{{ $fileName }}" />
                                                                                         @endif
                                                                                     </div>
                                                                                 @endforeach
                                                                             </div>
                                                                         @else
                                                                             {{-- Single file --}}
-                                                                            @php $file = $files[0]; @endphp
+                                                                            @php
+                                                                                $file = $files[0];
+                                                                                $fileUrl = getFileUrl($file);
+                                                                                $fileName = getFileName($file);
+                                                                            @endphp
                                                                             <div class="mb-3">
-                                                                                @if (str_ends_with(strtolower($file['path'] ?? ''), '.pdf'))
+                                                                                @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                                    <div
+                                                                                        class="d-flex align-items-center mb-2">
+                                                                                        <a href="{{ $fileUrl }}{{ $penilaianOpd->page_number ? '#page=' . $penilaianOpd->page_number : '' }}"
+                                                                                            target="_blank"
+                                                                                            class="btn btn-sm btn-primary me-2">
+                                                                                            <i
+                                                                                                class="ri-external-link-line me-1"></i>
+                                                                                            Buka di Tab Baru
+                                                                                        </a>
+                                                                                        @if ($penilaianOpd->page_number)
+                                                                                            <span
+                                                                                                class="badge bg-info">
+                                                                                                <i
+                                                                                                    class="ri-bookmark-line me-1"></i>
+                                                                                                Hal.
+                                                                                                {{ $penilaianOpd->page_number }}
+                                                                                            </span>
+                                                                                        @endif
+                                                                                    </div>
                                                                                     <embed
-                                                                                        src="{{ asset('storage/' . $file['path']) }}"
+                                                                                        src="{{ $fileUrl }}{{ $penilaianOpd->page_number ? '#page=' . $penilaianOpd->page_number : '' }}"
                                                                                         type="application/pdf"
                                                                                         width="100%"
                                                                                         height="500" />
                                                                                 @else
-                                                                                    <img src="{{ asset('storage/' . ($file['path'] ?? '')) }}"
+                                                                                    <img src="{{ $fileUrl }}"
                                                                                         class="img-fluid"
-                                                                                        alt="{{ $file['original_name'] ?? 'Dokumen' }}" />
+                                                                                        alt="{{ $fileName }}" />
                                                                                 @endif
                                                                             </div>
                                                                         @endif
@@ -1973,38 +2070,86 @@
                                                                                                 $buktiItem->id .
                                                                                                 '-file-' .
                                                                                                 $fileIndex;
+                                                                                            $fileUrl = getFileUrl(
+                                                                                                $file,
+                                                                                            );
+                                                                                            $fileName = getFileName(
+                                                                                                $file,
+                                                                                            );
                                                                                         @endphp
                                                                                         <div class="tab-pane {{ $fileIndex === 0 ? 'show active' : '' }}"
                                                                                             id="{{ $tabId }}"
                                                                                             role="tabpanel">
-                                                                                            @if (str_ends_with(strtolower($file['path'] ?? ''), '.pdf'))
+                                                                                            @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                                                <div
+                                                                                                    class="d-flex align-items-center mb-2">
+                                                                                                    <a href="{{ $fileUrl }}{{ $buktiItem->penilaian_opd->page_number ? '#page=' . $buktiItem->penilaian_opd->page_number : '' }}"
+                                                                                                        target="_blank"
+                                                                                                        class="btn btn-sm btn-primary me-2">
+                                                                                                        <i
+                                                                                                            class="ri-external-link-line me-1"></i>
+                                                                                                        Buka di Tab Baru
+                                                                                                    </a>
+                                                                                                    @if ($buktiItem->penilaian_opd->page_number)
+                                                                                                        <span
+                                                                                                            class="badge bg-info">
+                                                                                                            <i
+                                                                                                                class="ri-bookmark-line me-1"></i>
+                                                                                                            Hal.
+                                                                                                            {{ $buktiItem->penilaian_opd->page_number }}
+                                                                                                        </span>
+                                                                                                    @endif
+                                                                                                </div>
                                                                                                 <embed
-                                                                                                    src="{{ asset('storage/' . $file['path']) }}"
+                                                                                                    src="{{ $fileUrl }}{{ $buktiItem->penilaian_opd->page_number ? '#page=' . $buktiItem->penilaian_opd->page_number : '' }}"
                                                                                                     type="application/pdf"
                                                                                                     width="100%"
                                                                                                     height="500" />
                                                                                             @else
-                                                                                                <img src="{{ asset('storage/' . ($file['path'] ?? '')) }}"
+                                                                                                <img src="{{ $fileUrl }}"
                                                                                                     class="img-fluid"
-                                                                                                    alt="{{ $file['original_name'] ?? 'Dokumen' }}" />
+                                                                                                    alt="{{ $fileName }}" />
                                                                                             @endif
                                                                                         </div>
                                                                                     @endforeach
                                                                                 </div>
                                                                             @else
                                                                                 {{-- Single file - tampilkan langsung tanpa tab --}}
-                                                                                @php $file = $files[0]; @endphp
+                                                                                @php
+                                                                                    $file = $files[0];
+                                                                                    $fileUrl = getFileUrl($file);
+                                                                                    $fileName = getFileName($file);
+                                                                                @endphp
                                                                                 <div class="mb-3">
-                                                                                    @if (str_ends_with(strtolower($file['path'] ?? ''), '.pdf'))
+                                                                                    @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                                        <div
+                                                                                            class="d-flex align-items-center mb-2">
+                                                                                            <a href="{{ $fileUrl }}{{ $buktiItem->penilaian_opd->page_number ? '#page=' . $buktiItem->penilaian_opd->page_number : '' }}"
+                                                                                                target="_blank"
+                                                                                                class="btn btn-sm btn-primary me-2">
+                                                                                                <i
+                                                                                                    class="ri-external-link-line me-1"></i>
+                                                                                                Buka di Tab Baru
+                                                                                            </a>
+                                                                                            @if ($buktiItem->penilaian_opd->page_number)
+                                                                                                <span
+                                                                                                    class="badge bg-info">
+                                                                                                    <i
+                                                                                                        class="ri-bookmark-line me-1"></i>
+                                                                                                    Hal.
+                                                                                                    {{ $buktiItem->penilaian_opd->page_number }}
+                                                                                                </span>
+                                                                                            @endif
+                                                                                        </div>
                                                                                         <embed
-                                                                                            src="{{ asset('storage/' . $file['path']) }}"
+                                                                                            src="{{ $fileUrl }}{{ $buktiItem->penilaian_opd->page_number ? '#page=' . $buktiItem->penilaian_opd->page_number : '' }}"
                                                                                             type="application/pdf"
                                                                                             width="100%"
                                                                                             height="500" />
                                                                                     @else
-                                                                                        <img src="{{ asset('storage/' . ($file['path'] ?? '')) }}"
+                                                                                        <img src="{{ $fileUrl }}"
                                                                                             class="img-fluid"
-                                                                                            alt="{{ $file['original_name'] ?? 'Dokumen' }}" />
+                                                                                            alt="{{ $fileName }}" />
                                                                                     @endif
                                                                                 </div>
                                                                             @endif
@@ -2097,33 +2242,80 @@
                                                             </ul>
                                                             <div class="tab-content">
                                                                 @foreach ($this->selectedFileBuktiDukung as $index => $file)
+                                                                    @php
+                                                                        $fileUrl = getFileUrl($file);
+                                                                        $fileName = getFileName($file);
+                                                                    @endphp
                                                                     <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
                                                                         id="dokumen-file-{{ $index }}"
                                                                         role="tabpanel">
-                                                                        @if (str_ends_with(strtolower($file['path']), '.pdf'))
+                                                                        @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                            <div
+                                                                                class="d-flex align-items-center mb-2">
+                                                                                <a href="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
+                                                                                    target="_blank"
+                                                                                    class="btn btn-sm btn-primary me-2">
+                                                                                    <i
+                                                                                        class="ri-external-link-line me-1"></i>
+                                                                                    Buka di Tab Baru
+                                                                                </a>
+                                                                                @if ($penilaianOpdRecord->page_number)
+                                                                                    <span class="badge bg-info">
+                                                                                        <i
+                                                                                            class="ri-bookmark-line me-1"></i>
+                                                                                        Hal.
+                                                                                        {{ $penilaianOpdRecord->page_number }}
+                                                                                    </span>
+                                                                                @endif
+                                                                            </div>
                                                                             <embed
-                                                                                src="{{ asset('storage/' . $file['path']) }}"
+                                                                                src="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
                                                                                 type="application/pdf" width="100%"
                                                                                 height="600" />
                                                                         @else
-                                                                            <img src="{{ asset('storage/' . $file['path']) }}"
+                                                                            <img src="{{ $fileUrl }}"
                                                                                 class="img-fluid"
-                                                                                alt="{{ $file['original_name'] }}" />
+                                                                                alt="{{ $fileName }}" />
                                                                         @endif
                                                                     </div>
                                                                 @endforeach
                                                             </div>
                                                         @else
                                                             {{-- Single file --}}
-                                                            @php $file = $this->selectedFileBuktiDukung[0]; @endphp
-                                                            @if (str_ends_with(strtolower($file['path']), '.pdf'))
-                                                                <embed src="{{ asset('storage/' . $file['path']) }}"
+                                                            @php
+                                                                $file = $this->selectedFileBuktiDukung[0];
+                                                                // Handle both local upload (path) and E-SAKIP (file_url)
+                                                                $fileUrl =
+                                                                    isset($file['from_esakip']) && $file['from_esakip']
+                                                                        ? $file['url']
+                                                                        : asset('storage/' . $file['path']);
+                                                                $fileName =
+                                                                    $file['original_name'] ??
+                                                                    basename($file['path'] ?? ($file['url'] ?? ''));
+                                                            @endphp
+                                                            @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                <div class="d-flex align-items-center mb-2">
+                                                                    <a href="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
+                                                                        target="_blank"
+                                                                        class="btn btn-sm btn-primary me-2">
+                                                                        <i class="ri-external-link-line me-1"></i>
+                                                                        Buka di Tab Baru
+                                                                    </a>
+                                                                    @if ($penilaianOpdRecord->page_number)
+                                                                        <span class="badge bg-info">
+                                                                            <i class="ri-bookmark-line me-1"></i>
+                                                                            Hal.
+                                                                            {{ $penilaianOpdRecord->page_number }}
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+                                                                <embed
+                                                                    src="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
                                                                     type="application/pdf" width="100%"
                                                                     height="600" />
                                                             @else
-                                                                <img src="{{ asset('storage/' . $file['path']) }}"
-                                                                    class="img-fluid"
-                                                                    alt="{{ $file['original_name'] }}" />
+                                                                <img src="{{ $fileUrl }}" class="img-fluid"
+                                                                    alt="{{ $fileName }}" />
                                                             @endif
                                                         @endif
                                                     @else
@@ -2164,13 +2356,30 @@
                                                             </div>
                                                         </div>
 
+                                                        <div class="mb-3">
+                                                            <label for="page_number" class="form-label">
+                                                                Halaman <small class="text-muted">(opsional)</small>
+                                                            </label>
+                                                            <input wire:model="page_number"
+                                                                class="form-control @error('page_number') is-invalid @enderror"
+                                                                type="number" id="page_number" min="1"
+                                                                :disabled="isUploading" placeholder="Contoh: 15">
+                                                            <div class="form-text">
+                                                                <i class="ri-bookmark-line"></i>
+                                                                Tandai nomor halaman awal dokumen untuk memudahkan
+                                                                navigasi saat verifikasi
+                                                            </div>
+                                                            @error('page_number')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+
                                                         <div class="form-check form-switch mb-3">
                                                             <input wire:model="is_perubahan" type="checkbox"
                                                                 class="form-check-input" id="is_perubahan_switch"
                                                                 :disabled="isUploading" role="switch">
                                                             <label class="form-check-label" for="is_perubahan_switch">
-                                                                <i class="ri-refresh-line me-1"></i>Tandai sebagai
-                                                                Perubahan
+                                                                Tandai sebagai Perubahan
                                                             </label>
                                                             <div class="form-text">Centang jika dokumen ini merupakan
                                                                 perbaikan/perubahan dari dokumen sebelumnya</div>
@@ -2609,13 +2818,13 @@
                                                                             <td>
                                                                                 <span
                                                                                     class="text-dark">{{ $history->getActionDescription() }}</span>
-                                                                                @if ($history->is_perubahan)
+                                                                                {{-- @if ($history->is_perubahan)
                                                                                     <span
                                                                                         class="badge bg-soft-warning text-warning ms-1">
                                                                                         <i
                                                                                             class="ri-refresh-line me-1"></i>Revisi
                                                                                     </span>
-                                                                                @endif
+                                                                                @endif --}}
                                                                             </td>
                                                                             <td>
                                                                                 @if ($history->tingkatan_nilai)
