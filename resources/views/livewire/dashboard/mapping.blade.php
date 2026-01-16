@@ -82,7 +82,7 @@
                                                         Dukung</th>
                                                     <th scope="col" style="width: 8%;">Bobot</th>
                                                     <th scope="col" style="width: 10%;">Kriteria Penilaian</th>
-                                                    <th scope="col" style="width: 12%;">Verifikator/Penilai</th>
+                                                    <th scope="col" style="width: 12%;">Verifikator</th>
                                                     <th scope="col" style="width: 12%;">Penilaian Di</th>
                                                     <th scope="col" style="width: 10%;">Aksi</th>
                                                 </tr>
@@ -100,7 +100,7 @@
                                                         <td><strong>{{ $komponen->nama }}</strong></td>
                                                         <td>{{ $komponen->bobot }}%</td>
                                                         <td></td>
-                                                        <td>{{ $komponen->role->nama ?? '' }}</td>
+                                                        <td></td>
                                                         <td></td>
                                                         <td>
                                                             <div class="dropdown">
@@ -261,7 +261,7 @@
                                                                         {{ $bukti_dukung->nama }}</td>
                                                                     <td>{{ $bukti_dukung->bobot }}%</td>
                                                                     <td>{{ $bukti_dukung->kriteria_penilaian }}</td>
-                                                                    <td></td>
+                                                                    <td>{{ $bukti_dukung->role->nama ?? '' }}</td>
                                                                     <td></td>
                                                                     <td>
                                                                         <div class="hstack gap-2">
@@ -333,15 +333,6 @@
                                     class="text-danger">*</span></label>
                             <input wire:model="bobot_komponen" type="number" step="0.01" class="form-control"
                                 id="komponenBobot" placeholder="Contoh: 25.00">
-                        </div>
-                        <div class="mb-3">
-                            <label for="komponenEvaluator" class="form-label">Evaluator/Verifikator</label>
-                            <select wire:model="role_id" class="form-select" id="komponenEvaluator">
-                                <option value="">Pilih Role</option>
-                                @foreach ($this->roleoptions as $role)
-                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
-                                @endforeach
-                            </select>
                         </div>
                         <div class="mb-3">
                             <label for="komponenTahun" class="form-label">Tahun <span
@@ -503,22 +494,43 @@
                 <div class="modal-body">
                     <form>
                         <div class="mb-3">
-                            <label for="buktiKode" class="form-label">Kode Bukti Dukung <span
-                                    class="text-danger">*</span></label>
-                            <input wire:model="kd_bukti" type="text" class="form-control" id="buktiKode"
-                                placeholder="Contoh: BD1">
-                        </div>
-                        <div class="mb-3">
                             <label for="buktiNama" class="form-label">Nama Bukti Dukung <span
                                     class="text-danger">*</span></label>
                             <textarea wire:model="nama_bukti" class="form-control" id="buktiNama" rows="3"
                                 placeholder="Masukkan nama bukti dukung"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="buktiKriteria" class="form-label">Kriteria Penilaian</label>
-                            <textarea wire:model="kriteria_penilaian" class="form-control" id="buktiKriteria" rows="2"
-                                placeholder="Masukkan kriteria penilaian"></textarea>
+                            <label for="buktiVerifikator" class="form-label">Verifikator</label>
+                            <select wire:model="role_id_bukti" class="form-select" id="buktiVerifikator">
+                                <option value="">Pilih Role</option>
+                                @foreach ($this->roleoptions as $role)
+                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
+                                @endforeach
+                            </select>
                         </div>
+                        <div class="mb-4">
+                            <label for="esakipDocumentType" class="form-label">Mapping Dokumen E-SAKIP
+                                (Opsional)</label>
+                            <select wire:model="esakip_document_type" class="form-select" id="esakipDocumentType">
+                                <option value="">-- Tidak ada di E-SAKIP --</option>
+                                @foreach ($this->esakipDocumentTypes as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Pilih jenis dokumen E-SAKIP yang sesuai untuk
+                                sinkronisasi otomatis</small>
+                        </div>
+                        @if ($this->selectedKriteriaPenilaianDi === 'bukti')
+                            <div class="mb-4 form-check">
+                                <input type="checkbox" wire:model="is_auto_verified" class="form-check-input"
+                                    id="buktiAutoVerified">
+                                <label class="form-check-label" for="buktiAutoVerified">
+                                    Verifikasi Otomatis
+                                </label>
+                                <small class="form-text text-muted d-block">Centang jika bukti ini otomatis
+                                    terverifikasi setelah sinkron data dari E-SAKIP</small>
+                            </div>
+                        @endif
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -569,15 +581,6 @@
                                     class="text-danger">*</span></label>
                             <input wire:model="bobot_komponen" type="number" step="0.01" class="form-control"
                                 id="editKomponenBobot" placeholder="Contoh: 25.00">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editKomponenEvaluator" class="form-label">Evaluator/Verifikator</label>
-                            <select wire:model="role_id" class="form-select" id="editKomponenEvaluator">
-                                <option value="">Pilih Role</option>
-                                @foreach ($this->roleoptions as $role)
-                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
-                                @endforeach
-                            </select>
                         </div>
                         @if ($errors->all())
                             <div class="alert alert-danger">
@@ -737,6 +740,39 @@
                             <textarea wire:model="nama_bukti" class="form-control" id="editBuktiNama" rows="3"
                                 placeholder="Masukkan nama bukti dukung"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="editBuktiVerifikator" class="form-label">Verifikator</label>
+                            <select wire:model="role_id_bukti" class="form-select" id="editBuktiVerifikator">
+                                <option value="">Pilih Role</option>
+                                @foreach ($this->roleoptions as $role)
+                                    <option value="{{ $role->id }}">{{ $role->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="editEsakipDocumentType" class="form-label">Mapping Dokumen E-SAKIP
+                                (Opsional)</label>
+                            <select wire:model="esakip_document_type" class="form-select"
+                                id="editEsakipDocumentType">
+                                <option value="">-- Tidak ada di E-SAKIP --</option>
+                                @foreach ($this->esakipDocumentTypes as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Pilih jenis dokumen E-SAKIP yang sesuai untuk
+                                sinkronisasi otomatis</small>
+                        </div>
+                        @if ($this->selectedKriteriaPenilaianDi === 'bukti')
+                            <div class="mb-4 form-check">
+                                <input type="checkbox" wire:model="is_auto_verified" class="form-check-input"
+                                    id="editBuktiAutoVerified">
+                                <label class="form-check-label" for="editBuktiAutoVerified">
+                                    Verifikasi Otomatis
+                                </label>
+                                <small class="form-text text-muted d-block">Centang jika bukti ini otomatis
+                                    terverifikasi setelah sinkron data dari E-SAKIP</small>
+                            </div>
+                        @endif
                     </form>
                 </div>
                 <div class="modal-footer">

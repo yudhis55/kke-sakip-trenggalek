@@ -14,10 +14,10 @@ use App\Models\Role;
 
 class Mapping extends Component
 {
-    public $kd_komponen, $nama_komponen, $bobot_komponen, $role_id;
+    public $kd_komponen, $nama_komponen, $bobot_komponen;
     public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id, $penilaian_di_kriteria;
-    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian;
+    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian, $role_id_bukti, $is_auto_verified, $esakip_document_type, $esakip_document_code;
     public $tahun_id;
 
     // Edit mode properties
@@ -43,16 +43,31 @@ class Mapping extends Component
     }
 
     #[Computed]
+    public function esakipDocumentTypes()
+    {
+        return config('esakip.document_types');
+    }
+
+    #[Computed]
+    public function selectedKriteriaPenilaianDi()
+    {
+        if ($this->kriteria_komponen_id) {
+            $kriteria = KriteriaKomponen::find($this->kriteria_komponen_id);
+            return $kriteria?->penilaian_di ?? 'kriteria';
+        }
+        return 'kriteria';
+    }
+
+    #[Computed]
     public function roleoptions()
     {
-        return Role::all();
+        return Role::where('jenis', 'verifikator')->get();
     }
 
     #[Computed]
     public function fullMapping()
     {
         $komponens = Komponen::with([
-            'role',
             'sub_komponen' => function ($q) {
                 $q->withCount('kriteria_komponen')
                     ->with([
@@ -65,6 +80,7 @@ class Mapping extends Component
                                     },
                                     'bukti_dukung' => function ($q) {
                                         $q->with([
+                                            'role',
                                             'kriteria_komponen' => function ($kq) {
                                                 $kq->withCount('bukti_dukung')
                                                     ->with([
@@ -90,7 +106,6 @@ class Mapping extends Component
             'kd_komponen' => 'required|unique:komponen,kode',
             'nama_komponen' => 'required',
             'bobot_komponen' => 'required|numeric|min:0',
-            'role_id' => 'nullable|exists:role,id',
         ]);
 
         // Calculate total existing bobot for the same tahun_id
@@ -108,14 +123,12 @@ class Mapping extends Component
             'nama' => $this->nama_komponen,
             'bobot' => $this->bobot_komponen,
             'tahun_id' => $this->tahun_id,
-            'role_id' => $this->role_id,
         ]);
 
         // Reset form fields
         $this->kd_komponen = '';
         $this->nama_komponen = '';
         $this->bobot_komponen = '';
-        $this->role_id = null;
 
         unset($this->fullMapping);
     }
@@ -194,16 +207,22 @@ class Mapping extends Component
     {
         $this->validate([
             'nama_bukti' => 'required',
-            'kriteria_penilaian' => 'nullable|string',
+            'role_id_bukti' => 'nullable|exists:role,id',
+            'is_auto_verified' => 'nullable|boolean',
+            'esakip_document_type' => 'nullable|string',
+            'esakip_document_code' => 'nullable|string',
         ]);
 
         // Create Bukti Dukung
         BuktiDukung::create([
             'nama' => $this->nama_bukti,
-            'kriteria_penilaian' => $this->kriteria_penilaian,
             'kriteria_komponen_id' => $this->kriteria_komponen_id,
             'sub_komponen_id' => KriteriaKomponen::find($this->kriteria_komponen_id)->sub_komponen_id,
             'komponen_id' => KriteriaKomponen::find($this->kriteria_komponen_id)->komponen_id,
+            'role_id' => $this->role_id_bukti,
+            'is_auto_verified' => $this->is_auto_verified ?? false,
+            'esakip_document_type' => $this->esakip_document_type,
+            'esakip_document_code' => $this->esakip_document_code,
             'tahun_id' => $this->tahun_id,
         ]);
 
@@ -213,6 +232,10 @@ class Mapping extends Component
         $this->bobot_bukti = '';
         $this->kriteria_penilaian = '';
         $this->kriteria_komponen_id = '';
+        $this->role_id_bukti = null;
+        $this->is_auto_verified = false;
+        $this->esakip_document_type = '';
+        $this->esakip_document_code = '';
 
         unset($this->fullMapping);
     }
@@ -226,7 +249,6 @@ class Mapping extends Component
             $this->kd_komponen = $komponen->kode;
             $this->nama_komponen = $komponen->nama;
             $this->bobot_komponen = $komponen->bobot;
-            $this->role_id = $komponen->role_id;
             $this->isEditMode = true;
         }
     }
@@ -237,7 +259,6 @@ class Mapping extends Component
             'kd_komponen' => 'required',
             'nama_komponen' => 'required',
             'bobot_komponen' => 'required|numeric|min:0',
-            'role_id' => 'nullable|exists:role,id',
         ]);
 
         $komponen = Komponen::find($this->editKomponenId);
@@ -257,7 +278,6 @@ class Mapping extends Component
                 'kode' => $this->kd_komponen,
                 'nama' => $this->nama_komponen,
                 'bobot' => $this->bobot_komponen,
-                'role_id' => $this->role_id,
             ]);
 
             $this->resetFormKomponen();
@@ -355,6 +375,10 @@ class Mapping extends Component
             $this->nama_bukti = $bukti->nama;
             $this->kriteria_penilaian = $bukti->kriteria_penilaian;
             $this->kriteria_komponen_id = $bukti->kriteria_komponen_id;
+            $this->role_id_bukti = $bukti->role_id;
+            $this->is_auto_verified = $bukti->is_auto_verified;
+            $this->esakip_document_type = $bukti->esakip_document_type;
+            $this->esakip_document_code = $bukti->esakip_document_code;
             $this->isEditMode = true;
         }
     }
@@ -364,6 +388,10 @@ class Mapping extends Component
         $this->validate([
             'nama_bukti' => 'required',
             'kriteria_penilaian' => 'nullable|string',
+            'role_id_bukti' => 'nullable|exists:role,id',
+            'is_auto_verified' => 'nullable|boolean',
+            'esakip_document_type' => 'nullable|string',
+            'esakip_document_code' => 'nullable|string',
         ]);
 
         $bukti = BuktiDukung::find($this->editBuktiDukungId);
@@ -371,6 +399,10 @@ class Mapping extends Component
             $bukti->update([
                 'nama' => $this->nama_bukti,
                 'kriteria_penilaian' => $this->kriteria_penilaian,
+                'role_id' => $this->role_id_bukti,
+                'is_auto_verified' => $this->is_auto_verified ?? false,
+                'esakip_document_type' => $this->esakip_document_type,
+                'esakip_document_code' => $this->esakip_document_code,
             ]);
 
             $this->resetFormBuktiDukung();
@@ -383,7 +415,6 @@ class Mapping extends Component
         $this->kd_komponen = '';
         $this->nama_komponen = '';
         $this->bobot_komponen = '';
-        $this->role_id = null;
         $this->editKomponenId = null;
         $this->isEditMode = false;
         unset($this->fullMapping);
@@ -418,6 +449,10 @@ class Mapping extends Component
         $this->nama_bukti = '';
         $this->kriteria_penilaian = '';
         $this->kriteria_komponen_id = '';
+        $this->role_id_bukti = null;
+        $this->is_auto_verified = false;
+        $this->esakip_document_type = '';
+        $this->esakip_document_code = '';
         $this->editBuktiDukungId = null;
         $this->isEditMode = false;
         unset($this->fullMapping);
