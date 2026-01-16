@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('sub_komponen_id')->constrained('sub_komponen')->restrictOnDelete();
             $table->foreignId('komponen_id')->constrained('komponen')->restrictOnDelete();
             $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
+            $table->foreignId('role_id')->constrained('role')->restrictOnDelete();
+            $table->boolean('is_auto_verified')->default(true);
             $table->timestamps();
         });
     }

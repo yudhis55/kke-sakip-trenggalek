@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('komponen', function (Blueprint $table) {
-            $table->id();
-            $table->string('kode');
-            $table->string('nama');
-            $table->float('bobot');
-            $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
-            $table->timestamps();
+        Schema::table('opd', function (Blueprint $table) {
+            $table->string('esakip_opd_id')->nullable()->after('nama')->comment('ID OPD di sistem E-SAKIP untuk mapping saat sinkronisasi');
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('komponen');
+        Schema::table('opd', function (Blueprint $table) {
+            $table->dropColumn('esakip_opd_id');
+        });
     }
 };

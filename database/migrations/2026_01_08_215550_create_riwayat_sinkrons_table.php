@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('komponen', function (Blueprint $table) {
+        Schema::create('riwayat_sinkron', function (Blueprint $table) {
             $table->id();
-            $table->string('kode');
-            $table->string('nama');
-            $table->float('bobot');
-            $table->foreignId('tahun_id')->constrained('tahun')->restrictOnDelete();
+            $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
+            $table->string('dokumen');
+            $table->string('tahun');
+            $table->string('status');
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('komponen');
+        Schema::dropIfExists('riwayat_sinkron');
     }
 };
