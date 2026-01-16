@@ -13,6 +13,11 @@ class BuktiDukung extends Model
     protected $guarded = ['id'];
     protected $appends = ['bobot'];
 
+    protected $casts = [
+        'is_auto_verified' => 'boolean',
+        'last_synced_at' => 'datetime',
+    ];
+
     public function kriteria_komponen(): BelongsTo
     {
         return $this->belongsTo(KriteriaKomponen::class, 'kriteria_komponen_id');
@@ -31,6 +36,11 @@ class BuktiDukung extends Model
     public function tahun(): BelongsTo
     {
         return $this->belongsTo(Tahun::class, 'tahun_id');
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     public function penilaian(): HasMany

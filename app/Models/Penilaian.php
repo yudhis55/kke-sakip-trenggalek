@@ -13,6 +13,8 @@ class Penilaian extends Model
     protected $casts = [
         'link_file' => 'array',
         'is_perubahan' => 'boolean',
+        'esakip_synced_at' => 'datetime',
+        'page_number' => 'integer',
     ];
 
     public function tingkatan_nilai()
