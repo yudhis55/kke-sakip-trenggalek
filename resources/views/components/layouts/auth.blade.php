@@ -7,8 +7,8 @@
     <meta charset="utf-8" />
     <title>{{ $title ?? 'Dashboard KKE SAKIP Trenggalek' }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
-    <meta content="Themesbrand" name="author" />
+    <meta content="Kertas Kerja Evaluasi Sistem Akuntabilitas Kinerja Instansi Pemerintah Kab Trenggalek" name="description" />
+    <meta content="Diskominfo Trenggalek" name="author" />
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/logo-trenggalek-mini.png') }}">
 

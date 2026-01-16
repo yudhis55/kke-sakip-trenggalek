@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Services\EsakipSyncService;
 use App\Models\Tahun;
 use App\Models\Opd;
@@ -10,6 +11,7 @@ use App\Models\RiwayatSinkron;
 
 class SinkronData extends Component
 {
+    use WithPagination;
     // Filter properties
     public $selected_tahun;
     public $selected_opd;
@@ -63,8 +65,8 @@ class SinkronData extends Component
             );
 
             if ($this->previewData['document_count'] === 0) {
-                flash()->use('theme.ruby')->option('position', 'bottom-right')->warning('Tidak ada dokumen yang ditemukan untuk filter yang dipilih');
-                $this->previewData = null;
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->warning('Tidak ada dokumen yang ditemukan untuk filter yang dipilih. Coba filter lain atau periksa data di E-SAKIP.');
+                // Tetap tampilkan preview dengan info kosong, jangan set null
             }
         } catch (\Exception $e) {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal preview: ' . $e->getMessage());
@@ -156,8 +158,7 @@ class SinkronData extends Component
     {
         return RiwayatSinkron::with(['opd', 'tahun'])
             ->orderBy('synced_at', 'desc')
-            ->limit(20)
-            ->get();
+            ->paginate(5);
     }
 
     public function render()

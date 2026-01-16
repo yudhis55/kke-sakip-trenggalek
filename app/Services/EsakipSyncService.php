@@ -75,15 +75,23 @@ class EsakipSyncService
                 try {
                     $documents = $this->fetchDocumentsFromEsakip($type, $tahun->tahun, $opd->id);
 
+                    if (empty($documents)) {
+                        // Skip jika tidak ada dokumen, tapi tidak error
+                        Log::info("No documents found", [
+                            'type' => $type,
+                            'opd' => $opd->nama,
+                            'tahun' => $tahun->tahun,
+                        ]);
+                        continue;
+                    }
+
                     foreach ($documents as $doc) {
                         $preview['document_count']++;
                         $preview['bukti_dukung_count'] += $buktiDukungList->count();
 
-                        // Hitung auto-verified hanya untuk kriteria dengan penilaian_di = 'bukti'
+                        // Hitung auto-verified: bukti dukung yang punya esakip mapping
                         $autoVerifiedBukti = $buktiDukungList->filter(function ($bd) {
-                            return $bd->is_auto_verified
-                                && $bd->kriteriaKomponen
-                                && $bd->kriteriaKomponen->penilaian_di === 'bukti';
+                            return $bd->is_auto_verified;
                         });
                         $preview['auto_verified_count'] += $autoVerifiedBukti->count();
 
@@ -104,6 +112,8 @@ class EsakipSyncService
             }
         }
 
+        // Jangan throw error jika document_count = 0, karena mungkin memang tidak ada data untuk filter tertentu
+        // Biarkan user tahu bahwa preview berhasil dijalankan tapi tidak menemukan dokumen
         return $preview;
     }
 
@@ -426,7 +436,7 @@ class EsakipSyncService
     }
 
     /**
-     * Create penilaian auto-verified untuk role verifikator
+     * Create penilaian auto-verified untuk role verifikator sesuai bukti_dukung
      *
      * @param BuktiDukung $buktiDukung
      * @param Opd $opd
@@ -436,30 +446,44 @@ class EsakipSyncService
      */
     protected function createAutoVerifiedPenilaian($buktiDukung, $opd, $tingkatanNilaiId, $penilaianOpd)
     {
-        // Create untuk role VERIFIKATOR (is_verified = true)
-        $verifikatorRole = \App\Models\Role::where('jenis', 'verifikator')->first();
+        // Gunakan role_id dari bukti_dukung (bisa verifikator, penjamin, atau penilai)
+        // Setiap bukti dukung punya petugas verifikasi sendiri
+        $verifikatorRoleId = $buktiDukung->role_id;
 
-        if ($verifikatorRole) {
-            // Cek apakah penilaian verifikator sudah ada
-            $existingVerifikator = Penilaian::where('opd_id', $opd->id)
-                ->where('bukti_dukung_id', $buktiDukung->id)
-                ->where('role_id', $verifikatorRole->id)
-                ->first();
+        if (!$verifikatorRoleId) {
+            Log::warning("Bukti dukung tidak memiliki role_id untuk verifikasi", [
+                'bukti_dukung_id' => $buktiDukung->id,
+                'nama' => $buktiDukung->nama,
+            ]);
+            return;
+        }
 
-            if (!$existingVerifikator) {
-                // Create penilaian auto-verified untuk verifikator
-                Penilaian::create([
-                    'opd_id' => $opd->id,
-                    'bukti_dukung_id' => $buktiDukung->id,
-                    'role_id' => $verifikatorRole->id,
-                    'kriteria_komponen_id' => $buktiDukung->kriteria_komponen_id,
-                    'tingkatan_nilai_id' => $tingkatanNilaiId,
-                    'is_verified' => true,
-                    'keterangan' => 'Auto-verified dari sinkronisasi E-SAKIP',
-                    'source' => 'esakip',
-                    'esakip_synced_at' => now(),
-                ]);
-            }
+        // Cek apakah penilaian verifikator sudah ada
+        $existingVerifikator = Penilaian::where('opd_id', $opd->id)
+            ->where('bukti_dukung_id', $buktiDukung->id)
+            ->where('role_id', $verifikatorRoleId)
+            ->first();
+
+        if (!$existingVerifikator) {
+            // Create penilaian auto-verified untuk role yang bertugas
+            Penilaian::create([
+                'opd_id' => $opd->id,
+                'bukti_dukung_id' => $buktiDukung->id,
+                'role_id' => $verifikatorRoleId,
+                'kriteria_komponen_id' => $buktiDukung->kriteria_komponen_id,
+                'tingkatan_nilai_id' => $tingkatanNilaiId,
+                'is_verified' => true,
+                'keterangan' => 'Auto-verified dari sinkronisasi E-SAKIP',
+                'source' => 'esakip',
+                'esakip_synced_at' => now(),
+            ]);
+
+            Log::info("Created auto-verified penilaian", [
+                'bukti_dukung_id' => $buktiDukung->id,
+                'opd_id' => $opd->id,
+                'role_id' => $verifikatorRoleId,
+                'tingkatan_nilai_id' => $tingkatanNilaiId,
+            ]);
         }
     }
 
@@ -569,19 +593,48 @@ class EsakipSyncService
 
         $url = $this->apiBaseUrl . $endpoint;
 
+        // Log request details
+        Log::info("Fetching from E-SAKIP", [
+            'url' => $url,
+            'document_type' => $documentType,
+            'tahun' => $tahun,
+            'opd_id' => $opdId,
+            'esakip_opd_id' => $esakipOpdId,
+            'opd_nama' => $opd?->nama,
+        ]);
+
         try {
-            $response = Http::timeout($this->timeout)
-                ->retry($this->retryCount, 100)
+            $response = Http::connectTimeout(60) // Set connection timeout to 60 seconds
+                ->timeout($this->timeout) // Set full request timeout
+                ->withoutVerifying() // Disable SSL verification for development
+                ->retry(5, 200) // Retry 5 times with 200ms delay (server is very slow)
                 ->get($url, [
                     'tahun' => $tahun,
                     'opd' => $esakipOpdId, // Changed from opd_id to opd
                 ]);
 
+            // Log response status
+            Log::info("E-SAKIP Response", [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+            ]);
+
             if ($response->successful()) {
                 $result = $response->json();
 
+                // Log response structure
+                Log::info("E-SAKIP Response Data", [
+                    'has_data' => isset($result['data']),
+                    'data_type' => isset($result['data']) ? gettype($result['data']) : 'null',
+                    'data_keys' => isset($result['data']) && is_array($result['data']) ? array_keys($result['data']) : [],
+                    'message' => $result['message'] ?? null,
+                ]);
+
                 // Validate response structure
                 if (!isset($result['data']) || empty($result['data'])) {
+                    Log::warning("E-SAKIP returned empty data", [
+                        'full_response' => $result,
+                    ]);
                     return [];
                 }
 
@@ -593,6 +646,11 @@ class EsakipSyncService
 
                 if (is_array($data) || is_object($data)) {
                     foreach ($data as $opdName => $documents) {
+                        Log::info("Processing OPD documents", [
+                            'opd_name_key' => $opdName,
+                            'documents_count' => is_array($documents) ? count($documents) : 0,
+                        ]);
+
                         if (is_array($documents)) {
                             foreach ($documents as $doc) {
                                 // Filter by tahun for periode-type documents
@@ -609,13 +667,20 @@ class EsakipSyncService
                     }
                 }
 
+                Log::info("E-SAKIP documents fetched", [
+                    'total_documents' => count($allDocuments),
+                ]);
+
                 return $allDocuments;
             }
 
             Log::warning("API esakip failed: " . $response->status() . " - " . $response->body());
             return [];
         } catch (\Exception $e) {
-            Log::error("Failed to fetch from esakip: " . $e->getMessage());
+            Log::error("Failed to fetch from esakip: " . $e->getMessage(), [
+                'exception' => $e,
+                'url' => $url,
+            ]);
             return [];
         }
     }

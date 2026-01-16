@@ -2358,7 +2358,7 @@
 
                                                         <div class="mb-3">
                                                             <label for="page_number" class="form-label">
-                                                                Halaman <small class="text-muted">(opsional)</small>
+                                                                Halaman
                                                             </label>
                                                             <input wire:model="page_number"
                                                                 class="form-control @error('page_number') is-invalid @enderror"
@@ -2366,8 +2366,7 @@
                                                                 :disabled="isUploading" placeholder="Contoh: 15">
                                                             <div class="form-text">
                                                                 <i class="ri-bookmark-line"></i>
-                                                                Tandai nomor halaman awal dokumen untuk memudahkan
-                                                                navigasi saat verifikasi
+                                                                Tandai nomor halaman awal jika menggunakan dokumen bersama 
                                                             </div>
                                                             @error('page_number')
                                                                 <div class="invalid-feedback">{{ $message }}</div>

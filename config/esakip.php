@@ -75,7 +75,7 @@ return [
 
     'sync' => [
         // Timeout untuk API request (dalam detik)
-        'timeout' => env('ESAKIP_SYNC_TIMEOUT', 30),
+        'timeout' => env('ESAKIP_SYNC_TIMEOUT', 60), // Increased from 30 to 60
 
         // Jumlah retry jika request gagal
         'retry_count' => env('ESAKIP_SYNC_RETRY', 3),

@@ -46,7 +46,7 @@
                             <div class="col-md-4">
                                 <label class="form-label">OPD (Opsional)</label>
                                 <select wire:model.live="selected_opd" class="form-select">
-                                    <option value="">-- Semua OPD --</option>
+                                    <option value="">Semua OPD</option>
                                     @foreach ($opdList as $opd)
                                         <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
                                     @endforeach
@@ -58,12 +58,12 @@
                             <div class="col-md-4">
                                 <label class="form-label">Jenis Dokumen (Opsional)</label>
                                 <select wire:model.live="selected_document_type" class="form-select">
-                                    <option value="">-- Semua Dokumen --</option>
+                                    <option value="">Semua Dokumen</option>
                                     @foreach ($documentTypes as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted">Kosongkan untuk sinkron semua jenis</small>
+                                <small class="text-muted">Kosongkan untuk sinkron semua dokumen</small>
                             </div>
 
                             {{-- Sync Mode --}}
@@ -339,7 +339,7 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
+                        <div class="list-group list-group-flush">
                             @forelse($this->riwayat as $item)
                                 <div class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-start">
@@ -385,6 +385,11 @@
                             @endforelse
                         </div>
                     </div>
+                    @if ($this->riwayat->hasPages())
+                        <div class="card-footer">
+                            {{ $this->riwayat->links() }}
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Info Box --}}
