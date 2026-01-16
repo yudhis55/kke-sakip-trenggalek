@@ -77,6 +77,17 @@ class MappingSeeder extends Seeder
             'DVAL001.3' => 'bukti',
         ];
 
+        // Mapping nama bukti dukung ke esakip_document_type
+        $esakipDocumentMapping = [
+            'RPJMD' => 'rpjmd',
+            'Pokin' => 'cascading',
+            'Renstra' => 'renstra',
+            'Renja' => 'renja',
+            'IKU' => 'iku',
+            'PK' => 'perjanjian-kinerja',
+            'LKjIP' => 'lkjip',
+        ];
+
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
         $data = [
             [
@@ -792,9 +803,11 @@ class MappingSeeder extends Seeder
                         'nama' => $kom['nama'],
                         'bobot' => $this->parseBobot($kom['bobot'] ?? null),
                         'tahun_id' => $tahun_id,
-                        'role_id' => $roleMapping[$kom['kode']] ?? null,
                     ]);
                 }
+
+                // Ambil role_id untuk komponen ini dari mapping
+                $komponenRoleId = $roleMapping[$kom['kode']] ?? null;
 
                 // sub komponen
                 if (!empty($kom['children'])) {
@@ -856,11 +869,22 @@ class MappingSeeder extends Seeder
                                             ->where('tahun_id', $tahun_id)
                                             ->first();
                                         if (!$existsB) {
+                                            // Mapping esakip document type berdasarkan nama bukti
+                                            $esakipType = $esakipDocumentMapping[$buk] ?? null;
+                                            $esakipCode = $esakipType; // code sama dengan type
+
+                                            // is_auto_verified true jika memiliki esakip_document_type
+                                            $isAutoVerified = !is_null($esakipType);
+
                                             DB::table('bukti_dukung')->insert([
                                                 'nama' => $buk,
                                                 'kriteria_komponen_id' => $kriteriaId,
                                                 'sub_komponen_id' => $subId,
                                                 'komponen_id' => $komponenId,
+                                                'role_id' => $komponenRoleId,
+                                                'is_auto_verified' => $isAutoVerified,
+                                                'esakip_document_type' => $esakipType,
+                                                'esakip_document_code' => $esakipCode,
                                                 'tahun_id' => $tahun_id,
                                             ]);
                                         }
