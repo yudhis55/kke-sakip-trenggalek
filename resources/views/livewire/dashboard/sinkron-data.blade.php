@@ -407,7 +407,7 @@
                     </div>
                     @if ($this->riwayat->hasPages())
                         <div class="card-footer">
-                            {{ $this->riwayat->links() }}
+                            {{ $this->riwayat->links(data: ['scrollTo' => 'false']) }}
                         </div>
                     @endif
                 </div>

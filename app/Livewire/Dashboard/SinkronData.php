@@ -8,10 +8,11 @@ use App\Services\EsakipSyncService;
 use App\Models\Tahun;
 use App\Models\Opd;
 use App\Models\RiwayatSinkron;
+use Livewire\WithoutUrlPagination;
 
 class SinkronData extends Component
 {
-    use WithPagination;
+    use WithPagination, WithoutUrlPagination;
     protected $paginationTheme = 'bootstrap';
     // Filter properties
     public $selected_tahun;
@@ -159,7 +160,7 @@ class SinkronData extends Component
     {
         return RiwayatSinkron::with(['opd', 'tahun'])
             ->orderBy('synced_at', 'desc')
-            ->paginate(5);
+            ->simplePaginate(5);
     }
 
     /**
