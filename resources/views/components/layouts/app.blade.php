@@ -228,7 +228,7 @@
                             </li>
                         @endif
 
-                        @if (Auth::user()->role->jenis == 'admin')
+                        {{-- @if (Auth::user()->role->jenis == 'admin')
                             <li class="nav-item">
                                 <a wire:current="active" class="nav-link menu-link" href="/monitoring"
                                     role="button" aria-expanded="false" aria-controls="sidebarLayouts">
@@ -237,7 +237,7 @@
                                 </a>
                             </li>
                             <!-- end Dashboard Menu -->
-                        @endif
+                        @endif --}}
 
                         {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Pages</span>
                         </li> --}}

@@ -215,68 +215,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0">Master Bukti Dukung</h4>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Daftar Bukti Dukung</h4>
-                                <button wire:click="resetBuktiDukungForm" type="button"
-                                    class="btn btn-primary add-btn" data-bs-toggle="modal"
-                                    data-bs-target="#addBuktiDukungModal">
-                                    <i class="ri-add-line align-bottom me-1"></i>Tambah
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table align-middle table-nowrap mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">No</th>
-                                                <th scope="col">Bukti Dukung</th>
-                                                <th scope="col">Role</th>
-                                                <th scope="col">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($this->buktiDukungList() as $index => $buktiDukung)
-                                                <tr>
-                                                    <td>{{ ($this->buktiDukungList()->currentPage() - 1) * $this->buktiDukungList()->perPage() + $index + 1 }}
-                                                    </td>
-                                                    <td>{{ $buktiDukung->nama ?? '-' }}</td>
-                                                    <td>{{ $buktiDukung->role->nama ?? '-' }}</td>
-                                                    <td>
-                                                        <button wire:click="editBuktiDukung({{ $buktiDukung->id }})"
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-primary btn-icon waves-effect waves-light"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#addBuktiDukungModal">
-                                                            <i class="ri-edit-line"></i>
-                                                        </button>
-                                                        <button
-                                                            wire:click="setBuktiDukungToDelete({{ $buktiDukung->id }})"
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-danger btn-icon waves-effect waves-light"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#deleteBuktiDukungModal">
-                                                            <i class="ri-delete-bin-5-line"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <!-- Pagination -->
-                                <div class="mt-3">
-                                    {{ $this->buktiDukungList()->links(data: ['scrollTo' => false]) }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="col-md-4">
 
