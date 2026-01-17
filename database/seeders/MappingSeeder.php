@@ -86,6 +86,8 @@ class MappingSeeder extends Seeder
             'IKU' => 'iku',
             'PK' => 'perjanjian-kinerja',
             'LKjIP' => 'lkjip',
+            'Probis (Proses Bisnis)' => 'proses-bisnis',
+            'Renaksi' => 'rencana-aksi'
         ];
 
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)

@@ -2236,6 +2236,10 @@
                                                                             title="{{ $file['original_name'] ?? 'Dokumen ' . ($index + 1) }}">
                                                                             <i class="ri-file-line me-1"></i>Dokumen
                                                                             {{ $index + 1 }}
+                                                                            @if (isset($file['is_perubahan']) && $file['is_perubahan'])
+                                                                                <i class="ri-refresh-line text-warning ms-1"
+                                                                                    title="Dokumen Perubahan"></i>
+                                                                            @endif
                                                                         </a>
                                                                     </li>
                                                                 @endforeach
@@ -2249,27 +2253,97 @@
                                                                     <div class="tab-pane {{ $index === 0 ? 'show active' : '' }}"
                                                                         id="dokumen-file-{{ $index }}"
                                                                         role="tabpanel">
-                                                                        @if (str_ends_with(strtolower($fileName), '.pdf'))
-                                                                            <div
-                                                                                class="d-flex align-items-center mb-2">
-                                                                                <a href="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
-                                                                                    target="_blank"
-                                                                                    class="btn btn-sm btn-primary me-2">
-                                                                                    <i
-                                                                                        class="ri-external-link-line me-1"></i>
-                                                                                    Buka di Tab Baru
-                                                                                </a>
-                                                                                @if ($penilaianOpdRecord->page_number)
-                                                                                    <span class="badge bg-info">
+                                                                        {{-- Display file metadata badges --}}
+                                                                        <div
+                                                                            class="d-flex justify-content-between align-items-start mb-2">
+                                                                            <div class="flex-grow-1">
+                                                                                {{-- @if (isset($file['is_perubahan']) && $file['is_perubahan'])
+                                                                                    <span
+                                                                                        class="badge bg-warning me-1">
                                                                                         <i
-                                                                                            class="ri-bookmark-line me-1"></i>
-                                                                                        Hal.
-                                                                                        {{ $penilaianOpdRecord->page_number }}
+                                                                                            class="ri-refresh-line me-1"></i>Dokumen
+                                                                                        Perubahan
+                                                                                    </span>
+                                                                                @endif --}}
+                                                                                @if (isset($file['from_esakip']) && $file['from_esakip'])
+                                                                                    <span class="badge bg-info me-1">
+                                                                                        <i
+                                                                                            class="ri-cloud-line me-1"></i>E-SAKIP
+                                                                                    </span>
+                                                                                @else
+                                                                                    <span
+                                                                                        class="badge bg-secondary me-1">
+                                                                                        <i
+                                                                                            class="ri-upload-line me-1"></i>Upload
+                                                                                        Manual
+                                                                                    </span>
+                                                                                @endif
+                                                                                @if (isset($file['kategori']))
+                                                                                    <span
+                                                                                        class="badge bg-{{ $file['kategori'] === 'induk' ? 'success' : 'warning' }} me-1">
+                                                                                        {{ ucfirst($file['kategori']) }}
+                                                                                    </span>
+                                                                                @endif
+
+                                                                                {{-- Periode & Tanggal Publish --}}
+                                                                                @if (isset($file['periode']) && $file['periode'])
+                                                                                    <span
+                                                                                        class="badge bg-primary me-1">
+                                                                                        <i
+                                                                                            class="ri-calendar-line me-1"></i>Periode:
+                                                                                        {{ $file['periode'] }}
+                                                                                    </span>
+                                                                                @endif
+                                                                                @if (isset($file['tanggal_publish']) && $file['tanggal_publish'])
+                                                                                    <span
+                                                                                        class="badge bg-light text-dark me-1">
+                                                                                        <i
+                                                                                            class="ri-calendar-check-line me-1"></i>Tanggal
+                                                                                        Publish:
+                                                                                        {{ $file['tanggal_publish'] }}
                                                                                     </span>
                                                                                 @endif
                                                                             </div>
+
+                                                                            {{-- Action buttons di kanan --}}
+                                                                            @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                                <div class="d-flex gap-1">
+                                                                                    <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
+                                                                                        target="_blank"
+                                                                                        class="btn btn-sm btn-primary">
+                                                                                        <i
+                                                                                            class="ri-external-link-line me-1"></i>
+                                                                                        Buka di Tab Baru
+                                                                                    </a>
+                                                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                                        <button type="button"
+                                                                                            wire:click="openSetPageNumberModal({{ $index }})"
+                                                                                            class="btn btn-sm btn-outline-secondary"
+                                                                                            data-bs-toggle="modal"
+                                                                                            data-bs-target="#modalSetPageNumber">
+                                                                                            <i
+                                                                                                class="ri-bookmark-line me-1"></i>
+                                                                                            @if (isset($file['page_number']) && $file['page_number'])
+                                                                                                Hal.
+                                                                                                {{ $file['page_number'] }}
+                                                                                            @else
+                                                                                                Set Halaman
+                                                                                            @endif
+                                                                                        </button>
+                                                                                    @endif
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+
+                                                                        @if (isset($file['keterangan']) && $file['keterangan'])
+                                                                            <div class="alert alert-light py-2 mb-2">
+                                                                                <small><strong>Keterangan:</strong>
+                                                                                    {{ $file['keterangan'] }}</small>
+                                                                            </div>
+                                                                        @endif
+                                                                        @if (str_ends_with(strtolower($fileName), '.pdf'))
                                                                             <embed
-                                                                                src="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
+                                                                                src="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
                                                                                 type="application/pdf" width="100%"
                                                                                 height="600" />
                                                                         @else
@@ -2293,24 +2367,84 @@
                                                                     $file['original_name'] ??
                                                                     basename($file['path'] ?? ($file['url'] ?? ''));
                                                             @endphp
-                                                            @if (str_ends_with(strtolower($fileName), '.pdf'))
-                                                                <div class="d-flex align-items-center mb-2">
-                                                                    <a href="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
-                                                                        target="_blank"
-                                                                        class="btn btn-sm btn-primary me-2">
-                                                                        <i class="ri-external-link-line me-1"></i>
-                                                                        Buka di Tab Baru
-                                                                    </a>
-                                                                    @if ($penilaianOpdRecord->page_number)
-                                                                        <span class="badge bg-info">
-                                                                            <i class="ri-bookmark-line me-1"></i>
-                                                                            Hal.
-                                                                            {{ $penilaianOpdRecord->page_number }}
+                                                            {{-- Display file metadata badges --}}
+                                                            <div
+                                                                class="d-flex justify-content-between align-items-start mb-2">
+                                                                <div class="flex-grow-1">
+                                                                    {{-- @if (isset($file['is_perubahan']) && $file['is_perubahan'])
+                                                                        <span class="badge bg-warning me-1">
+                                                                            <i class="ri-refresh-line me-1"></i>Dokumen
+                                                                            Perubahan
+                                                                        </span>
+                                                                    @endif --}}
+                                                                    @if (isset($file['from_esakip']) && $file['from_esakip'])
+                                                                        <span class="badge bg-info me-1">
+                                                                            <i class="ri-cloud-line me-1"></i>E-SAKIP
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="badge bg-secondary me-1">
+                                                                            <i class="ri-upload-line me-1"></i>Upload
+                                                                            Manual
+                                                                        </span>
+                                                                    @endif
+                                                                    @if (isset($file['kategori']))
+                                                                        <span
+                                                                            class="badge bg-{{ $file['kategori'] === 'induk' ? 'success' : 'warning' }} me-1">
+                                                                            {{ ucfirst($file['kategori']) }}
+                                                                        </span>
+                                                                    @endif
+
+                                                                    {{-- Periode & Tanggal Publish --}}
+                                                                    @if (isset($file['periode']) && $file['periode'])
+                                                                        <span class="badge bg-primary me-1">
+                                                                            <i
+                                                                                class="ri-calendar-line me-1"></i>{{ $file['periode'] }}
+                                                                        </span>
+                                                                    @endif
+                                                                    @if (isset($file['tanggal_publish']) && $file['tanggal_publish'])
+                                                                        <span class="badge bg-light text-dark me-1">
+                                                                            <i
+                                                                                class="ri-calendar-check-line me-1"></i>{{ $file['tanggal_publish'] }}
                                                                         </span>
                                                                     @endif
                                                                 </div>
+
+                                                                {{-- Action buttons di kanan --}}
+                                                                @if (str_ends_with(strtolower($fileName), '.pdf'))
+                                                                    <div class="d-flex gap-1">
+                                                                        <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
+                                                                            target="_blank"
+                                                                            class="btn btn-sm btn-primary">
+                                                                            <i class="ri-external-link-line me-1"></i>
+                                                                            Buka di Tab Baru
+                                                                        </a>
+                                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                            <button type="button"
+                                                                                wire:click="openSetPageNumberModal(0)"
+                                                                                class="btn btn-sm btn-outline-secondary"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#modalSetPageNumber">
+                                                                                <i class="ri-bookmark-line me-1"></i>
+                                                                                @if (isset($file['page_number']) && $file['page_number'])
+                                                                                    Hal. {{ $file['page_number'] }}
+                                                                                @else
+                                                                                    Set Halaman
+                                                                                @endif
+                                                                            </button>
+                                                                        @endif
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+
+                                                            @if (isset($file['keterangan']) && $file['keterangan'])
+                                                                <div class="alert alert-light py-2 mb-2">
+                                                                    <small><strong>Keterangan:</strong>
+                                                                        {{ $file['keterangan'] }}</small>
+                                                                </div>
+                                                            @endif
+                                                            @if (str_ends_with(strtolower($fileName), '.pdf'))
                                                                 <embed
-                                                                    src="{{ $fileUrl }}{{ $penilaianOpdRecord->page_number ? '#page=' . $penilaianOpdRecord->page_number : '' }}"
+                                                                    src="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
                                                                     type="application/pdf" width="100%"
                                                                     height="600" />
                                                             @else
@@ -2366,7 +2500,8 @@
                                                                 :disabled="isUploading" placeholder="Contoh: 15">
                                                             <div class="form-text">
                                                                 <i class="ri-bookmark-line"></i>
-                                                                Tandai nomor halaman awal jika menggunakan dokumen bersama 
+                                                                Tandai nomor halaman awal jika menggunakan dokumen
+                                                                bersama
                                                             </div>
                                                             @error('page_number')
                                                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -2885,6 +3020,50 @@
             @endif
         @endif
 
+        <!-- Modal Set Page Number -->
+        <div wire:ignore.self id="modalSetPageNumber" class="modal fade" tabindex="-1"
+            aria-labelledby="modalSetPageNumberLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalSetPageNumberLabel">
+                            <i class="ri-bookmark-line me-2"></i>Set Nomor Halaman
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="page_number_input" class="form-label">Nomor Halaman</label>
+                            <input type="number" wire:model="page_number" class="form-control"
+                                id="page_number_input" min="1"
+                                placeholder="Masukkan nomor halaman (opsional)">
+                            @error('page_number')
+                                <div class="text-danger mt-1 small">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">
+                                <i class="ri-information-line"></i>
+                                Nomor halaman akan digunakan untuk membuka PDF pada halaman tertentu.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" wire:click="updatePageNumber" class="btn btn-primary"
+                            wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="updatePageNumber">
+                                <i class="ri-save-line me-1"></i>Simpan
+                            </span>
+                            <span wire:loading wire:target="updatePageNumber">
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                Menyimpan...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tracking Modal -->
         <div wire:ignore.self id="trackingModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
             aria-hidden="true" style="display: none;">
@@ -3042,6 +3221,18 @@
                 </div><!-- /.modal-content -->
             </div><!-- /.modal-dialog -->
         </div><!-- /.modal -->
+
+        @script
+            <script>
+                // Listen for close-modal event
+                $wire.on('close-modal', (modalId) => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                    if (modal) {
+                        modal.hide();
+                    }
+                });
+            </script>
+        @endscript
 
     </div>
 </div>

@@ -18,6 +18,7 @@ class Mapping extends Component
     public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id, $penilaian_di_kriteria;
     public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian, $role_id_bukti, $is_auto_verified, $esakip_document_type, $esakip_document_code;
+    public $original_is_auto_verified = null; // Track nilai awal untuk deteksi perubahan
     public $tahun_id;
 
     // Edit mode properties
@@ -377,6 +378,7 @@ class Mapping extends Component
             $this->kriteria_komponen_id = $bukti->kriteria_komponen_id;
             $this->role_id_bukti = $bukti->role_id;
             $this->is_auto_verified = $bukti->is_auto_verified;
+            $this->original_is_auto_verified = $bukti->is_auto_verified; // Simpan nilai awal
             $this->esakip_document_type = $bukti->esakip_document_type;
             $this->esakip_document_code = $bukti->esakip_document_code;
             $this->isEditMode = true;
@@ -396,18 +398,157 @@ class Mapping extends Component
 
         $bukti = BuktiDukung::find($this->editBuktiDukungId);
         if ($bukti) {
+            // Deteksi perubahan is_auto_verified
+            $isAutoVerifiedChanged = $this->original_is_auto_verified !== $this->is_auto_verified;
+            $wasAutoVerified = $this->original_is_auto_verified;
+            $nowAutoVerified = $this->is_auto_verified ?? false;
+
+            // Update bukti dukung
             $bukti->update([
                 'nama' => $this->nama_bukti,
                 'kriteria_penilaian' => $this->kriteria_penilaian,
                 'role_id' => $this->role_id_bukti,
-                'is_auto_verified' => $this->is_auto_verified ?? false,
+                'is_auto_verified' => $nowAutoVerified,
                 'esakip_document_type' => $this->esakip_document_type,
                 'esakip_document_code' => $this->esakip_document_code,
             ]);
 
+            // Handle perubahan is_auto_verified
+            if ($isAutoVerifiedChanged) {
+                if ($wasAutoVerified && !$nowAutoVerified) {
+                    // CASE 1: true → false: Kosongkan tingkatan_nilai_id (OPD) dan is_verified (Verifikator)
+                    $updatedCount = $this->clearAutoVerifiedFields($bukti);
+
+                    flash()
+                        ->use('theme.ruby')
+                        ->option('position', 'bottom-right')
+                        ->warning("Bukti dukung berhasil diupdate. {$updatedCount} penilaian dikosongkan karena verifikasi otomatis dinonaktifkan.");
+                } elseif (!$wasAutoVerified && $nowAutoVerified) {
+                    // CASE 2: false → true: Re-aktifkan auto-verified untuk penilaian yang sudah ada
+                    $reactivatedCount = $this->reactivateAutoVerifiedFields($bukti);
+
+                    if ($reactivatedCount > 0) {
+                        flash()
+                            ->use('theme.ruby')
+                            ->option('position', 'bottom-right')
+                            ->success("Bukti dukung berhasil diupdate. {$reactivatedCount} penilaian diaktifkan kembali dengan verifikasi otomatis.");
+                    } else {
+                        flash()
+                            ->use('theme.ruby')
+                            ->option('position', 'bottom-right')
+                            ->success('Bukti dukung berhasil diupdate. Verifikasi otomatis akan diterapkan saat sinkronisasi dokumen berikutnya.');
+                    }
+                }
+            } else {
+                flash()
+                    ->use('theme.ruby')
+                    ->option('position', 'bottom-right')
+                    ->success('Bukti dukung berhasil diupdate.');
+            }
+
             $this->resetFormBuktiDukung();
         }
     }
+
+    /**
+     * Re-aktifkan field auto-verified untuk penilaian yang sudah ada
+     * - Isi tingkatan_nilai_id OPD dengan nilai tertinggi (jika punya dokumen)
+     * - Set is_verified = true untuk Verifikator (jika OPD punya dokumen)
+     */
+    private function reactivateAutoVerifiedFields($buktiDukung)
+    {
+        $opdRole = \App\Models\Role::where('jenis', 'opd')->first();
+        $reactivatedCount = 0;
+
+        if (!$opdRole) {
+            return $reactivatedCount;
+        }
+
+        // Hitung tingkatan nilai tertinggi untuk auto-verify
+        $tingkatanNilaiId = null;
+        if ($buktiDukung->kriteria_komponen) {
+            $jenisNilaiId = $buktiDukung->kriteria_komponen->jenis_nilai_id;
+            $tingkatanNilaiTertinggi = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilaiId)
+                ->orderBy('bobot', 'desc')
+                ->first();
+            $tingkatanNilaiId = $tingkatanNilaiTertinggi?->id;
+        }
+
+        // Re-aktifkan tingkatan_nilai_id untuk penilaian OPD yang punya dokumen
+        if ($tingkatanNilaiId) {
+            $opdUpdated = \App\Models\Penilaian::where('bukti_dukung_id', $buktiDukung->id)
+                ->where('role_id', $opdRole->id)
+                ->whereNotNull('link_file')
+                ->whereNull('tingkatan_nilai_id')
+                ->update(['tingkatan_nilai_id' => $tingkatanNilaiId]);
+
+            $reactivatedCount += $opdUpdated;
+
+            // Re-aktifkan is_verified untuk Verifikator jika OPD punya dokumen
+            if ($buktiDukung->role_id && $opdUpdated > 0) {
+                // Ambil OPD yang baru di-update
+                $opdIdsWithDocs = \App\Models\Penilaian::where('bukti_dukung_id', $buktiDukung->id)
+                    ->where('role_id', $opdRole->id)
+                    ->whereNotNull('link_file')
+                    ->whereNotNull('tingkatan_nilai_id')
+                    ->pluck('opd_id');
+
+                // Update verifikator untuk OPD tersebut
+                $verifikatorUpdated = \App\Models\Penilaian::where('bukti_dukung_id', $buktiDukung->id)
+                    ->where('role_id', $buktiDukung->role_id)
+                    ->whereIn('opd_id', $opdIdsWithDocs)
+                    ->where('is_verified', false)
+                    ->update([
+                        'is_verified' => true,
+                        'keterangan' => 'Auto-verified dari re-aktivasi mapping',
+                    ]);
+
+                $reactivatedCount += $verifikatorUpdated;
+            }
+        }
+
+        return $reactivatedCount;
+    }
+
+    /**
+     * Kosongkan field auto-verified saat verifikasi otomatis dinonaktifkan
+     * - Kosongkan tingkatan_nilai_id dari penilaian OPD
+     * - Kosongkan is_verified dari penilaian Verifikator
+     */
+    private function clearAutoVerifiedFields($buktiDukung)
+    {
+        $opdRole = \App\Models\Role::where('jenis', 'opd')->first();
+        $updatedCount = 0;
+
+        if (!$opdRole) {
+            return $updatedCount;
+        }
+
+        // Clear tingkatan_nilai_id dari penilaian OPD
+        $opdUpdated = \App\Models\Penilaian::where('bukti_dukung_id', $buktiDukung->id)
+            ->where('role_id', $opdRole->id)
+            ->whereNotNull('tingkatan_nilai_id')
+            ->update(['tingkatan_nilai_id' => null]);
+
+        $updatedCount += $opdUpdated;
+
+        // Clear is_verified dari penilaian Verifikator
+        if ($buktiDukung->role_id) {
+            $verifikatorUpdated = \App\Models\Penilaian::where('bukti_dukung_id', $buktiDukung->id)
+                ->where('role_id', $buktiDukung->role_id)
+                ->where('is_verified', true)
+                ->update([
+                    'is_verified' => false,
+                    'keterangan' => null,
+                ]);
+
+            $updatedCount += $verifikatorUpdated;
+        }
+
+        return $updatedCount;
+    }
+
+
 
     // Reset functions
     public function resetFormKomponen()
@@ -451,6 +592,7 @@ class Mapping extends Component
         $this->kriteria_komponen_id = '';
         $this->role_id_bukti = null;
         $this->is_auto_verified = false;
+        $this->original_is_auto_verified = null; // Reset tracking
         $this->esakip_document_type = '';
         $this->esakip_document_code = '';
         $this->editBuktiDukungId = null;

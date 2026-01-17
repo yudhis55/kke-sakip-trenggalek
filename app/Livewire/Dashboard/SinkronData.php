@@ -18,7 +18,6 @@ class SinkronData extends Component
     public $selected_tahun;
     public $selected_opd;
     public $selected_document_type;
-    public $sync_mode = 'merge'; // merge, replace, skip
 
     // Preview data
     public $previewData = null;
@@ -83,7 +82,6 @@ class SinkronData extends Component
     {
         $this->validate([
             'selected_tahun' => 'required|exists:tahun,id',
-            'sync_mode' => 'required|in:merge,replace,skip',
         ]);
 
         $this->syncing = true;
@@ -97,7 +95,6 @@ class SinkronData extends Component
                 $this->selected_tahun,
                 $this->selected_opd ?: null,
                 $this->selected_document_type ?: null,
-                $this->sync_mode,
                 function ($current, $total, $message) {
                     $this->syncProgress = round(($current / $total) * 100);
                     $this->syncMessage = $message;
@@ -150,7 +147,6 @@ class SinkronData extends Component
             'syncProgress',
             'syncMessage',
         ]);
-        $this->sync_mode = 'merge';
     }
 
     /**

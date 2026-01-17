@@ -123,11 +123,10 @@ class EsakipSyncService
      * @param int $tahunId
      * @param int|null $opdId
      * @param string|null $documentType
-     * @param string $syncMode (merge, replace, skip)
      * @param callable|null $progressCallback
      * @return array
      */
-    public function processSync($tahunId, $opdId = null, $documentType = null, $syncMode = 'merge', $progressCallback = null)
+    public function processSync($tahunId, $opdId = null, $documentType = null, $progressCallback = null)
     {
         $tahun = Tahun::findOrFail($tahunId);
 
@@ -168,7 +167,7 @@ class EsakipSyncService
                 }
 
                 try {
-                    $result = $this->syncDocumentForOpd($type, $label, $tahun, $opd, $syncMode);
+                    $result = $this->syncDocumentForOpd($type, $label, $tahun, $opd);
 
                     // Aggregate results
                     if ($result['status'] === 'success') {
@@ -206,10 +205,9 @@ class EsakipSyncService
      * @param string $documentLabel
      * @param Tahun $tahun
      * @param Opd $opd
-     * @param string $syncMode
      * @return array
      */
-    protected function syncDocumentForOpd($documentType, $documentLabel, $tahun, $opd, $syncMode)
+    protected function syncDocumentForOpd($documentType, $documentLabel, $tahun, $opd)
     {
         // 1. Get bukti dukung yang di-mapping ke dokumen ini
         $buktiDukungList = $this->getBuktiDukungForSync($tahun->id, $documentType);
@@ -240,7 +238,7 @@ class EsakipSyncService
         }
 
         if ($isSharedDocument) {
-            return $this->syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList, $syncMode);
+            return $this->syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList);
         }
 
         if (empty($documents)) {
@@ -269,48 +267,56 @@ class EsakipSyncService
             ];
         }
 
-        // 3. Process setiap dokumen
+        // 3. Process setiap bukti dukung dengan semua dokumen (Smart Sync)
         $penilaianIds = [];
         $autoVerifiedCount = 0;
         $skippedCount = 0;
+        $totalFilesAdded = 0;
 
         DB::beginTransaction();
         try {
-            foreach ($documents as $document) {
-                foreach ($buktiDukungList as $buktiDukung) {
-                    $result = $this->syncPenilaian($buktiDukung, $opd, $document, $syncMode);
+            // Loop per bukti dukung (bukan per dokumen) untuk smart merge
+            foreach ($buktiDukungList as $buktiDukung) {
+                // Pass SEMUA dokumen sekaligus untuk smart merge
+                $result = $this->syncPenilaian($buktiDukung, $opd, $documents);
 
-                    if ($result['status'] === 'synced') {
-                        $penilaianIds[] = $result['penilaian_id'];
-                        if ($result['auto_verified']) {
-                            $autoVerifiedCount++;
-                        }
-                    } elseif ($result['status'] === 'skipped') {
-                        $skippedCount++;
+                if ($result['status'] === 'created' || $result['status'] === 'updated') {
+                    $penilaianIds[] = $result['penilaian_id'];
+                    $totalFilesAdded += $result['files_added'] ?? 0;
+
+                    if ($result['auto_verified'] ?? false) {
+                        $autoVerifiedCount++;
                     }
-
-                    // Update bukti_dukung status
-                    $buktiDukung->update([
-                        'sync_status' => 'synced',
-                        'last_synced_at' => now(),
-                    ]);
+                } elseif ($result['status'] === 'skipped') {
+                    $skippedCount++;
+                } elseif ($result['status'] === 'no_change') {
+                    // Tidak ada perubahan, tapi tetap count sebagai processed
+                    if (isset($result['penilaian_id'])) {
+                        $penilaianIds[] = $result['penilaian_id'];
+                    }
                 }
 
-                // 4. Log riwayat sinkronisasi
-                $this->logSync([
-                    'opd_id' => $opd->id,
-                    'tahun_id' => $tahun->id,
-                    'document_type' => $documentType,
-                    'document_name' => $document['keterangan'] ?? basename($document['file'] ?? ''),
-                    'tahun_value' => $tahun->tahun,
-                    'file_url' => $document['file_url'] ?? null,
-                    'penilaian_ids' => $penilaianIds,
-                    'affected_count' => count($penilaianIds),
-                    'auto_verified_count' => $autoVerifiedCount,
-                    'status' => 'success',
-                    'synced_at' => now(),
+                // Update bukti_dukung status
+                $buktiDukung->update([
+                    'sync_status' => 'synced',
+                    'last_synced_at' => now(),
                 ]);
             }
+
+            // 4. Log riwayat sinkronisasi
+            $this->logSync([
+                'opd_id' => $opd->id,
+                'tahun_id' => $tahun->id,
+                'document_type' => $documentType,
+                'document_name' => $documentLabel,
+                'tahun_value' => $tahun->tahun,
+                'file_url' => null, // Multiple files, no single URL
+                'penilaian_ids' => $penilaianIds,
+                'affected_count' => count($penilaianIds),
+                'auto_verified_count' => $autoVerifiedCount,
+                'status' => 'success',
+                'synced_at' => now(),
+            ]);
 
             DB::commit();
 
@@ -329,15 +335,15 @@ class EsakipSyncService
     }
 
     /**
-     * Sync/Update satu penilaian
+     * Smart Sync penilaian dengan array dokumen dari E-SAKIP
+     * NO MODE - otomatis menentukan tindakan berdasarkan kondisi
      *
      * @param BuktiDukung $buktiDukung
      * @param Opd $opd
-     * @param array $document
-     * @param string $syncMode
+     * @param array $documents - Array of documents from E-SAKIP API
      * @return array
      */
-    protected function syncPenilaian($buktiDukung, $opd, $document, $syncMode)
+    protected function syncPenilaian($buktiDukung, $opd, $documents)
     {
         // PENTING: Dokumen dari esakip SELALU untuk role OPD
         $opdRole = \App\Models\Role::where('jenis', 'opd')->first();
@@ -352,84 +358,117 @@ class EsakipSyncService
             ->where('role_id', $opdRole->id) // HARUS role OPD
             ->first();
 
-        $newFile = [
-            'url' => $document['file_url'] ?? null,
-            'original_name' => basename($document['file'] ?? ''),
-            'from_esakip' => true,
-            'synced_at' => now()->toDateTimeString(),
-        ];
-
         // Inisialisasi tingkatanNilaiId untuk auto-verify
         $tingkatanNilaiId = null;
 
-        if ($penilaian) {
-            // Penilaian OPD sudah ada
-            if ($penilaian->source === 'upload' && $syncMode === 'skip') {
-                // Skip jika mode skip
-                return [
-                    'status' => 'skipped',
-                    'penilaian_id' => $penilaian->id,
-                    'auto_verified' => false,
-                ];
+        // Calculate tingkatan nilai jika auto-verified
+        if ($buktiDukung->is_auto_verified && $buktiDukung->kriteria_komponen) {
+            $jenisNilaiId = $buktiDukung->kriteria_komponen->jenis_nilai_id;
+            $tingkatanNilaiTertinggi = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilaiId)
+                ->orderBy('bobot', 'desc')
+                ->first();
+            $tingkatanNilaiId = $tingkatanNilaiTertinggi?->id;
+        }
+
+        // === CASE 1: Penilaian belum ada - CREATE NEW ===
+        if (!$penilaian) {
+            // Build all file objects dari API documents
+            $allFiles = [];
+            foreach ($documents as $doc) {
+                $allFiles[] = $this->buildFileObject($doc);
             }
 
-            if ($penilaian->source === 'upload' && $syncMode === 'merge') {
-                // Merge: Append file baru
-                $existingFiles = $penilaian->link_file ?? [];
-                $penilaian->update([
-                    'link_file' => array_merge($existingFiles, [$newFile]),
-                    'esakip_document_id' => $document['id'] ?? null,
-                    'esakip_synced_at' => now(),
-                    'page_number' => $document['page_number'] ?? $penilaian->page_number,
-                ]);
-            } else {
-                // Replace atau source sudah esakip
-                $penilaian->update([
-                    'link_file' => [$newFile],
-                    'source' => 'esakip',
-                    'esakip_document_id' => $document['id'] ?? null,
-                    'esakip_synced_at' => now(),
-                    'page_number' => $document['page_number'] ?? null,
-                ]);
-            }
-        } else {
-            // Jika auto_verified (ada esakip mapping), ambil tingkatan_nilai dengan bobot tertinggi
-            $shouldAutoVerify = $buktiDukung->is_auto_verified && $buktiDukung->kriteria_komponen;
-
-            if ($shouldAutoVerify) {
-                $jenisNilaiId = $buktiDukung->kriteria_komponen->jenis_nilai_id;
-                $tingkatanNilaiTertinggi = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilaiId)
-                    ->orderBy('bobot', 'desc')
-                    ->first();
-                $tingkatanNilaiId = $tingkatanNilaiTertinggi?->id;
-            }
-
-            // Buat penilaian baru untuk ROLE OPD
+            // Create penilaian baru dengan semua dokumen
+            // Role OPD: Upload dokumen + Input nilai (self-assessment)
             $penilaian = Penilaian::create([
                 'opd_id' => $opd->id,
                 'bukti_dukung_id' => $buktiDukung->id,
-                'role_id' => $opdRole->id, // SELALU role OPD
+                'role_id' => $opdRole->id,
                 'kriteria_komponen_id' => $buktiDukung->kriteria_komponen_id,
-                'link_file' => [$newFile],
+                'link_file' => $allFiles,
                 'source' => 'esakip',
-                'esakip_document_id' => $document['id'] ?? null,
                 'esakip_synced_at' => now(),
-                'page_number' => $document['page_number'] ?? null,
-                'tingkatan_nilai_id' => $tingkatanNilaiId,
+                'tingkatan_nilai_id' => $tingkatanNilaiId, // OPD punya nilai (self-assessment)
             ]);
+
+            Log::info("Created new penilaian", [
+                'penilaian_id' => $penilaian->id,
+                'bukti_dukung_id' => $buktiDukung->id,
+                'files_count' => count($allFiles),
+            ]);
+
+            // Auto-verify jika perlu
+            if ($buktiDukung->is_auto_verified) {
+                $this->createAutoVerifiedPenilaian($buktiDukung, $opd, $tingkatanNilaiId, $penilaian);
+            }
+
+            return [
+                'status' => 'created',
+                'penilaian_id' => $penilaian->id,
+                'files_added' => count($allFiles),
+                'auto_verified' => $buktiDukung->is_auto_verified,
+            ];
         }
 
-        // Auto-verify: Jika is_auto_verified = true (ada esakip mapping)
-        if ($buktiDukung->is_auto_verified) {
-            $this->createAutoVerifiedPenilaian($buktiDukung, $opd, $tingkatanNilaiId, $penilaian);
+        // === CASE 2: Penilaian ada tapi source = 'upload' - SKIP (preserve user data) ===
+        if ($penilaian->source === 'upload') {
+            Log::info("Skipping sync - manual upload preserved", [
+                'penilaian_id' => $penilaian->id,
+                'bukti_dukung_id' => $buktiDukung->id,
+            ]);
+
+            return [
+                'status' => 'skipped',
+                'penilaian_id' => $penilaian->id,
+                'reason' => 'manual_upload',
+                'files_added' => 0,
+                'auto_verified' => false,
+            ];
         }
+
+        // === CASE 3: Penilaian ada dan source = 'esakip' - SMART MERGE ===
+        $existingFiles = $penilaian->link_file ?? [];
+        $mergeResult = $this->smartMergeDocuments($existingFiles, $documents);
+
+        $mergedFiles = $mergeResult['files'];
+        $filesAdded = $mergeResult['added_count'];
+
+        if ($filesAdded > 0) {
+            // Ada dokumen baru, update
+            $penilaian->update([
+                'link_file' => $mergedFiles,
+                'esakip_synced_at' => now(),
+            ]);
+
+            Log::info("Updated penilaian with new documents", [
+                'penilaian_id' => $penilaian->id,
+                'bukti_dukung_id' => $buktiDukung->id,
+                'files_added' => $filesAdded,
+                'total_files' => count($mergedFiles),
+            ]);
+
+            return [
+                'status' => 'updated',
+                'penilaian_id' => $penilaian->id,
+                'files_added' => $filesAdded,
+                'auto_verified' => false, // sudah ada sebelumnya
+            ];
+        }
+
+        // Tidak ada perubahan
+        Log::debug("No changes detected", [
+            'penilaian_id' => $penilaian->id,
+            'bukti_dukung_id' => $buktiDukung->id,
+        ]);
 
         return [
-            'status' => 'synced',
+            'status' => 'no_change',
             'penilaian_id' => $penilaian->id,
-            'auto_verified' => $buktiDukung->is_auto_verified,
+            'files_added' => 0,
+            'auto_verified' => false,
         ];
     }
+
 
     /**
      * Create penilaian auto-verified untuk role verifikator sesuai bukti_dukung
@@ -462,12 +501,13 @@ class EsakipSyncService
 
         if (!$existingVerifikator) {
             // Create penilaian auto-verified untuk role yang bertugas
+            // PENTING: Verifikator TIDAK input nilai, hanya verifikasi (is_verified + keterangan)
             Penilaian::create([
                 'opd_id' => $opd->id,
                 'bukti_dukung_id' => $buktiDukung->id,
                 'role_id' => $verifikatorRoleId,
                 'kriteria_komponen_id' => $buktiDukung->kriteria_komponen_id,
-                'tingkatan_nilai_id' => $tingkatanNilaiId,
+                'tingkatan_nilai_id' => null, // Verifikator TIDAK input nilai
                 'is_verified' => true,
                 'keterangan' => 'Auto-verified dari sinkronisasi E-SAKIP',
                 'source' => 'esakip',
@@ -478,7 +518,7 @@ class EsakipSyncService
                 'bukti_dukung_id' => $buktiDukung->id,
                 'opd_id' => $opd->id,
                 'role_id' => $verifikatorRoleId,
-                'tingkatan_nilai_id' => $tingkatanNilaiId,
+                'tingkatan_nilai_id' => null, // Verifikator tidak punya nilai
             ]);
         }
     }
@@ -491,59 +531,74 @@ class EsakipSyncService
      * @param Tahun $tahun
      * @param array $documents
      * @param \Illuminate\Database\Eloquent\Collection $buktiDukungList
-     * @param string $syncMode
      * @return array
      */
-    protected function syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList, $syncMode)
+    protected function syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList)
     {
         $allOpds = Opd::all();
         $totalPenilaianIds = [];
         $totalAutoVerified = 0;
         $totalSkipped = 0;
+        $totalFilesAdded = 0;
+
+        // Filter hanya dokumen bersama (opd_id = 1)
+        $sharedDocuments = array_filter($documents, function ($doc) {
+            return isset($doc['opd_id']) && $doc['opd_id'] == 1;
+        });
+
+        if (empty($sharedDocuments)) {
+            return [
+                'status' => 'no_document',
+                'document_type' => $documentType,
+                'opd' => 'SEMUA OPD (Dokumen Bersama)',
+                'message' => 'Tidak ada dokumen bersama',
+                'affected_count' => 0,
+            ];
+        }
 
         DB::beginTransaction();
         try {
             foreach ($allOpds as $targetOpd) {
-                foreach ($documents as $document) {
-                    // Skip jika bukan dokumen bersama
-                    if (!isset($document['opd_id']) || $document['opd_id'] != 1) {
-                        continue;
-                    }
+                // Loop per bukti dukung (Smart Sync)
+                foreach ($buktiDukungList as $buktiDukung) {
+                    // Pass SEMUA dokumen bersama sekaligus
+                    $result = $this->syncPenilaian($buktiDukung, $targetOpd, $sharedDocuments);
 
-                    foreach ($buktiDukungList as $buktiDukung) {
-                        $result = $this->syncPenilaian($buktiDukung, $targetOpd, $document, $syncMode);
+                    if ($result['status'] === 'created' || $result['status'] === 'updated') {
+                        $totalPenilaianIds[] = $result['penilaian_id'];
+                        $totalFilesAdded += $result['files_added'] ?? 0;
 
-                        if ($result['status'] === 'synced') {
-                            $totalPenilaianIds[] = $result['penilaian_id'];
-                            if ($result['auto_verified']) {
-                                $totalAutoVerified++;
-                            }
-                        } elseif ($result['status'] === 'skipped') {
-                            $totalSkipped++;
+                        if ($result['auto_verified'] ?? false) {
+                            $totalAutoVerified++;
                         }
-
-                        // Update bukti_dukung status
-                        $buktiDukung->update([
-                            'sync_status' => 'synced',
-                            'last_synced_at' => now(),
-                        ]);
+                    } elseif ($result['status'] === 'skipped') {
+                        $totalSkipped++;
+                    } elseif ($result['status'] === 'no_change') {
+                        if (isset($result['penilaian_id'])) {
+                            $totalPenilaianIds[] = $result['penilaian_id'];
+                        }
                     }
 
-                    // Log untuk setiap OPD
-                    $this->logSync([
-                        'opd_id' => $targetOpd->id,
-                        'tahun_id' => $tahun->id,
-                        'document_type' => $documentType,
-                        'document_name' => $document['keterangan'] ?? basename($document['file'] ?? ''),
-                        'tahun_value' => $tahun->tahun,
-                        'file_url' => $document['file_url'] ?? null,
-                        'penilaian_ids' => $totalPenilaianIds,
-                        'affected_count' => count($totalPenilaianIds),
-                        'auto_verified_count' => $totalAutoVerified,
-                        'status' => 'success',
-                        'synced_at' => now(),
+                    // Update bukti_dukung status
+                    $buktiDukung->update([
+                        'sync_status' => 'synced',
+                        'last_synced_at' => now(),
                     ]);
                 }
+
+                // Log untuk setiap OPD
+                $this->logSync([
+                    'opd_id' => $targetOpd->id,
+                    'tahun_id' => $tahun->id,
+                    'document_type' => $documentType,
+                    'document_name' => $documentLabel,
+                    'tahun_value' => $tahun->tahun,
+                    'penilaian_ids' => $totalPenilaianIds,
+                    'affected_count' => count($totalPenilaianIds),
+                    'auto_verified_count' => $totalAutoVerified,
+                    'status' => 'success',
+                    'synced_at' => now(),
+                ]);
             }
 
             DB::commit();
@@ -721,6 +776,7 @@ class EsakipSyncService
             'jenis_periode' => $doc['jenis_periode'] ?? null,
             'periode' => $doc['periode'] ?? null,
             'tanggal_publish' => $doc['tanggal_publish'] ?? null,
+            'kategori' => $doc['kategori'] ?? null, // induk atau perubahan
             'page_number' => null, // New API doesn't provide page_number
         ];
     }
@@ -749,5 +805,125 @@ class EsakipSyncService
     protected function logSync($data)
     {
         return RiwayatSinkron::create($data);
+    }
+
+    /**
+     * Extract timestamp dari nama file E-SAKIP
+     * Format: NamaFile_Periode_1761182369.pdf
+     *
+     * @param string $url
+     * @return string|null
+     */
+    protected function extractTimestamp($url)
+    {
+        $filename = basename($url);
+
+        // Extract timestamp (10 digit number) sebelum .pdf
+        if (preg_match('/_(\d{10})\.pdf$/i', $filename, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Build file object dengan metadata lengkap
+     *
+     * @param array $document
+     * @return array
+     */
+    protected function buildFileObject($document)
+    {
+        $url = $document['file_url'] ?? $document['file'] ?? null;
+        $timestamp = $this->extractTimestamp($url);
+        $isPerubahan = isset($document['kategori']) && $document['kategori'] === 'perubahan';
+
+        return [
+            'url' => $url,
+            'original_name' => basename($url ?? ''),
+            'timestamp' => $timestamp,
+            'kategori' => $document['kategori'] ?? 'induk',
+            'tanggal_publish' => $document['tanggal_publish'] ?? null,
+            'periode' => $document['periode'] ?? null,
+            'keterangan' => $document['keterangan'] ?? null,
+            'is_perubahan' => $isPerubahan,
+            'from_esakip' => true,
+            'synced_at' => now()->toDateTimeString(),
+            'page_number' => null, // Page number per file, bukan per penilaian
+        ];
+    }
+
+    /**
+     * Check apakah dokumen sudah ada dalam link_file array
+     * Compare by URL (primary) dan timestamp (secondary)
+     *
+     * @param array $linkFiles
+     * @param array $documentToCheck
+     * @return bool
+     */
+    protected function documentExists($linkFiles, $documentToCheck)
+    {
+        $checkUrl = $documentToCheck['url'] ?? null;
+        $checkTimestamp = $documentToCheck['timestamp'] ?? null;
+
+        if (!$checkUrl) {
+            return false;
+        }
+
+        foreach ($linkFiles as $file) {
+            $fileUrl = $file['url'] ?? null;
+            $fileTimestamp = $file['timestamp'] ?? null;
+
+            // Primary check: URL sama
+            if ($fileUrl === $checkUrl) {
+                return true;
+            }
+
+            // Secondary check: Timestamp sama (jika URL berubah tapi file sama)
+            if ($checkTimestamp && $fileTimestamp && $checkTimestamp === $fileTimestamp) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Smart merge: Gabungkan existing files dengan dokumen baru dari API
+     * Hanya tambahkan dokumen yang belum ada (no duplicate)
+     *
+     * @param array $existingFiles
+     * @param array $apiDocuments
+     * @return array
+     */
+    protected function smartMergeDocuments($existingFiles, $apiDocuments)
+    {
+        $mergedFiles = $existingFiles; // Start dengan existing files
+        $addedCount = 0;
+
+        foreach ($apiDocuments as $doc) {
+            $fileObject = $this->buildFileObject($doc);
+
+            // Check apakah dokumen sudah ada
+            if (!$this->documentExists($mergedFiles, $fileObject)) {
+                $mergedFiles[] = $fileObject;
+                $addedCount++;
+
+                Log::info("Adding new document", [
+                    'url' => $fileObject['url'],
+                    'timestamp' => $fileObject['timestamp'],
+                    'kategori' => $fileObject['kategori'],
+                ]);
+            } else {
+                Log::debug("Document already exists, skipping", [
+                    'url' => $fileObject['url'],
+                ]);
+            }
+        }
+
+        return [
+            'files' => $mergedFiles,
+            'added_count' => $addedCount,
+        ];
     }
 }

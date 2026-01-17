@@ -67,53 +67,24 @@
                             </div>
 
                             {{-- Sync Mode --}}
-                            <div class="col-md-12">
-                                <label class="form-label">Mode Sinkronisasi</label>
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <div class="form-check card mb-0">
-                                            <div class="card-body p-3">
-                                                <input type="radio" wire:model="sync_mode" value="merge"
-                                                    class="form-check-input" id="modeMerge">
-                                                <label class="form-check-label w-100" for="modeMerge">
-                                                    <i class="mdi mdi-plus-circle text-primary me-2"></i>
-                                                    <strong>Gabung</strong>
-                                                    <span class="d-block text-muted small">Tambahkan file baru tanpa
-                                                        menghapus file lama</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card mb-0">
-                                            <div class="card-body p-3">
-                                                <input type="radio" wire:model="sync_mode" value="replace"
-                                                    class="form-check-input" id="modeReplace">
-                                                <label class="form-check-label w-100" for="modeReplace">
-                                                    <i class="mdi mdi-refresh text-warning me-2"></i>
-                                                    <strong>Ganti</strong>
-                                                    <span class="d-block text-muted small">Ganti semua file dengan file
-                                                        dari esakip</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card mb-0">
-                                            <div class="card-body p-3">
-                                                <input type="radio" wire:model="sync_mode" value="skip"
-                                                    class="form-check-input" id="modeSkip">
-                                                <label class="form-check-label w-100" for="modeSkip">
-                                                    <i class="mdi mdi-skip-forward text-info me-2"></i>
-                                                    <strong>Lewati</strong>
-                                                    <span class="d-block text-muted small">Hanya sinkron yang belum ada
-                                                        dokumen</span>
-                                                </label>
-                                            </div>
+                            {{-- <div class="col-md-12">
+                                <div class="alert alert-info mb-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="mdi mdi-information-outline me-2 fs-4"></i>
+                                        <div>
+                                            <strong>Smart Sync</strong>
+                                            <p class="mb-0 small">
+                                                Sistem akan otomatis mendeteksi tindakan yang tepat:
+                                                <span class="badge bg-success ms-1">Buat Baru</span> jika belum ada,
+                                                <span class="badge bg-primary ms-1">Update</span> jika ada dokumen baru
+                                                dari E-SAKIP,
+                                                <span class="badge bg-warning ms-1">Skip</span> jika ada upload manual
+                                                (data terlindungi)
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <div class="mt-3 d-flex gap-2">
@@ -332,21 +303,6 @@
             {{-- Sidebar: Riwayat --}}
             <div class="col-lg-4">
                 {{-- Info Box --}}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">
-                            <i class="mdi mdi-information me-2"></i>
-                            Panduan
-                        </h5>
-                        <ul class="mb-0 small">
-                            <li><strong>Gabung:</strong> File dari esakip ditambahkan ke file yang sudah ada</li>
-                            <li><strong>Ganti:</strong> File lama akan diganti dengan file dari esakip</li>
-                            <li><strong>Lewati:</strong> Jika sudah ada upload manual, tidak akan di-sync</li>
-                            <li><strong>Auto-Verify:</strong> Bukti dukung yang ditandai akan otomatis terverifikasi
-                            </li>
-                        </ul>
-                    </div>
-                </div>
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">

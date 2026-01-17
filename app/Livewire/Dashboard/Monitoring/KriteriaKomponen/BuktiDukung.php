@@ -617,6 +617,14 @@ class BuktiDukung extends Component
             $uploadedFiles[] = [
                 'path' => $path, // Sudah random filename dari Laravel
                 'original_name' => $file->getClientOriginalName(), // Nama asli untuk display
+                'is_perubahan' => $this->is_perubahan ?? false, // Per-file is_perubahan
+                'kategori' => $this->is_perubahan ? 'perubahan' : 'induk',
+                'keterangan' => $this->keterangan_upload ?? null,
+                'periode' => null, // Upload manual tidak punya periode
+                'tanggal_publish' => now()->toDateString(), // Tanggal upload
+                'from_esakip' => false,
+                'uploaded_at' => now()->toDateTimeString(),
+                'page_number' => null, // Page number per file
             ];
         }
 

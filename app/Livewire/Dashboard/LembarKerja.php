@@ -52,6 +52,7 @@ class LembarKerja extends Component
     public $file_bukti_dukung = [];
     public $keterangan_upload = '';
     public $page_number = null;
+    public $file_index = null; // Index file yang akan di-set page number
     public $is_perubahan = false;
     public $ganti_semua_dokumen = false;
     public $is_final = false;
@@ -635,6 +636,25 @@ class LembarKerja extends Component
     }
 
     /**
+     * Get penilaian OPD (untuk akses page_number di modal)
+     */
+    #[Computed]
+    public function currentPenilaianOpd()
+    {
+        if (!$this->bukti_dukung_id || !$this->opd_session) {
+            return null;
+        }
+
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+
+        return Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_session)
+            ->where('role_id', $opdRoleId)
+            ->first();
+    }
+
+    /**
      * Get penilaian tersimpan untuk user saat ini
      */
     #[Computed]
@@ -928,6 +948,14 @@ class LembarKerja extends Component
             $uploadedFiles[] = [
                 'path' => $path,
                 'original_name' => $file->getClientOriginalName(),
+                'is_perubahan' => $this->is_perubahan ?? false, // Per-file is_perubahan
+                'kategori' => $this->is_perubahan ? 'perubahan' : 'induk',
+                'keterangan' => $this->keterangan_upload ?? null,
+                'periode' => null, // Upload manual tidak punya periode
+                'tanggal_publish' => now()->toDateString(), // Tanggal upload
+                'from_esakip' => false,
+                'uploaded_at' => now()->toDateTimeString(),
+                'page_number' => null, // Page number per file
             ];
         }
 
@@ -1295,6 +1323,103 @@ class LembarKerja extends Component
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File bukti dukung dan penilaian berhasil dihapus.');
         } else {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
+        }
+    }
+
+    /**
+     * Open modal set page number dengan pre-fill data
+     */
+    public function openSetPageNumberModal($fileIndex)
+    {
+        $this->file_index = $fileIndex;
+
+        // Load page_number dari file yang dipilih
+        $files = $this->selectedFileBuktiDukung;
+        if (isset($files[$fileIndex]['page_number'])) {
+            $this->page_number = $files[$fileIndex]['page_number'];
+        } else {
+            $this->page_number = null;
+        }
+    }
+
+    /**
+     * Update page number untuk dokumen spesifik (per file, bukan per penilaian)
+     */
+    public function updatePageNumber()
+    {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
+        $this->validate([
+            'page_number' => 'nullable|integer|min:1',
+            'file_index' => 'required|integer|min:0',
+        ], [
+            'page_number.integer' => 'Nomor halaman harus berupa angka',
+            'page_number.min' => 'Nomor halaman harus minimal 1',
+            'file_index.required' => 'Index file tidak valid',
+        ]);
+
+        if (!$this->bukti_dukung_id || !$this->opd_session) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Bukti dukung tidak ditemukan.');
+            return;
+        }
+
+        // Cari record penilaian OPD (gunakan role OPD, bukan role user)
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+
+        $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_session)
+            ->where('role_id', $opdRoleId)
+            ->first();
+
+        if ($penilaian && $penilaian->link_file) {
+            $files = $penilaian->link_file;
+
+            // Pastikan file index valid
+            if (!isset($files[$this->file_index])) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
+                return;
+            }
+
+            // Update page_number di array file spesifik
+            $files[$this->file_index]['page_number'] = $this->page_number;
+
+            // Save updated array ke database
+            $penilaian->update([
+                'link_file' => $files,
+            ]);
+
+            // Record history
+            $fileName = $files[$this->file_index]['original_name'] ?? 'Dokumen ' . ($this->file_index + 1);
+            $penilaian->recordHistory(
+                userId: Auth::id(),
+                roleId: Auth::user()->role_id,
+                opdId: $this->opd_session,
+                kriteriaKomponenId: $this->kriteria_komponen_session,
+                buktiDukungId: $this->bukti_dukung_id,
+                tingkatanNilaiId: $penilaian->tingkatan_nilai_id,
+                isVerified: $penilaian->is_verified,
+                keterangan: sprintf(
+                    'Mengubah halaman dokumen "%s" menjadi %s',
+                    $fileName,
+                    $this->page_number ?? 'kosong'
+                ),
+                isPerubahan: true
+            );
+
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Nomor halaman berhasil diperbarui.');
+
+            // Reset & close modal
+            $this->file_index = null;
+            $this->page_number = null;
+            $this->dispatch('close-modal', 'modalSetPageNumber');
+        } else {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Penilaian tidak ditemukan.');
         }
     }
 

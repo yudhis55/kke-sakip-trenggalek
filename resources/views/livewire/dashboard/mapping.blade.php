@@ -309,9 +309,9 @@
         aria-labelledby="addKomponenModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h5 class="modal-title text-white" id="addKomponenModalLabel">Tambah Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addKomponenModalLabel">Tambah Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -370,9 +370,9 @@
         aria-labelledby="addSubKomponenModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title text-white" id="addSubKomponenModalLabel">Tambah Sub Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSubKomponenModalLabel">Tambah Sub Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -419,9 +419,9 @@
         aria-labelledby="addKriteriaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h5 class="modal-title text-white" id="addKriteriaModalLabel">Tambah Kriteria Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addKriteriaModalLabel">Tambah Kriteria Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -486,9 +486,9 @@
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title text-white" id="addBuktiModalLabel">Tambah Bukti Dukung</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBuktiModalLabel">Tambah Bukti Dukung</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -557,9 +557,9 @@
         aria-labelledby="editKomponenModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h5 class="modal-title text-white" id="editKomponenModalLabel">Edit Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editKomponenModalLabel">Edit Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close" wire:click="resetFormKomponen"></button>
                 </div>
                 <div class="modal-body">
@@ -608,9 +608,9 @@
         aria-labelledby="editSubKomponenModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title text-white" id="editSubKomponenModalLabel">Edit Sub Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSubKomponenModalLabel">Edit Sub Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close" wire:click="resetFormSubKomponen"></button>
                 </div>
                 <div class="modal-body">
@@ -659,9 +659,9 @@
         aria-labelledby="editKriteriaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h5 class="modal-title text-white" id="editKriteriaModalLabel">Edit Kriteria Komponen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editKriteriaModalLabel">Edit Kriteria Komponen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close" wire:click="resetFormKriteriaKomponen"></button>
                 </div>
                 <div class="modal-body">
@@ -727,9 +727,9 @@
         aria-labelledby="editBuktiModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title text-white" id="editBuktiModalLabel">Edit Bukti Dukung</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBuktiModalLabel">Edit Bukti Dukung</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close" wire:click="resetFormBuktiDukung"></button>
                 </div>
                 <div class="modal-body">
