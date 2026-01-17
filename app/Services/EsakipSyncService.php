@@ -359,6 +359,9 @@ class EsakipSyncService
             'synced_at' => now()->toDateTimeString(),
         ];
 
+        // Inisialisasi tingkatanNilaiId untuk auto-verify
+        $tingkatanNilaiId = null;
+
         if ($penilaian) {
             // Penilaian OPD sudah ada
             if ($penilaian->source === 'upload' && $syncMode === 'skip') {
@@ -390,14 +393,11 @@ class EsakipSyncService
                 ]);
             }
         } else {
-            // Jika auto_verified dan penilaian_di = 'bukti', ambil tingkatan_nilai dengan bobot tertinggi
-            $tingkatanNilaiId = null;
-            $shouldAutoVerify = $buktiDukung->is_auto_verified
-                && $buktiDukung->kriteriaKomponen
-                && $buktiDukung->kriteriaKomponen->penilaian_di === 'bukti';
+            // Jika auto_verified (ada esakip mapping), ambil tingkatan_nilai dengan bobot tertinggi
+            $shouldAutoVerify = $buktiDukung->is_auto_verified && $buktiDukung->kriteria_komponen;
 
             if ($shouldAutoVerify) {
-                $jenisNilaiId = $buktiDukung->kriteriaKomponen->jenis_nilai_id;
+                $jenisNilaiId = $buktiDukung->kriteria_komponen->jenis_nilai_id;
                 $tingkatanNilaiTertinggi = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilaiId)
                     ->orderBy('bobot', 'desc')
                     ->first();
@@ -419,12 +419,8 @@ class EsakipSyncService
             ]);
         }
 
-        // Auto-verify: Hanya jika penilaian_di = 'bukti' DAN is_auto_verified = true
-        $shouldAutoVerify = $buktiDukung->is_auto_verified
-            && $buktiDukung->kriteriaKomponen
-            && $buktiDukung->kriteriaKomponen->penilaian_di === 'bukti';
-
-        if ($shouldAutoVerify) {
+        // Auto-verify: Jika is_auto_verified = true (ada esakip mapping)
+        if ($buktiDukung->is_auto_verified) {
             $this->createAutoVerifiedPenilaian($buktiDukung, $opd, $tingkatanNilaiId, $penilaian);
         }
 

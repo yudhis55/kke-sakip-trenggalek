@@ -12,6 +12,7 @@ use App\Models\RiwayatSinkron;
 class SinkronData extends Component
 {
     use WithPagination;
+    protected $paginationTheme = 'bootstrap';
     // Filter properties
     public $selected_tahun;
     public $selected_opd;
@@ -159,6 +160,19 @@ class SinkronData extends Component
         return RiwayatSinkron::with(['opd', 'tahun'])
             ->orderBy('synced_at', 'desc')
             ->paginate(5);
+    }
+
+    /**
+     * Clear semua riwayat sinkronisasi
+     */
+    public function clearRiwayat()
+    {
+        try {
+            RiwayatSinkron::truncate();
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Riwayat sinkronisasi berhasil dibersihkan');
+        } catch (\Exception $e) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal membersihkan riwayat: ' . $e->getMessage());
+        }
     }
 
     public function render()

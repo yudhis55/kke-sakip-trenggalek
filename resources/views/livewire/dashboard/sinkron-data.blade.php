@@ -331,12 +331,32 @@
 
             {{-- Sidebar: Riwayat --}}
             <div class="col-lg-4">
+                {{-- Info Box --}}
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-body">
+                        <h5 class="mb-3">
+                            <i class="mdi mdi-information me-2"></i>
+                            Panduan
+                        </h5>
+                        <ul class="mb-0 small">
+                            <li><strong>Gabung:</strong> File dari esakip ditambahkan ke file yang sudah ada</li>
+                            <li><strong>Ganti:</strong> File lama akan diganti dengan file dari esakip</li>
+                            <li><strong>Lewati:</strong> Jika sudah ada upload manual, tidak akan di-sync</li>
+                            <li><strong>Auto-Verify:</strong> Bukti dukung yang ditandai akan otomatis terverifikasi
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
                             <i class="mdi mdi-history me-2"></i>
                             Riwayat Sinkronisasi
                         </h5>
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                            data-bs-target="#clearRiwayatModal" title="Hapus Semua Riwayat">
+                            <i class="mdi mdi-delete"></i>
+                        </button>
                     </div>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
@@ -391,21 +411,31 @@
                         </div>
                     @endif
                 </div>
+            </div>
+        </div>
+    </div>
 
-                {{-- Info Box --}}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">
-                            <i class="mdi mdi-information me-2"></i>
-                            Panduan
-                        </h5>
-                        <ul class="mb-0 small">
-                            <li><strong>Gabung:</strong> File dari esakip ditambahkan ke file yang sudah ada</li>
-                            <li><strong>Ganti:</strong> File lama akan diganti dengan file dari esakip</li>
-                            <li><strong>Lewati:</strong> Jika sudah ada upload manual, tidak akan di-sync</li>
-                            <li><strong>Auto-Verify:</strong> Bukti dukung yang ditandai akan otomatis terverifikasi
-                            </li>
-                        </ul>
+    {{-- Modal Konfirmasi Hapus Riwayat --}}
+    <div wire:ignore.self class="modal fade zoomIn" id="clearRiwayatModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mt-2 text-center">
+                        <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop"
+                            colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
+                        <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                            <h4>Hapus Riwayat Sinkronisasi</h4>
+                            <p class="text-muted mx-4 mb-0">Apakah Anda yakin ingin menghapus <strong>semua riwayat
+                                    sinkronisasi</strong>? Tindakan ini tidak dapat dibatalkan.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                        <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button wire:click="clearRiwayat" type="button" class="btn w-sm btn-danger"
+                            data-bs-dismiss="modal">Hapus</button>
                     </div>
                 </div>
             </div>
