@@ -141,7 +141,7 @@ class SinkronData extends Component
             'selected_tahun',
             'selected_opd',
             'selected_document_type',
-            'sync_mode',
+            // 'sync_mode',
             'previewData',
             'syncResults',
             'syncProgress',

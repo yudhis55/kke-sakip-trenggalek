@@ -75,6 +75,21 @@ class EsakipSyncService
                 try {
                     $documents = $this->fetchDocumentsFromEsakip($type, $tahun->tahun, $opd->id);
 
+                    // Fetch dan merge dokumen 'lainnya' yang keterangannya match
+                    $lainnyaDocs = $this->fetchDocumentsFromEsakip('lainnya', $tahun->tahun, $opd->id);
+                    $filteredLainnya = $this->filterLainnyaDocuments($lainnyaDocs, $type);
+
+                    if (!empty($filteredLainnya)) {
+                        $documents = array_merge($documents, $filteredLainnya);
+
+                        Log::info("Preview: Merged 'lainnya' documents", [
+                            'document_type' => $type,
+                            'opd' => $opd->nama,
+                            'lainnya_count' => count($filteredLainnya),
+                            'total_documents' => count($documents),
+                        ]);
+                    }
+
                     if (empty($documents)) {
                         // Skip jika tidak ada dokumen, tapi tidak error
                         Log::info("No documents found", [
@@ -227,7 +242,23 @@ class EsakipSyncService
         // 2. Fetch dokumen dari esakip
         $documents = $this->fetchDocumentsFromEsakip($documentType, $tahun->tahun, $opd->id);
 
-        // 2.1. Deteksi Dokumen Bersama (opd_id = 1)
+        // 2.1. Fetch dokumen 'lainnya' yang keterangannya match dengan document_type
+        $lainnyaDocs = $this->fetchDocumentsFromEsakip('lainnya', $tahun->tahun, $opd->id);
+        $filteredLainnya = $this->filterLainnyaDocuments($lainnyaDocs, $documentType);
+
+        // Merge dokumen 'lainnya' yang cocok ke documents utama
+        if (!empty($filteredLainnya)) {
+            $documents = array_merge($documents, $filteredLainnya);
+
+            Log::info("Merged 'lainnya' documents", [
+                'document_type' => $documentType,
+                'opd' => $opd->nama,
+                'lainnya_count' => count($filteredLainnya),
+                'total_documents' => count($documents),
+            ]);
+        }
+
+        // 2.2. Deteksi Dokumen Bersama (opd_id = 1)
         // Jika ada dokumen bersama, sync ke SEMUA OPD
         $isSharedDocument = false;
         foreach ($documents as $document) {
@@ -782,7 +813,52 @@ class EsakipSyncService
     }
 
     /**
-     * Get bukti dukung yang di-mapping untuk jenis dokumen tertentu
+     * Filter dokumen 'lainnya' berdasarkan keterangan yang mengandung document_type
+     *
+     * @param array $lainnyaDocs - Dokumen dengan type 'lainnya' dari API
+     * @param string $documentType - Jenis dokumen yang dicari (renstra, renja, dll)
+     * @return array - Filtered documents yang keterangannya match
+     */
+    protected function filterLainnyaDocuments($lainnyaDocs, $documentType)
+    {
+        if (empty($lainnyaDocs)) {
+            return [];
+        }
+
+        $filtered = [];
+
+        // Normalize document_type: replace dash dengan spasi untuk matching
+        // 'rencana-aksi' → 'rencana aksi'
+        $normalizedType = str_replace('-', ' ', $documentType);
+
+        foreach ($lainnyaDocs as $doc) {
+            $keterangan = $doc['keterangan'] ?? '';
+
+            // Check apakah keterangan mengandung normalized document_type (case-insensitive)
+            // Coba match dengan versi normalized (pakai spasi) dan original (pakai dash)
+            if (
+                !empty($keterangan) &&
+                (stripos($keterangan, $normalizedType) !== false || stripos($keterangan, $documentType) !== false)
+            ) {
+                // Mark bahwa ini dari 'lainnya' untuk tracking
+                $doc['from_lainnya'] = true;
+                $doc['matched_type'] = $documentType;
+
+                $filtered[] = $doc;
+
+                Log::info("Found matching 'lainnya' document", [
+                    'keterangan' => $keterangan,
+                    'matched_type' => $documentType,
+                    'normalized_type' => $normalizedType,
+                    'file' => $doc['file_url'] ?? $doc['file'] ?? 'unknown',
+                ]);
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**     * Get bukti dukung yang di-mapping untuk jenis dokumen tertentu
      *
      * @param int $tahunId
      * @param string $documentType
@@ -848,6 +924,8 @@ class EsakipSyncService
             'keterangan' => $document['keterangan'] ?? null,
             'is_perubahan' => $isPerubahan,
             'from_esakip' => true,
+            'from_lainnya' => $document['from_lainnya'] ?? false,
+            'matched_type' => $document['matched_type'] ?? null,
             'synced_at' => now()->toDateTimeString(),
             'page_number' => null, // Page number per file, bukan per penilaian
         ];
