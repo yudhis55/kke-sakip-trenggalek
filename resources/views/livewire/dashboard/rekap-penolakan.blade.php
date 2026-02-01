@@ -23,16 +23,18 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive table-card">
-                            <table class="table table-nowrap mb-0 align-middle">
+                            <table class="table mb-0 align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col" style="width: 5%;">No</th>
-                                        <th scope="col" style="width: 15%;">Komponen</th>
-                                        <th scope="col" style="width: 15%;">Sub Komponen</th>
-                                        <th scope="col" style="width: 20%;">Kriteria Komponen</th>
-                                        <th scope="col" style="width: 20%;">Bukti Dukung</th>
-                                        <th scope="col" style="width: 12%;">Ditolak Oleh</th>
-                                        <th scope="col" style="width: 13%;">Keterangan</th>
+                                        <th scope="col" style="width: 4%;">No</th>
+                                        <th scope="col" style="width: 12%;">Komponen</th>
+                                        <th scope="col" style="width: 12%;">Sub Komponen</th>
+                                        <th scope="col" style="width: 16%;">Kriteria Komponen</th>
+                                        <th scope="col" style="width: 14%;">Bukti Dukung</th>
+                                        <th scope="col" style="width: 10%;">Ditolak Oleh</th>
+                                        <th scope="col" style="width: 9%;">Tgl Penolakan</th>
+                                        <th scope="col" style="width: 11%;">Status Perbaikan</th>
+                                        <th scope="col" style="width: 12%;">Keterangan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -98,6 +100,41 @@
                                                 @endif
                                             </td>
                                             <td>
+                                                <small class="text-muted">
+                                                    {{ $penolakan->created_at->format('d/m/Y') }}<br>
+                                                    {{ $penolakan->created_at->format('H:i') }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                @switch($penolakan->status_perbaikan)
+                                                    @case('belum_diperbaiki')
+                                                        <span class="badge bg-danger">
+                                                            <i class="ri-close-circle-line me-1"></i>Belum Diperbaiki
+                                                        </span>
+                                                    @break
+
+                                                    @case('sudah_diperbaiki')
+                                                        <span class="badge bg-warning">
+                                                            <i class="ri-time-line me-1"></i>Sudah Diperbaiki
+                                                        </span>
+                                                        @if ($penolakan->tanggal_perbaikan)
+                                                            <small class="d-block text-muted mt-1">
+                                                                {{ $penolakan->tanggal_perbaikan->format('d/m/Y H:i') }}
+                                                            </small>
+                                                        @endif
+                                                    @break
+
+                                                    @case('diterima_setelah_perbaikan')
+                                                        <span class="badge bg-success">
+                                                            <i class="ri-checkbox-circle-line me-1"></i>Diterima
+                                                        </span>
+                                                    @break
+
+                                                    @default
+                                                        <span class="badge bg-secondary">-</span>
+                                                @endswitch
+                                            </td>
+                                            <td>
                                                 @if ($penolakan->keterangan)
                                                     <button type="button" class="btn btn-sm btn-primary me-1"
                                                         data-bs-toggle="modal" data-bs-target="#keteranganModal"
@@ -107,8 +144,7 @@
                                                     </button>
                                                 @endif
                                                 <button wire:click="redirectToBuktiDukung({{ $penolakan->id }})"
-                                                    type="button"
-                                                    class="btn btn-sm btn-primary"
+                                                    type="button" class="btn btn-sm btn-primary"
                                                     title="Buka di Lembar Kerja">
                                                     <i class="ri-external-link-line"></i>
                                                 </button>
@@ -116,7 +152,7 @@
                                         </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="text-center py-4">
+                                                <td colspan="9" class="text-center py-4">
                                                     <div class="d-flex flex-column align-items-center">
                                                         <i class="ri-file-list-3-line display-4 text-muted mb-2"></i>
                                                         <p class="text-muted mb-0">Tidak ada penolakan dokumen</p>

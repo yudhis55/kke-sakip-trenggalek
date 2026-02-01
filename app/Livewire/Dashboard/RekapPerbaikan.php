@@ -2,8 +2,6 @@
 
 namespace App\Livewire\Dashboard;
 
-use App\Models\BuktiDukung;
-use App\Models\Penilaian;
 use App\Models\PenilaianHistory;
 use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
@@ -11,10 +9,11 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Session;
 use Livewire\Component;
 
-class RekapPenolakan extends Component
+class RekapPerbaikan extends Component
 {
     // Modal keterangan
     public $selectedKeterangan = null;
+    public $selectedPenolakan = null;
 
     // Session untuk redirect ke lembar kerja
     #[Session(key: 'tahun_session')]
@@ -30,63 +29,57 @@ class RekapPenolakan extends Component
 
     public function showKeterangan($penilaianHistoryId)
     {
-        $penilaianHistory = PenilaianHistory::find($penilaianHistoryId);
-        $this->selectedKeterangan = $penilaianHistory?->keterangan ?? 'Tidak ada keterangan';
+        $penilaianHistory = PenilaianHistory::with(['opd'])->find($penilaianHistoryId);
+
+        if ($penilaianHistory) {
+            $this->selectedKeterangan = $penilaianHistory->keterangan ?? 'Tidak ada keterangan';
+            $this->selectedPenolakan = $penilaianHistory;
+        }
     }
 
     #[Computed]
-    public function rekapPenolakan()
+    public function rekapPerbaikan()
     {
-        // Hanya untuk OPD
-        if (Auth::user()->role->jenis !== 'opd') {
+        // Hanya untuk Verifikator, Penjamin, Penilai
+        $allowedRoles = ['verifikator', 'penjamin', 'penilai'];
+
+        if (!in_array(Auth::user()->role->jenis, $allowedRoles)) {
             return collect();
         }
 
-        $opdId = Auth::user()->opd_id;
-
-        // Ambil semua penilaian yang ditolak (is_verified = 0 atau false)
-        // Dari role verifikator atau penjamin
-        $verifikatorRoleIds = Role::where('jenis', 'verifikator')->pluck('id')->toArray();
-        $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
-        $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
-
-        return PenilaianHistory::whereIn('role_id', $roleIds)
-            ->where('opd_id', $opdId)
+        // Setiap user hanya melihat perbaikan dari dokumen yang mereka sendiri tolak
+        return PenilaianHistory::where('role_id', Auth::user()->role_id)
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
-            ->whereIn('status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki']) // Exclude yang sudah diterima
+            ->where('status_perbaikan', 'sudah_diperbaiki')
             ->whereHas('kriteria_komponen', function ($query) {
                 $query->where('tahun_id', $this->tahun_session);
             })
             ->with([
                 'kriteria_komponen.sub_komponen.komponen',
                 'bukti_dukung',
+                'opd',
                 'role'
             ])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('tanggal_perbaikan', 'desc')
             ->get();
     }
 
     #[Computed]
     public function badgeCount()
     {
-        // Hanya untuk OPD
-        if (Auth::user()->role->jenis !== 'opd') {
+        // Hanya untuk Verifikator, Penjamin, Penilai
+        $allowedRoles = ['verifikator', 'penjamin', 'penilai'];
+
+        if (!in_array(Auth::user()->role->jenis, $allowedRoles)) {
             return 0;
         }
 
-        $opdId = Auth::user()->opd_id;
-
-        // Hitung dokumen yang ditolak dan belum diperbaiki
-        $verifikatorRoleIds = Role::where('jenis', 'verifikator')->pluck('id')->toArray();
-        $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
-        $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
-
-        return PenilaianHistory::whereIn('role_id', $roleIds)
-            ->where('opd_id', $opdId)
+        // Setiap user hanya hitung perbaikan dari dokumen yang mereka sendiri tolak
+        return PenilaianHistory::where('role_id', Auth::user()->role_id)
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
-            ->where('status_perbaikan', 'belum_diperbaiki')
+            ->where('status_perbaikan', 'sudah_diperbaiki')
             ->whereHas('kriteria_komponen', function ($query) {
                 $query->where('tahun_id', $this->tahun_session);
             })
@@ -95,7 +88,7 @@ class RekapPenolakan extends Component
 
     public function redirectToBuktiDukung($penilaianHistoryId)
     {
-        $penilaianHistory = PenilaianHistory::with(['bukti_dukung', 'kriteria_komponen.sub_komponen.komponen'])
+        $penilaianHistory = PenilaianHistory::with(['bukti_dukung', 'kriteria_komponen.sub_komponen.komponen', 'opd'])
             ->find($penilaianHistoryId);
 
         if (!$penilaianHistory || !$penilaianHistory->kriteria_komponen) {
@@ -105,7 +98,7 @@ class RekapPenolakan extends Component
 
         // Set semua session yang diperlukan untuk lembar kerja
         $this->tahun_session = $penilaianHistory->kriteria_komponen->tahun_id;
-        $this->opd_session = Auth::user()->opd_id;
+        $this->opd_session = $penilaianHistory->opd_id;
 
         $this->komponen_session = $penilaianHistory->kriteria_komponen->sub_komponen->komponen_id;
         $this->sub_komponen_session = $penilaianHistory->kriteria_komponen->sub_komponen_id;
@@ -115,6 +108,6 @@ class RekapPenolakan extends Component
 
     public function render()
     {
-        return view('livewire.dashboard.rekap-penolakan');
+        return view('livewire.dashboard.rekap-perbaikan');
     }
 }

@@ -13,6 +13,7 @@ class PenilaianHistory extends Model
     protected $casts = [
         'is_verified' => 'boolean',
         'is_perubahan' => 'boolean',
+        'tanggal_perbaikan' => 'datetime',
     ];
 
     // Relasi
@@ -49,6 +50,11 @@ class PenilaianHistory extends Model
     public function tingkatan_nilai(): BelongsTo
     {
         return $this->belongsTo(TingkatanNilai::class, 'tingkatan_nilai_id');
+    }
+
+    public function file_perbaikan(): BelongsTo
+    {
+        return $this->belongsTo(FileBuktiDukung::class, 'file_perbaikan_id');
     }
 
     /**

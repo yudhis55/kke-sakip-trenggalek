@@ -7,7 +7,8 @@
     <meta charset="utf-8" />
     <title>{{ $title ?? 'Dashboard KKE SAKIP Trenggalek' }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Kertas Kerja Evaluasi Sistem Akuntabilitas Kinerja Instansi Pemerintah Kab Trenggalek" name="description" />
+    <meta content="Kertas Kerja Evaluasi Sistem Akuntabilitas Kinerja Instansi Pemerintah Kab Trenggalek"
+        name="description" />
     <meta content="Diskominfo Trenggalek" name="author" />
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/logo-trenggalek-mini.png') }}">
@@ -30,6 +31,89 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+
+    <!-- Custom Badge Notification Style -->
+    {{-- <style>
+        .menu-badge-notification {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 10px;
+            background-color: #f06548;
+            color: white;
+            box-shadow: 0 2px 4px rgba(240, 101, 72, 0.4);
+            animation: pulse-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% {
+                box-shadow: 0 2px 4px rgba(240, 101, 72, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 4px rgba(240, 101, 72, 0.2);
+            }
+        }
+
+        .nav-item {
+            position: relative;
+        }
+    </style> --}}
+
+    <style>
+        .nav-item {
+            position: relative;
+        }
+
+        .badge-pulsate-app {
+            display: inline-block;
+            background-color: red;
+            border-radius: 50%;
+            width: 5px;
+            height: 5px;
+            padding: 0;
+            position: absolute;
+            top: 12px;
+            right: 15px;
+        }
+
+        .badge-pulsate-app::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            animation: pulse 1s ease infinite;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 100, 100, 0.6);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            60% {
+                transform: scale(1.3);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+    </style>
+
     @filepondScripts
 </head>
 
@@ -220,10 +304,62 @@
 
                         @if (Auth::user()->role->jenis == 'opd')
                             <li class="nav-item">
+                                @php
+                                    $opdId = Auth::user()->opd_id;
+                                    $tahunSession = session('tahun_session');
+                                    $verifikatorRoleIds = \App\Models\Role::where('jenis', 'verifikator')
+                                        ->pluck('id')
+                                        ->toArray();
+                                    $penjaminRoleId = \App\Models\Role::where('jenis', 'penjamin')->first()?->id;
+                                    $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
+
+                                    $badgeCountPenolakan = \App\Models\PenilaianHistory::whereIn('role_id', $roleIds)
+                                        ->where('opd_id', $opdId)
+                                        ->where('is_verified', 0)
+                                        ->whereNotNull('keterangan')
+                                        ->where('status_perbaikan', 'belum_diperbaiki')
+                                        ->when($tahunSession, function ($query) use ($tahunSession) {
+                                            $query->whereHas('kriteria_komponen', function ($q) use ($tahunSession) {
+                                                $q->where('tahun_id', $tahunSession);
+                                            });
+                                        })
+                                        ->count();
+                                @endphp
                                 <a wire:current="active" class="nav-link menu-link" href="/rekap-penolakan"
                                     role="button" aria-expanded="false" aria-controls="sidebarLayouts">
                                     <i class="mdi mdi-file-cancel-outline"></i> <span data-key="t-layouts">Rekap
                                         Penolakan</span>
+                                    @if ($badgeCountPenolakan > 0)
+                                        <span class="badge-pulsate-app"></span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endif
+
+                        @if (in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin', 'penilai']))
+                            <li class="nav-item">
+                                @php
+                                    $tahunSession = session('tahun_session');
+
+                                    // Setiap user hanya hitung perbaikan dari dokumen yang mereka sendiri tolak
+                                    $badgeCountPerbaikan = \App\Models\PenilaianHistory::where('role_id', Auth::user()->role_id)
+                                        ->where('is_verified', 0)
+                                        ->whereNotNull('keterangan')
+                                        ->where('status_perbaikan', 'sudah_diperbaiki')
+                                        ->when($tahunSession, function ($query) use ($tahunSession) {
+                                            $query->whereHas('kriteria_komponen', function ($q) use ($tahunSession) {
+                                                $q->where('tahun_id', $tahunSession);
+                                            });
+                                        })
+                                        ->count();
+                                @endphp
+                                <a wire:current="active" class="nav-link menu-link" href="/rekap-perbaikan"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                    <i class="mdi mdi-file-check-outline"></i> <span data-key="t-layouts">Rekap
+                                        Perbaikan</span>
+                                    @if ($badgeCountPerbaikan > 0)
+                                        <span class="badge-pulsate-app"></span>
+                                    @endif
                                 </a>
                             </li>
                         @endif
@@ -244,7 +380,8 @@
 
                         @if (Auth::user()->role->jenis == 'admin')
                             <li class="nav-item">
-                                <a wire:current="active" class="nav-link menu-link" href="/ekspor-laporan" role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                <a wire:current="active" class="nav-link menu-link" href="/ekspor-laporan"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
                                     <i class="mdi mdi-file-export-outline"></i> <span data-key="t-layouts">Ekspor
                                         Laporan</span>
                                 </a>
@@ -253,7 +390,8 @@
 
                         @if (Auth::user()->role->jenis == 'admin')
                             <li class="nav-item">
-                                <a wire:current="active" class="nav-link menu-link" href="/sinkron-data" role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                <a wire:current="active" class="nav-link menu-link" href="/sinkron-data"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
                                     <i class="mdi mdi-sync"></i> <span data-key="t-layouts">Sinkron Data</span>
                                 </a>
                             </li>
