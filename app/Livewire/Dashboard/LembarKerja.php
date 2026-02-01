@@ -1092,6 +1092,30 @@ class LembarKerja extends Component
             }
         }
 
+        // Update status perbaikan untuk penolakan yang belum diperbaiki
+        // Cek apakah ada penolakan untuk bukti dukung ini
+        $penolakanBelumDiperbaiki = PenilaianHistory::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_session)
+            ->where('is_verified', 0)
+            ->whereNotNull('keterangan')
+            ->where('status_perbaikan', 'belum_diperbaiki')
+            ->get();
+
+        if ($penolakanBelumDiperbaiki->count() > 0) {
+            foreach ($penolakanBelumDiperbaiki as $penolakan) {
+                $penolakan->update([
+                    'status_perbaikan' => 'sudah_diperbaiki',
+                    'tanggal_perbaikan' => now(),
+                    'file_perbaikan_id' => null, // File tersimpan di link_file array, tidak perlu record terpisah
+                ]);
+            }
+
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->info(
+                'Status ' . $penolakanBelumDiperbaiki->count() . ' penolakan diupdate menjadi "Sudah Diperbaiki".'
+            );
+        }
+
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil diupload.');
 
         // Reset all form states after successful upload
@@ -1284,6 +1308,37 @@ class LembarKerja extends Component
             keterangan: $this->keterangan_verifikasi,
             isPerubahan: $isPerubahan
         );
+
+        // Update status perbaikan jika ada dokumen yang sebelumnya ditolak dan sudah diperbaiki
+        $perbaikanHistory = PenilaianHistory::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->where('opd_id', $this->opd_session)
+            ->where('status_perbaikan', 'sudah_diperbaiki');
+
+        // Filter berdasarkan bukti_dukung_id atau null (penilaian di kriteria)
+        if ($buktiDukungId) {
+            $perbaikanHistory->where('bukti_dukung_id', $buktiDukungId);
+        } else {
+            $perbaikanHistory->whereNull('bukti_dukung_id');
+        }
+
+        $perbaikanHistory = $perbaikanHistory->get();
+
+        if ($perbaikanHistory->count() > 0) {
+            foreach ($perbaikanHistory as $history) {
+                if ($this->is_verified == 1) {
+                    // Jika diterima, update status menjadi diterima_setelah_perbaikan
+                    $history->update([
+                        'status_perbaikan' => 'diterima_setelah_perbaikan',
+                    ]);
+                } else {
+                    // Jika ditolak lagi, kembalikan ke belum_diperbaiki
+                    $history->update([
+                        'status_perbaikan' => 'belum_diperbaiki',
+                        'tanggal_perbaikan' => null,
+                    ]);
+                }
+            }
+        }
 
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Verifikasi berhasil disimpan.');
 
@@ -1666,6 +1721,7 @@ class LembarKerja extends Component
     /**
      * Cek apakah komponen memiliki penolakan dari verifikator/penjamin
      * (is_verified = 0 atau false) pada dirinya atau anaknya
+     * Hanya hitung yang belum_diperbaiki atau sudah_diperbaiki (exclude diterima_setelah_perbaikan)
      */
     public function hasRejection($item, $type)
     {
@@ -1680,64 +1736,61 @@ class LembarKerja extends Component
             case 'komponen':
                 // Cek di semua kriteria komponen yang punya bukti dukung
                 // Hanya dari role verifikator atau penjamin
-                return DB::table('penilaian')
-                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
-                    ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                // Exclude yang sudah diterima setelah perbaikan
+                return DB::table('penilaian_history')
+                    ->join('kriteria_komponen', 'penilaian_history.kriteria_komponen_id', '=', 'kriteria_komponen.id')
                     ->join('sub_komponen', 'kriteria_komponen.sub_komponen_id', '=', 'sub_komponen.id')
-                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                    ->join('role', 'penilaian_history.role_id', '=', 'role.id')
                     ->where('sub_komponen.komponen_id', $item->id)
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.is_verified', false)
+                    ->where('penilaian_history.opd_id', $opdId)
+                    ->where('penilaian_history.is_verified', false)
+                    ->whereNotNull('penilaian_history.keterangan')
+                    ->whereIn('penilaian_history.status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki'])
                     ->whereIn('role.jenis', ['verifikator', 'penjamin'])
                     ->exists();
 
             case 'sub_komponen':
                 // Cek di semua kriteria komponen dari sub komponen ini
                 // Hanya dari role verifikator atau penjamin
-                return \DB::table('penilaian')
-                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
-                    ->join('kriteria_komponen', 'bukti_dukung.kriteria_komponen_id', '=', 'kriteria_komponen.id')
-                    ->join('role', 'penilaian.role_id', '=', 'role.id')
+                // Exclude yang sudah diterima setelah perbaikan
+                return \DB::table('penilaian_history')
+                    ->join('kriteria_komponen', 'penilaian_history.kriteria_komponen_id', '=', 'kriteria_komponen.id')
+                    ->join('role', 'penilaian_history.role_id', '=', 'role.id')
                     ->where('kriteria_komponen.sub_komponen_id', $item->id)
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.is_verified', false)
+                    ->where('penilaian_history.opd_id', $opdId)
+                    ->where('penilaian_history.is_verified', false)
+                    ->whereNotNull('penilaian_history.keterangan')
+                    ->whereIn('penilaian_history.status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki'])
                     ->whereIn('role.jenis', ['verifikator', 'penjamin'])
                     ->exists();
 
             case 'kriteria':
                 // Cek di penilaian level kriteria atau di bukti dukungnya
                 // Hanya dari role verifikator atau penjamin
+                // Exclude yang sudah diterima setelah perbaikan
 
-                // Level kriteria (penilaian_di = 'kriteria')
-                $hasRejectionKriteria = \DB::table('penilaian')
-                    ->join('role', 'penilaian.role_id', '=', 'role.id')
-                    ->whereNull('penilaian.bukti_dukung_id')
-                    ->where('penilaian.kriteria_komponen_id', $item->id)
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.is_verified', false)
+                // Level kriteria (penilaian_di = 'kriteria') atau bukti dukung (penilaian_di = 'bukti')
+                return \DB::table('penilaian_history')
+                    ->join('role', 'penilaian_history.role_id', '=', 'role.id')
+                    ->where('penilaian_history.kriteria_komponen_id', $item->id)
+                    ->where('penilaian_history.opd_id', $opdId)
+                    ->where('penilaian_history.is_verified', false)
+                    ->whereNotNull('penilaian_history.keterangan')
+                    ->whereIn('penilaian_history.status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki'])
                     ->whereIn('role.jenis', ['verifikator', 'penjamin'])
                     ->exists();
-
-                // Level bukti dukung (penilaian_di = 'bukti')
-                $hasRejectionBukti = \DB::table('penilaian')
-                    ->join('bukti_dukung', 'penilaian.bukti_dukung_id', '=', 'bukti_dukung.id')
-                    ->join('role', 'penilaian.role_id', '=', 'role.id')
-                    ->where('bukti_dukung.kriteria_komponen_id', $item->id)
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.is_verified', false)
-                    ->whereIn('role.jenis', ['verifikator', 'penjamin'])
-                    ->exists();
-
-                return $hasRejectionKriteria || $hasRejectionBukti;
 
             case 'bukti':
                 // Cek langsung di penilaian bukti dukung ini
                 // Hanya dari role verifikator atau penjamin
-                return \DB::table('penilaian')
-                    ->join('role', 'penilaian.role_id', '=', 'role.id')
-                    ->where('penilaian.bukti_dukung_id', $item->id)
-                    ->where('penilaian.opd_id', $opdId)
-                    ->where('penilaian.is_verified', false)
+                // Exclude yang sudah diterima setelah perbaikan
+                return \DB::table('penilaian_history')
+                    ->join('role', 'penilaian_history.role_id', '=', 'role.id')
+                    ->where('penilaian_history.bukti_dukung_id', $item->id)
+                    ->where('penilaian_history.opd_id', $opdId)
+                    ->where('penilaian_history.is_verified', false)
+                    ->whereNotNull('penilaian_history.keterangan')
+                    ->whereIn('penilaian_history.status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki'])
                     ->whereIn('role.jenis', ['verifikator', 'penjamin'])
                     ->exists();
 

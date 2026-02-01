@@ -568,6 +568,7 @@
 
                                                     // Info dan metadata per level
                                                     if ($isKomponenLevel && !$komponen_session) {
+                                                        // Level: Tampilkan daftar Komponen
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'komponen');
                                                         $jumlahSubKomponen = $lembar_kerja->sub_komponen()->count();
                                                         $jumlahKriteria = \DB::table('kriteria_komponen')
@@ -575,7 +576,8 @@
                                                             ->count();
                                                         $infoText = "Jumlah sub komponen: {$jumlahSubKomponen} | Jumlah kriteria: {$jumlahKriteria}";
                                                         $bobotKriteria = $lembar_kerja->bobot ?? 0;
-                                                    } elseif ($isKomponenLevel) {
+                                                    } elseif ($isSubKomponenLevel) {
+                                                        // Level: Tampilkan daftar Sub Komponen
                                                         $hasRejection = $this->hasRejection(
                                                             $lembar_kerja,
                                                             'sub_komponen',
@@ -595,13 +597,8 @@
                                                             ->count();
                                                         $infoText = "Jumlah kriteria: {$jumlahKriteria} | Jumlah bukti dukung: {$jumlahBuktiDukung}";
                                                         $bobotKriteria = $lembar_kerja->bobot ?? 0;
-                                                    } elseif ($isSubKomponenLevel) {
-                                                        $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
-                                                        $jumlahKriteria = $lembar_kerja->kriteria_komponen()->count();
-                                                        $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
-                                                        $infoText = "Jumlah kriteria: {$jumlahKriteria} | Jumlah bukti dukung: {$jumlahBuktiDukung}";
-                                                        $bobotKriteria = $lembar_kerja->bobot ?? 0;
                                                     } else {
+                                                        // Level: Tampilkan daftar Kriteria Komponen
                                                         $hasRejection = $this->hasRejection($lembar_kerja, 'kriteria');
                                                         $jumlahBuktiDukung = $lembar_kerja->bukti_dukung()->count();
                                                         $penilaianDiText =
@@ -1858,7 +1855,8 @@
                                                                                 </span>
                                                                             @endif
                                                                             @if ($penilaianOpd->keterangan)
-                                                                                <p class="mb-1">
+                                                                                <p class="mb-1"
+                                                                                    style="word-wrap: break-word; overflow-wrap: break-word;">
                                                                                     <strong>Keterangan:</strong>
                                                                                     {{ $penilaianOpd->keterangan }}
                                                                                 </p>
@@ -2021,7 +2019,8 @@
                                                                                     </span>
                                                                                 @endif
                                                                                 @if ($buktiItem->penilaian_opd->keterangan)
-                                                                                    <p class="mb-1">
+                                                                                    <p class="mb-1"
+                                                                                        style="word-wrap: break-word; overflow-wrap: break-word;">
                                                                                         <strong>Keterangan:</strong>
                                                                                         {{ $buktiItem->penilaian_opd->keterangan }}
                                                                                     </p>
@@ -2195,31 +2194,41 @@
                                                                 ->first();
                                                         @endphp
                                                         @if ($penilaianOpdRecord)
-                                                            <div
-                                                                class="alert alert-info d-flex justify-content-between align-items-start mb-3">
-                                                                <div>
-                                                                    @if ($penilaianOpdRecord->is_perubahan)
-                                                                        <span class="badge bg-warning mb-2">
-                                                                            <i class="ri-refresh-line me-1"></i>Dokumen
-                                                                            Perubahan
-                                                                        </span>
+                                                            <div class="alert alert-info mb-3">
+                                                                <div
+                                                                    class="d-flex justify-content-between align-items-start gap-2">
+                                                                    <div class="flex-grow-1" style="min-width: 0;">
+                                                                        @if ($penilaianOpdRecord->is_perubahan)
+                                                                            <span class="badge bg-warning mb-2">
+                                                                                <i
+                                                                                    class="ri-refresh-line me-1"></i>Dokumen
+                                                                                Perubahan
+                                                                            </span>
+                                                                        @endif
+                                                                        @if ($penilaianOpdRecord->keterangan)
+                                                                            <p class="mb-1"
+                                                                                style="word-wrap: break-word; overflow-wrap: break-word;">
+                                                                                <strong>Keterangan:</strong>
+                                                                                {{ $penilaianOpdRecord->keterangan }}
+                                                                            </p>
+                                                                        @endif
+                                                                        <p class="mb-0 small text-muted">
+                                                                            <i class="ri-time-line me-1"></i>Diunggah:
+                                                                            {{ $penilaianOpdRecord->created_at->format('d M Y H:i') }}
+                                                                        </p>
+                                                                    </div>
+                                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                        <div class="flex-shrink-0">
+                                                                            <button wire:click="deleteFileBuktiDukung"
+                                                                                wire:confirm="Yakin ingin menghapus semua dokumen? Tindakan ini tidak dapat dibatalkan."
+                                                                                class="btn btn-sm btn-danger">
+                                                                                <i
+                                                                                    class="ri-delete-bin-line me-1"></i>Hapus
+                                                                                Dokumen
+                                                                            </button>
+                                                                        </div>
                                                                     @endif
-                                                                    @if ($penilaianOpdRecord->keterangan)
-                                                                        <p class="mb-0"><strong>Keterangan:</strong>
-                                                                            {{ $penilaianOpdRecord->keterangan }}</p>
-                                                                    @endif
-                                                                    <p class="mb-0 small text-muted">Diunggah:
-                                                                        {{ $penilaianOpdRecord->created_at->format('d M Y H:i') }}
-                                                                    </p>
                                                                 </div>
-                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
-                                                                    <button wire:click="deleteFileBuktiDukung"
-                                                                        wire:confirm="Yakin ingin menghapus semua dokumen? Tindakan ini tidak dapat dibatalkan."
-                                                                        class="btn btn-sm btn-danger">
-                                                                        <i class="ri-delete-bin-line me-1"></i>Hapus
-                                                                        Dokumen
-                                                                    </button>
-                                                                @endif
                                                             </div>
                                                         @endif
 
@@ -2468,39 +2477,48 @@
                                                         @filepond-upload-started.window="isUploading = true; hasFiles = true"
                                                         @filepond-upload-completed.window="isUploading = false"
                                                         @filepond-upload-file-removed.window="if ($event.detail.isEmpty) { hasFiles = false; isUploading = false }">
-                                                        <div class="ms-3">
-                                                            <div class="row align-items-start">
-                                                                {{-- Dynamic column: col-12 saat kosong, col-10 saat ada file --}}
-                                                                <div :class="{{ $file_count }} > 0 ? 'col-10' : 'col-12'">
-                                                                    <x-filepond::upload wire:model="file_bukti_dukung" multiple />
+                                                        <div class="mx-3">
+                                                            <div class="d-flex align-items-start gap-3">
+
+                                                                {{-- File upload: isi sisa lebar --}}
+                                                                <div class="flex-grow-1">
+                                                                    <x-filepond::upload wire:model="file_bukti_dukung"
+                                                                        multiple />
                                                                 </div>
 
-                                                            {{-- Tombol Set Halaman per file - hanya muncul saat ada file --}}
-                                                            @if ($file_count > 0)
-                                                                <div class="col-2 d-grid gap-2" style="margin-top: 76px;">
-                                                                    @foreach (range(0, $file_count - 1) as $index)
-                                                                        @php
-                                                                            $hasPageNumber = isset($file_page_numbers[$index]);
-                                                                            $pageNum = $file_page_numbers[$index] ?? null;
-                                                                        @endphp
-                                                                        <button type="button"
-                                                                            wire:click="openSetPageNumberForUpload({{ $index }})"
-                                                                            data-bs-toggle="modal"
-                                                                            data-bs-target="#modalSetPageNumber"
-                                                                            class="btn {{ $hasPageNumber ? 'btn-primary' : 'btn-outline-primary' }} btn-label"
-                                                                            style="min-height: 46px;"
-                                                                            title="Set halaman untuk {{ $temporary_file_names[$index] ?? 'Dokumen ' . ($index + 1) }}">
-                                                                            <i class="ri-bookmark-line label-icon align-middle fs-16 me-1"></i>
-                                                                            @if ($hasPageNumber)
-                                                                                <small>Hal. {{ $pageNum }}</small>
-                                                                            @else
-                                                                                <small>Set Halaman</small>
-                                                                            @endif
-                                                                        </button>
-                                                                    @endforeach
-                                                                </div>
-                                                            @endif
+                                                                {{-- Tombol: mentok kanan, lebar sesuai konten --}}
+                                                                @if ($file_count > 0)
+                                                                    <div class="d-grid gap-2"
+                                                                        style="margin-top: 76px;">
+                                                                        @foreach (range(0, $file_count - 1) as $index)
+                                                                            @php
+                                                                                $hasPageNumber = isset(
+                                                                                    $file_page_numbers[$index],
+                                                                                );
+                                                                                $pageNum =
+                                                                                    $file_page_numbers[$index] ?? null;
+                                                                            @endphp
+
+                                                                            <button type="button"
+                                                                                wire:click="openSetPageNumberForUpload({{ $index }})"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#modalSetPageNumber"
+                                                                                class="btn {{ $hasPageNumber ? 'btn-primary' : 'btn-outline-primary' }}"
+                                                                                style="min-height: 46px; white-space: nowrap;"
+                                                                                title="Set halaman untuk {{ $temporary_file_names[$index] ?? 'Dokumen ' . ($index + 1) }}">
+
+                                                                                <i class="ri-bookmark-line me-1"></i>
+                                                                                <small>
+                                                                                    {{ $hasPageNumber ? "Hal. $pageNum" : 'Hal.' }}
+                                                                                </small>
+                                                                            </button>
+                                                                        @endforeach
+                                                                    </div>
+                                                                @endif
+
+                                                            </div>
                                                         </div>
+
                                                         <div class="mb-3 mt-3">
                                                             <label for="keterangan_upload" class="form-label">
                                                                 Keterangan
@@ -2570,729 +2588,707 @@
                                                             </div>
                                                         @endif
                                                     </div>
-                                                </div>
-                                            @else
-                                                <div class="alert alert-warning mt-3 mx-3">
-                                                    <i class="ri-alert-line me-2"></i>
-                                                    <strong>Fitur Unggah Dokumen Tidak Tersedia</strong>
-                                                    <p class="mb-0 mt-2">
-                                                        @php $aksesCheck = $this->cekAksesWaktu(); @endphp
-                                                        {{ $aksesCheck['message'] }}
-                                                    </p>
-                                                </div>
-                                            @endif
                                             </div>
-                                            <div x-show="menu === 'penilaian'"
-                                                aria-labelledby="tombol-penilaian-mandiri">
-                                                <div>
-                                                    @php $canDoPenilaian = $this->canDoPenilaian; @endphp
-                                                    @if (!$canDoPenilaian['allowed'])
-                                                        <div class="alert alert-warning" role="alert">
-                                                            <i class="ri-alert-line me-2"></i>
-                                                            <strong>Upload Bukti Dukung Diperlukan</strong>
-                                                            <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
-                                                        </div>
-                                                    @else
-                                                        <div class="mb-3">
-                                                            @if ($this->penilaianTersimpan && $this->penilaianTersimpan->tingkatan_nilai_id && !$is_editing_penilaian)
-                                                                {{-- Preview Mode: Tampilkan nilai tersimpan --}}
-                                                                <div class="card border-success">
-                                                                    <div class="card-body">
-                                                                        <div
-                                                                            class="d-flex justify-content-between align-items-start mb-3">
-                                                                            <h5 class="card-title mb-0">
-                                                                                <i
-                                                                                    class="ri-checkbox-circle-fill text-success me-2"></i>
-                                                                                Penilaian Tersimpan
-                                                                            </h5>
-                                                                            <div>
-                                                                                <button wire:click="editPenilaian"
-                                                                                    class="btn btn-sm btn-warning me-1">
-                                                                                    <i
-                                                                                        class="ri-edit-line me-1"></i>Ubah
-                                                                                </button>
-                                                                                @if ($this->dalamRentangAkses)
-                                                                                    <button wire:click="hapusNilai"
-                                                                                        wire:confirm="Yakin ingin menghapus nilai penilaian? Keterangan dari upload dokumen akan tetap tersimpan."
-                                                                                        class="btn btn-sm btn-danger">
-                                                                                        <i
-                                                                                            class="ri-delete-bin-line me-1"></i>Hapus
-                                                                                    </button>
-                                                                                @endif
-                                                                            </div>
-                                                                        </div>
+                                        @else
+                                            <div class="alert alert-warning mt-3 mx-3">
+                                                <i class="ri-alert-line me-2"></i>
+                                                <strong>Fitur Unggah Dokumen Tidak Tersedia</strong>
+                                                <p class="mb-0 mt-2">
+                                                    @php $aksesCheck = $this->cekAksesWaktu(); @endphp
+                                                    {{ $aksesCheck['message'] }}
+                                                </p>
+                                            </div>
+            @endif
+    </div>
+    <div x-show="menu === 'penilaian'" aria-labelledby="tombol-penilaian-mandiri">
+        <div>
+            @php $canDoPenilaian = $this->canDoPenilaian; @endphp
+            @if (!$canDoPenilaian['allowed'])
+                <div class="alert alert-warning" role="alert">
+                    <i class="ri-alert-line me-2"></i>
+                    <strong>Upload Bukti Dukung Diperlukan</strong>
+                    <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
+                </div>
+            @else
+                <div class="mb-3">
+                    @if ($this->penilaianTersimpan && $this->penilaianTersimpan->tingkatan_nilai_id && !$is_editing_penilaian)
+                        {{-- Preview Mode: Tampilkan nilai tersimpan --}}
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">
+                                        <i class="ri-checkbox-circle-fill text-success me-2"></i>
+                                        Penilaian Tersimpan
+                                    </h5>
+                                    <div>
+                                        <button wire:click="editPenilaian" class="btn btn-sm btn-warning me-1">
+                                            <i class="ri-edit-line me-1"></i>Ubah
+                                        </button>
+                                        @if ($this->dalamRentangAkses)
+                                            <button wire:click="hapusNilai"
+                                                wire:confirm="Yakin ingin menghapus nilai penilaian? Keterangan dari upload dokumen akan tetap tersimpan."
+                                                class="btn btn-sm btn-danger">
+                                                <i class="ri-delete-bin-line me-1"></i>Hapus
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
 
-                                                                        <div class="row align-items-center">
-                                                                            <div class="col-auto">
-                                                                                <div class="avatar-lg">
-                                                                                    <div
-                                                                                        class="avatar-title bg-success text-white fs-1 rounded">
-                                                                                        {{ $this->penilaianTersimpan->tingkatan_nilai->kode_nilai ?? '-' }}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col">
-                                                                                <h4 class="mb-1">
-                                                                                    {{ $this->penilaianTersimpan->tingkatan_nilai->kode_nilai ?? '-' }}
-                                                                                </h4>
-                                                                                <p class="text-muted mb-1">
-                                                                                    <strong>Nilai:</strong>
-                                                                                    {{ $this->penilaianTersimpan->tingkatan_nilai->bobot ?? 0 }}
-                                                                                </p>
-                                                                                @if ($this->penilaianTersimpan->tingkatan_nilai && $this->penilaianTersimpan->tingkatan_nilai->deskripsi)
-                                                                                    <p class="text-muted mb-1">
-                                                                                        <strong>Deskripsi:</strong>
-                                                                                        {{ $this->penilaianTersimpan->tingkatan_nilai->deskripsi }}
-                                                                                    </p>
-                                                                                @endif
-                                                                                @if ($this->penilaianTersimpan->keterangan)
-                                                                                    <p class="text-muted mb-1">
-                                                                                        <strong>Keterangan:</strong>
-                                                                                        {{ $this->penilaianTersimpan->keterangan }}
-                                                                                    </p>
-                                                                                @endif
-                                                                                <p class="text-muted small mb-0">
-                                                                                    <i class="ri-time-line me-1"></i>
-                                                                                    Disimpan pada:
-                                                                                    {{ $this->penilaianTersimpan->created_at->format('d M Y H:i') }}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            @else
-                                                                {{-- Edit Mode / Belum Ada Penilaian --}}
-                                                                @if ($is_editing_penilaian)
-                                                                    <div
-                                                                        class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
-                                                                        <div>
-                                                                            <i class="ri-edit-box-line me-1"></i>
-                                                                            <strong>MODE EDIT PENILAIAN</strong>
-                                                                            <div class="small mt-1">Pilih tingkatan
-                                                                                nilai baru
-                                                                                untuk
-                                                                                mengubah penilaian</div>
-                                                                        </div>
-                                                                        <button wire:click="batalEditPenilaian"
-                                                                            class="btn btn-sm btn-secondary">
-                                                                            <i class="ri-close-line me-1"></i>Batal
-                                                                        </button>
-                                                                    </div>
-                                                                @endif
+                                <div class="row align-items-start">
+                                    <div class="col-auto">
+                                        <div class="avatar-lg">
+                                            <div class="avatar-title bg-success text-white fs-1 rounded">
+                                                {{ $this->penilaianTersimpan->tingkatan_nilai->kode_nilai ?? '-' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col" style="min-width: 0;">
+                                        <h4 class="mb-1">
+                                            {{ $this->penilaianTersimpan->tingkatan_nilai->kode_nilai ?? '-' }}
+                                        </h4>
+                                        <p class="text-muted mb-1">
+                                            <strong>Nilai:</strong>
+                                            {{ $this->penilaianTersimpan->tingkatan_nilai->bobot ?? 0 }}
+                                        </p>
+                                        @if ($this->penilaianTersimpan->tingkatan_nilai && $this->penilaianTersimpan->tingkatan_nilai->deskripsi)
+                                            <p class="text-muted mb-1"
+                                                style="word-wrap: break-word; overflow-wrap: break-word;">
+                                                <strong>Deskripsi:</strong>
+                                                {{ $this->penilaianTersimpan->tingkatan_nilai->deskripsi }}
+                                            </p>
+                                        @endif
+                                        @if ($this->penilaianTersimpan->keterangan)
+                                            <p class="text-muted mb-1"
+                                                style="word-wrap: break-word; overflow-wrap: break-word;">
+                                                <strong>Keterangan:</strong>
+                                                {{ $this->penilaianTersimpan->keterangan }}
+                                            </p>
+                                        @endif
+                                        <p class="text-muted small mb-0">
+                                            <i class="ri-time-line me-1"></i>
+                                            Disimpan pada:
+                                            {{ $this->penilaianTersimpan->created_at->format('d M Y H:i') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Edit Mode / Belum Ada Penilaian --}}
+                        @if ($is_editing_penilaian)
+                            <div class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <i class="ri-edit-box-line me-1"></i>
+                                    <strong>MODE EDIT PENILAIAN</strong>
+                                    <div class="small mt-1">Pilih tingkatan
+                                        nilai baru
+                                        untuk
+                                        mengubah penilaian</div>
+                                </div>
+                                <button wire:click="batalEditPenilaian" class="btn btn-sm btn-secondary">
+                                    <i class="ri-close-line me-1"></i>Batal
+                                </button>
+                            </div>
+                        @endif
 
-                                                                <h6 class="mb-3">Pilih Tingkatan Nilai</h6>
-                                                                @if ($this->tingkatanNilaiList()->isNotEmpty())
-                                                                    <div class="row">
-                                                                        @foreach ($this->tingkatanNilaiList() as $tingkatan)
-                                                                            @php
-                                                                                $isSelected =
-                                                                                    $tingkatan_nilai_id ==
-                                                                                    $tingkatan->id;
-                                                                            @endphp
-                                                                            <div
-                                                                                class="col-xxl-3 col-lg-4 col-md-6 mb-3">
-                                                                                <div class="card card-body text-center
+                        <h6 class="mb-3">Pilih Tingkatan Nilai</h6>
+                        @if ($this->tingkatanNilaiList()->isNotEmpty())
+                            <div class="row">
+                                @foreach ($this->tingkatanNilaiList() as $tingkatan)
+                                    @php
+                                        $isSelected = $tingkatan_nilai_id == $tingkatan->id;
+                                    @endphp
+                                    <div class="col-xxl-3 col-lg-4 col-md-6 mb-3">
+                                        <div class="card card-body text-center
                                                                     {{ $isSelected ? 'border-primary' : '' }}"
-                                                                                    style="cursor: pointer;"
-                                                                                    wire:click="$set('tingkatan_nilai_id', {{ $tingkatan->id }})">
-                                                                                    <div
-                                                                                        class="avatar-sm mx-auto mb-3">
-                                                                                        <div
-                                                                                            class="avatar-title
+                                            style="cursor: pointer;"
+                                            wire:click="$set('tingkatan_nilai_id', {{ $tingkatan->id }})">
+                                            <div class="avatar-sm mx-auto mb-3">
+                                                <div
+                                                    class="avatar-title
                                                                             {{ $tingkatan_nilai_id == $tingkatan->id ? 'bg-primary text-white' : 'bg-soft-primary text-primary' }}
                                                                             fs-17 rounded">
-                                                                                            {{ $tingkatan->kode_nilai }}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <p
-                                                                                        class="card-text text-muted mb-0">
-                                                                                        Nilai:
-                                                                                        {{ $tingkatan->bobot }}</p>
-                                                                                    @if ($tingkatan->deskripsi)
-                                                                                        <p
-                                                                                            class="card-text text-muted small">
-                                                                                            {{ Str::limit($tingkatan->deskripsi, 50) }}
-                                                                                        </p>
-                                                                                    @endif
-                                                                                </div>
-                                                                            </div>
-                                                                        @endforeach
-                                                                    </div>
-
-                                                                    <div class="mt-3">
-                                                                        @if ($this->dalamRentangAkses)
-                                                                            <button type="button" class="btn btn-primary"
-                                                                                wire:click="simpanPenilaian"
-                                                                                {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
-                                                                                <i class="ri-save-line me-1"></i>
-                                                                                {{ $is_editing_penilaian ? 'Update Penilaian' : 'Simpan Penilaian' }}
-                                                                            </button>
-                                                                            @if ($is_editing_penilaian)
-                                                                                <button type="button"
-                                                                                    class="btn btn-secondary"
-                                                                                    wire:click="batalEditPenilaian">
-                                                                                    <i class="ri-close-line me-1"></i>Batal
-                                                                                </button>
-                                                                            @endif
-                                                                        @else
-                                                                            <div class="alert alert-warning">
-                                                                                <i class="ri-alert-line me-2"></i>
-                                                                                Fitur penilaian tidak tersedia di luar rentang waktu input.
-                                                                            </div>
-                                                                        @endif
-                                                                    </div>
-                                                                @else
-                                                                    <div class="alert alert-warning">
-                                                                        Tidak ada tingkatan nilai yang tersedia untuk
-                                                                        kriteria
-                                                                        ini.
-                                                                    </div>
-                                                                @endif
-                                                            @endif
-                                                        </div>
-                                                    @endif
+                                                    {{ $tingkatan->kode_nilai }}
                                                 </div>
                                             </div>
-                                            <div x-show="menu === 'verifikasi'" aria-labelledby="v-pills-profile-tab">
-                                                <div>
-                                                    @php $canDoPenilaian = $this->canDoPenilaian; @endphp
-                                                    @if (!$canDoPenilaian['allowed'])
-                                                        <div class="alert alert-warning" role="alert">
-                                                            <i class="ri-alert-line me-2"></i>
-                                                            <strong>Upload Bukti Dukung Diperlukan</strong>
-                                                            <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
-                                                        </div>
-                                                    @else
-                                                        <div class="mb-2">
-                                                            <div class="ms-3">
-                                                                {{-- Riwayat Verifikasi --}}
-                                                                @if ($this->riwayatVerifikasi->isNotEmpty())
-                                                                    <div class="live-preview mb-4">
-                                                                        <h6 class="mb-3">Riwayat Verifikasi</h6>
-                                                                        <div class="table-responsive"
-                                                                            x-data="{
-                                                                                initPopovers() {
-                                                                                    this.$nextTick(() => {
-                                                                                        const popoverTriggerList = [].slice.call(this.$el.querySelectorAll('[data-bs-toggle=&quot;popover&quot;]'));
-                                                                                        popoverTriggerList.map(function(popoverTriggerEl) {
-                                                                                            return new bootstrap.Popover(popoverTriggerEl);
-                                                                                        });
-                                                                                    });
-                                                                                }
-                                                                            }"
-                                                                            x-init="initPopovers()">
-                                                                            <table
-                                                                                class="table align-middle table-nowrap mb-0">
-                                                                                <thead class="table-light">
-                                                                                    <tr>
-                                                                                        <th scope="col">Status
-                                                                                            Verifikasi
-                                                                                        </th>
-                                                                                        <th scope="col"
-                                                                                            class="text-center">
-                                                                                            Keterangan
-                                                                                        </th>
-                                                                                        <th scope="col">Oleh</th>
-                                                                                        <th scope="col">Tanggal</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody>
-                                                                                    @foreach ($this->riwayatVerifikasi as $verifikasi)
-                                                                                        <tr>
-                                                                                            <td>
-                                                                                                @if ($verifikasi->is_verified)
-                                                                                                    <span
-                                                                                                        class="badge bg-success">
-                                                                                                        <i
-                                                                                                            class="ri-check-line me-1"></i>Terverifikasi
-                                                                                                    </span>
-                                                                                                    @elseif ($verifikasi->role->nama == 'opd')
-                                                                                                    <span>-</span>
-                                                                                                    @elseif ($verifikasi->is_verified == false)
-                                                                                                    <span
-                                                                                                        class="badge bg-danger">
-                                                                                                        <i
-                                                                                                            class="ri-close-line me-1"></i>Tidak
-                                                                                                        Sesuai
-                                                                                                    </span>
-                                                                                                @else
-                                                                                                    <span>-</span>
-                                                                                                @endif
-                                                                                            </td>
-                                                                                            <td class="text-center">
-                                                                                                @if ($verifikasi->keterangan)
-                                                                                                    <button
-                                                                                                        tabindex="0"
-                                                                                                        class="btn btn-sm btn-soft-primary"
-                                                                                                        role="button"
-                                                                                                        data-bs-container="body"
-                                                                                                        data-bs-toggle="popover"
-                                                                                                        data-bs-trigger="focus"
-                                                                                                        data-bs-placement="top"
-                                                                                                        data-bs-content="Keterangan: {{ $verifikasi->keterangan }}">
-                                                                                                        <i
-                                                                                                            class="ri-information-line"></i>
-                                                                                                    </button>
-                                                                                                @else
-                                                                                                    <span
-                                                                                                        class="text-muted">-</span>
-                                                                                                @endif
-                                                                                            </td>
-                                                                                            <td>{{ $verifikasi->role->nama ?? '-' }}
-                                                                                            </td>
-                                                                                            <td>{{ $verifikasi->created_at->format('d M Y H:i') }}
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    @endforeach
-                                                                                </tbody>
-                                                                            </table>
+                                            <p class="card-text text-muted mb-0">
+                                                Nilai:
+                                                {{ $tingkatan->bobot }}</p>
+                                            @if ($tingkatan->deskripsi)
+                                                <p class="card-text text-muted small">
+                                                    {{ Str::limit($tingkatan->deskripsi, 50) }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <div class="mt-3">
+                                @if ($this->dalamRentangAkses)
+                                    <button type="button" class="btn btn-primary" wire:click="simpanPenilaian"
+                                        {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
+                                        <i class="ri-save-line me-1"></i>
+                                        {{ $is_editing_penilaian ? 'Update Penilaian' : 'Simpan Penilaian' }}
+                                    </button>
+                                    @if ($is_editing_penilaian)
+                                        <button type="button" class="btn btn-secondary"
+                                            wire:click="batalEditPenilaian">
+                                            <i class="ri-close-line me-1"></i>Batal
+                                        </button>
+                                    @endif
+                                @else
+                                    <div class="alert alert-warning">
+                                        <i class="ri-alert-line me-2"></i>
+                                        Fitur penilaian tidak tersedia di luar rentang waktu input.
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            <div class="alert alert-warning">
+                                Tidak ada tingkatan nilai yang tersedia untuk
+                                kriteria
+                                ini.
+                            </div>
+                        @endif
+                    @endif
+                </div>
+            @endif
+        </div>
+    </div>
+    <div x-show="menu === 'verifikasi'" aria-labelledby="v-pills-profile-tab">
+        <div>
+            @php $canDoPenilaian = $this->canDoPenilaian; @endphp
+            @if (!$canDoPenilaian['allowed'])
+                <div class="alert alert-warning" role="alert">
+                    <i class="ri-alert-line me-2"></i>
+                    <strong>Upload Bukti Dukung Diperlukan</strong>
+                    <p class="mb-0 mt-2">{{ $canDoPenilaian['message'] }}</p>
+                </div>
+            @else
+                <div class="mb-2">
+                    <div class="ms-3">
+                        {{-- Riwayat Verifikasi --}}
+                        @if ($this->riwayatVerifikasi->isNotEmpty())
+                            <div class="live-preview mb-4">
+                                <h6 class="mb-3">Riwayat Verifikasi</h6>
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-nowrap mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col">Status
+                                                    Verifikasi
+                                                </th>
+                                                <th scope="col" class="text-center">
+                                                    Keterangan
+                                                </th>
+                                                <th scope="col">Oleh</th>
+                                                <th scope="col">Tanggal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($this->riwayatVerifikasi as $verifikasi)
+                                                <tr>
+                                                    <td>
+                                                        @if ($verifikasi->is_verified)
+                                                            <span class="badge bg-success">
+                                                                <i class="ri-check-line me-1"></i>Terverifikasi
+                                                            </span>
+                                                        @elseif ($verifikasi->role->nama == 'opd')
+                                                            <span>-</span>
+                                                        @elseif ($verifikasi->is_verified == false)
+                                                            <span class="badge bg-danger">
+                                                                <i class="ri-close-line me-1"></i>Tidak
+                                                                Sesuai
+                                                            </span>
+                                                        @else
+                                                            <span>-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if ($verifikasi->keterangan)
+                                                            <button type="button" class="btn btn-sm btn-soft-primary"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#keteranganModal{{ $verifikasi->id }}">
+                                                                <i class="ri-information-line"></i>
+                                                            </button>
+
+                                                            {{-- Modal Keterangan Verifikasi --}}
+                                                            <div id="keteranganModal{{ $verifikasi->id }}"
+                                                                class="modal fade" tabindex="-1"
+                                                                aria-labelledby="keteranganModalLabel{{ $verifikasi->id }}"
+                                                                aria-hidden="true">
+                                                                <div class="modal-dialog modal-dialog-centered">
+                                                                    <div class="modal-content">
+                                                                        <div class="modal-header">
+                                                                            <h5 class="modal-title"
+                                                                                id="keteranganModalLabel{{ $verifikasi->id }}">
+                                                                                Keterangan
+                                                                            </h5>
+                                                                            <button type="button" class="btn-close"
+                                                                                data-bs-dismiss="modal"
+                                                                                aria-label="Close"></button>
+                                                                        </div>
+                                                                        <div class="modal-body">
+                                                                            <p class="text-muted mb-0">
+                                                                                {{ $verifikasi->keterangan }}</p>
+                                                                        </div>
+                                                                        <div class="modal-footer">
+                                                                            <button type="button"
+                                                                                class="btn btn-light"
+                                                                                data-bs-dismiss="modal">Tutup</button>
                                                                         </div>
                                                                     </div>
-                                                                @endif
-
-                                                                {{-- Form Verifikasi Baru --}}
-                                                                <h6 class="mb-3">Form Verifikasi</h6>
-                                                                <div class="form-check form-switch mt-3">
-                                                                    <input wire:model.live="is_verified"
-                                                                        value="1" type="radio"
-                                                                        class="form-check-input" role="switch"
-                                                                        id="verifikasiSesuai"
-                                                                        name="verifikasi_status">
-                                                                    <label class="form-check-label"
-                                                                        for="verifikasiSesuai">
-                                                                        <i
-                                                                            class="ri-check-line text-success me-1"></i>Ya,
-                                                                        sudah
-                                                                        diperiksa dan sesuai
-                                                                    </label>
                                                                 </div>
-                                                                <div class="form-check form-switch mt-3">
-                                                                    <input wire:model.live="is_verified"
-                                                                        value="0" type="radio"
-                                                                        class="form-check-input" role="switch"
-                                                                        id="verifikasiTidakSesuai"
-                                                                        name="verifikasi_status">
-                                                                    <label class="form-check-label"
-                                                                        for="verifikasiTidakSesuai">
-                                                                        <i
-                                                                            class="ri-close-line text-danger me-1"></i>Tidak,
-                                                                        belum ada kesesuaian
-                                                                    </label>
-                                                                </div>
-                                                                <div class="mb-3 mt-3">
-                                                                    <label for="keterangan"
-                                                                        class="form-label">Keterangan</label>
-                                                                    <textarea wire:model="keterangan_verifikasi" class="form-control" id="keterangan" rows="3"
-                                                                        placeholder="Tambahkan catatan atau keterangan..."></textarea>
-                                                                    @error('keterangan_verifikasi')
-                                                                        <span
-                                                                            class="text-danger small">{{ $message }}</span>
-                                                                    @enderror
-                                                                </div>
-                                                                @if ($this->dalamRentangAkses)
-                                                                    <button wire:click="simpanVerifikasi"
-                                                                        class="btn btn-primary">
-                                                                        <i class="ri-save-line me-1"></i>Simpan
-                                                                    </button>
-                                                                @else
-                                                                    <div class="alert alert-warning mt-2">
-                                                                        <i class="ri-alert-line me-2"></i>
-                                                                        Fitur verifikasi tidak tersedia di luar rentang waktu input.
-                                                                    </div>
-                                                                @endif
-                                                                @error('is_verified')
-                                                                    <div class="text-danger small mt-2">
-                                                                        {{ $message }}</div>
-                                                                @enderror
                                                             </div>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </div><!-- end menu verifikasi -->
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $verifikasi->role->nama ?? '-' }}
+                                                    </td>
+                                                    <td>{{ $verifikasi->created_at->format('d M Y H:i') }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endif
 
-                                            <div x-show="menu === 'history'" aria-labelledby="v-pills-history-tab">
-                                                <div>
-                                                    @php
-                                                        $historyData = $this->getHistoryPenilaian;
-                                                    @endphp
+                        {{-- Form Verifikasi Baru --}}
+                        <h6 class="mb-3">Form Verifikasi</h6>
+                        <div class="form-check form-switch mt-3">
+                            <input wire:model.live="is_verified" value="1" type="radio"
+                                class="form-check-input" role="switch" id="verifikasiSesuai"
+                                name="verifikasi_status">
+                            <label class="form-check-label" for="verifikasiSesuai">
+                                <i class="ri-check-line text-success me-1"></i>Ya,
+                                sudah
+                                diperiksa dan sesuai
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mt-3">
+                            <input wire:model.live="is_verified" value="0" type="radio"
+                                class="form-check-input" role="switch" id="verifikasiTidakSesuai"
+                                name="verifikasi_status">
+                            <label class="form-check-label" for="verifikasiTidakSesuai">
+                                <i class="ri-close-line text-danger me-1"></i>Tidak,
+                                belum ada kesesuaian
+                            </label>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="keterangan" class="form-label">Keterangan</label>
+                            <textarea wire:model="keterangan_verifikasi" class="form-control" id="keterangan" rows="3"
+                                placeholder="Tambahkan catatan atau keterangan..."></textarea>
+                            @error('keterangan_verifikasi')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        @if ($this->dalamRentangAkses)
+                            <button wire:click="simpanVerifikasi" class="btn btn-primary">
+                                <i class="ri-save-line me-1"></i>Simpan
+                            </button>
+                        @else
+                            <div class="alert alert-warning mt-2">
+                                <i class="ri-alert-line me-2"></i>
+                                Fitur verifikasi tidak tersedia di luar rentang waktu input.
+                            </div>
+                        @endif
+                        @error('is_verified')
+                            <div class="text-danger small mt-2">
+                                {{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div><!-- end menu verifikasi -->
 
-                                                    @if ($historyData->isEmpty())
-                                                        <div class="alert alert-info text-center">
-                                                            <i class="ri-information-line fs-3"></i>
-                                                            <p class="mb-0 mt-2">
-                                                                @if (!$this->penilaianDiKriteria && !$bukti_dukung_id)
-                                                                    Silakan pilih bukti dukung terlebih dahulu untuk
-                                                                    melihat history.
-                                                                @else
-                                                                    Belum ada history penilaian untuk
-                                                                    {{ $this->penilaianDiKriteria ? 'kriteria komponen' : 'bukti dukung' }}
-                                                                    ini.
-                                                                @endif
-                                                            </p>
-                                                        </div>
-                                                    @else
-                                                        <div class="table-responsive" x-data="{
-                                                            initPopovers() {
-                                                                this.$nextTick(() => {
-                                                                    const popoverTriggerList = [].slice.call(this.$el.querySelectorAll('[data-bs-toggle=&quot;popover&quot;]'));
-                                                                    popoverTriggerList.map(function(popoverTriggerEl) {
-                                                                        return new bootstrap.Popover(popoverTriggerEl);
-                                                                    });
-                                                                });
-                                                            }
-                                                        }"
-                                                            x-init="initPopovers()"
-                                                            @historyUpdated.window="initPopovers()">
-                                                            <table
-                                                                class="table table-striped table-hover align-middle mb-0">
-                                                                <thead class="table-light">
-                                                                    <tr>
-                                                                        <th scope="col" style="width: 5%">No</th>
-                                                                        <th scope="col" style="width: 15%">Tanggal
-                                                                            & Waktu</th>
-                                                                        <th scope="col" style="width: 15%">User
-                                                                        </th>
-                                                                        <th scope="col" style="width: 10%">Role
-                                                                        </th>
-                                                                        <th scope="col" style="width: 20%">Aksi
-                                                                        </th>
-                                                                        <th scope="col" style="width: 8%">Nilai
-                                                                        </th>
-                                                                        <th scope="col" style="width: 10%">Status
-                                                                        </th>
-                                                                        <th scope="col" style="width: 10%"
-                                                                            class="text-center">
-                                                                            Keterangan</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    @foreach ($historyData as $index => $history)
-                                                                        <tr>
-                                                                            <td>{{ $index + 1 }}</td>
-                                                                            <td>
-                                                                                <small class="text-muted">
-                                                                                    {{ $history->created_at->format('d/m/Y') }}<br>
-                                                                                    {{ $history->created_at->format('H:i') }}
-                                                                                    WIB
-                                                                                </small>
-                                                                            </td>
-                                                                            <td>
-                                                                                <div class="d-flex align-items-center">
-                                                                                    <span
-                                                                                        class="fw-medium">{{ $history->user->name ?? '-' }}</span>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td>
-                                                                                <span>
-                                                                                    {{ ucfirst($history->role->jenis ?? '-') }}
-                                                                                </span>
-                                                                            </td>
-                                                                            <td>
-                                                                                <span
-                                                                                    class="text-dark">{{ $history->getActionDescription() }}</span>
-                                                                                {{-- @if ($history->is_perubahan)
+    <div x-show="menu === 'history'" aria-labelledby="v-pills-history-tab">
+        <div>
+            @php
+                $historyData = $this->getHistoryPenilaian;
+            @endphp
+
+            @if ($historyData->isEmpty())
+                <div class="alert alert-info text-center">
+                    <i class="ri-information-line fs-3"></i>
+                    <p class="mb-0 mt-2">
+                        @if (!$this->penilaianDiKriteria && !$bukti_dukung_id)
+                            Silakan pilih bukti dukung terlebih dahulu untuk
+                            melihat history.
+                        @else
+                            Belum ada history penilaian untuk
+                            {{ $this->penilaianDiKriteria ? 'kriteria komponen' : 'bukti dukung' }}
+                            ini.
+                        @endif
+                    </p>
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" style="width: 5%">No</th>
+                                <th scope="col" style="width: 15%">Tanggal
+                                    & Waktu</th>
+                                <th scope="col" style="width: 15%">User
+                                </th>
+                                <th scope="col" style="width: 10%">Role
+                                </th>
+                                <th scope="col" style="width: 20%">Aksi
+                                </th>
+                                <th scope="col" style="width: 8%">Nilai
+                                </th>
+                                <th scope="col" style="width: 10%">Status
+                                </th>
+                                <th scope="col" style="width: 10%" class="text-center">
+                                    Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($historyData as $index => $history)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ $history->created_at->format('d/m/Y') }}<br>
+                                            {{ $history->created_at->format('H:i') }}
+                                            WIB
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="fw-medium">{{ $history->user->name ?? '-' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span>
+                                            {{ ucfirst($history->role->jenis ?? '-') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-dark">{{ $history->getActionDescription() }}</span>
+                                        {{-- @if ($history->is_perubahan)
                                                                                     <span
                                                                                         class="badge bg-soft-warning text-warning ms-1">
                                                                                         <i
                                                                                             class="ri-refresh-line me-1"></i>Revisi
                                                                                     </span>
                                                                                 @endif --}}
-                                                                            </td>
-                                                                            <td>
-                                                                                @if ($history->tingkatan_nilai)
-                                                                                    <span
-                                                                                        class="badge bg-primary fs-6">
-                                                                                        {{ $history->tingkatan_nilai->kode_nilai }}
-                                                                                    </span>
-                                                                                @else
-                                                                                    <span class="text-muted">-</span>
-                                                                                @endif
-                                                                            </td>
-                                                                            <td>
-                                                                                @if ($history->is_verified === true)
-                                                                                    <span class="badge bg-success">
-                                                                                        <i
-                                                                                            class="ri-check-line me-1"></i>Disetujui
-                                                                                    </span>
-                                                                                    @elseif ($history->is_verified === false)
-                                                                                    <span class="badge bg-danger">
-                                                                                        <i
-                                                                                            class="ri-close-line me-1"></i>Ditolak
-                                                                                    </span>
-                                                                                @else
-                                                                                    <span class="text-muted">-</span>
-                                                                                @endif
-                                                                            </td>
-                                                                            <td class="text-center">
-                                                                                @if ($history->keterangan)
-                                                                                    <button tabindex="0"
-                                                                                        class="btn btn-sm btn-soft-primary"
-                                                                                        role="button"
-                                                                                        data-bs-container="body"
-                                                                                        data-bs-toggle="popover"
-                                                                                        data-bs-trigger="focus"
-                                                                                        data-bs-placement="top"
-                                                                                        data-bs-content="Keterangan: {{ $history->keterangan }}">
-                                                                                        <i
-                                                                                            class="ri-information-line"></i>
-                                                                                    </button>
-                                                                                @else
-                                                                                    <span class="text-muted">-</span>
-                                                                                @endif
-                                                                            </td>
-                                                                        </tr>
-                                                                    @endforeach
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </div><!-- end menu history -->
-                                        </div><!-- end tab-content -->
-                                    </div><!-- end col-md-10 -->
-                                </div><!--  end row -->
-                            </div><!-- end card-body -->
-                        </div><!-- end card -->
-                    </div><!-- end col -->
-                </div><!-- end row (tab penilaian) -->
-            @endif
-        @endif
+                                    </td>
+                                    <td>
+                                        @if ($history->tingkatan_nilai)
+                                            <span class="badge bg-primary fs-6">
+                                                {{ $history->tingkatan_nilai->kode_nilai }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($history->is_verified === true)
+                                            <span class="badge bg-success">
+                                                <i class="ri-check-line me-1"></i>Disetujui
+                                            </span>
+                                        @elseif ($history->is_verified === false)
+                                            <span class="badge bg-danger">
+                                                <i class="ri-close-line me-1"></i>Ditolak
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($history->keterangan)
+                                            <button type="button" class="btn btn-sm btn-soft-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#historyKeteranganModal{{ $history->id }}">
+                                                <i class="ri-information-line"></i>
+                                            </button>
 
-        <!-- Modal Set Page Number -->
-        <div wire:ignore.self id="modalSetPageNumber" class="modal fade" tabindex="-1"
-            aria-labelledby="modalSetPageNumberLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalSetPageNumberLabel">
-                            <i class="ri-bookmark-line me-2"></i>Set Nomor Halaman
-                            @if ($is_setting_upload_page && isset($temporary_file_names[$file_index]))
-                                <br><small class="text-muted">{{ $temporary_file_names[$file_index] }}</small>
-                            @endif
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="page_number_input" class="form-label">Nomor Halaman</label>
-                            <input type="number" wire:model="page_number" class="form-control"
-                                id="page_number_input" min="1"
-                                placeholder="Masukkan nomor halaman (contoh: 15)">
-                            @error('page_number')
-                                <div class="text-danger mt-1 small">{{ $message }}</div>
-                            @enderror
-                            <small class="text-muted">
-                                <i class="ri-information-line"></i>
-                                @if ($is_setting_upload_page)
-                                    Nomor halaman akan disimpan dan digunakan saat dokumen ini diupload.
-                                @else
-                                    Nomor halaman akan digunakan untuk membuka PDF pada halaman tertentu.
-                                @endif
-                            </small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                                            {{-- Modal Keterangan History --}}
+                                            <div id="historyKeteranganModal{{ $history->id }}" class="modal fade"
+                                                tabindex="-1"
+                                                aria-labelledby="historyKeteranganModalLabel{{ $history->id }}"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"
+                                                                id="historyKeteranganModalLabel{{ $history->id }}">
+                                                                Keterangan
+                                                            </h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p class="text-muted mb-0">{{ $history->keterangan }}</p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-light"
+                                                                data-bs-dismiss="modal">Tutup</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div><!-- end menu history -->
+</div><!-- end tab-content -->
+</div><!-- end col-md-10 -->
+</div><!--  end row -->
+</div><!-- end card-body -->
+</div><!-- end card -->
+</div><!-- end col -->
+</div><!-- end row (tab penilaian) -->
+@endif
+@endif
+
+<!-- Modal Set Page Number -->
+<div wire:ignore.self id="modalSetPageNumber" class="modal fade" tabindex="-1"
+    aria-labelledby="modalSetPageNumberLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSetPageNumberLabel">
+                    <i class="ri-bookmark-line me-2"></i>Set Nomor Halaman
+                    @if ($is_setting_upload_page && isset($temporary_file_names[$file_index]))
+                        <br><small class="text-muted">{{ $temporary_file_names[$file_index] }}</small>
+                    @endif
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="page_number_input" class="form-label">Nomor Halaman</label>
+                    <input type="number" wire:model="page_number" class="form-control" id="page_number_input"
+                        min="1" placeholder="Masukkan nomor halaman (contoh: 15)">
+                    @error('page_number')
+                        <div class="text-danger mt-1 small">{{ $message }}</div>
+                    @enderror
+                    <small class="text-muted">
+                        <i class="ri-information-line"></i>
                         @if ($is_setting_upload_page)
-                            {{-- Button untuk file upload (temporary) --}}
-                            <button type="button" wire:click="savePageNumberForUpload" class="btn btn-primary"
-                                data-bs-dismiss="modal" wire:loading.attr="disabled">
-                                <span wire:loading.remove wire:target="savePageNumberForUpload">
-                                    <i class="ri-save-line me-1"></i>Simpan
-                                </span>
-                                <span wire:loading wire:target="savePageNumberForUpload">
-                                    <span class="spinner-border spinner-border-sm me-1"></span>
-                                    Menyimpan...
-                                </span>
-                            </button>
+                            Nomor halaman akan disimpan dan digunakan saat dokumen ini diupload.
                         @else
-                            {{-- Button untuk file existing --}}
-                            <button type="button" wire:click="updatePageNumber" class="btn btn-primary"
-                                wire:loading.attr="disabled">
-                                <span wire:loading.remove wire:target="updatePageNumber">
-                                    <i class="ri-save-line me-1"></i>Simpan
-                                </span>
-                                <span wire:loading wire:target="updatePageNumber">
-                                    <span class="spinner-border spinner-border-sm me-1"></span>
-                                    Menyimpan...
-                                </span>
-                            </button>
+                            Nomor halaman akan digunakan untuk membuka PDF pada halaman tertentu.
                         @endif
-                    </div>
+                    </small>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                @if ($is_setting_upload_page)
+                    {{-- Button untuk file upload (temporary) --}}
+                    <button type="button" wire:click="savePageNumberForUpload" class="btn btn-primary"
+                        data-bs-dismiss="modal" wire:loading.attr="disabled">
+                        <span wire:loading.remove wire:target="savePageNumberForUpload">
+                            <i class="ri-save-line me-1"></i>Simpan
+                        </span>
+                        <span wire:loading wire:target="savePageNumberForUpload">
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            Menyimpan...
+                        </span>
+                    </button>
+                @else
+                    {{-- Button untuk file existing --}}
+                    <button type="button" wire:click="updatePageNumber" class="btn btn-primary"
+                        wire:loading.attr="disabled">
+                        <span wire:loading.remove wire:target="updatePageNumber">
+                            <i class="ri-save-line me-1"></i>Simpan
+                        </span>
+                        <span wire:loading wire:target="updatePageNumber">
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            Menyimpan...
+                        </span>
+                    </button>
+                @endif
+            </div>
         </div>
-
-        <!-- Tracking Modal -->
-        <div wire:ignore.self id="trackingModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
-            aria-hidden="true" style="display: none;">
-            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="myModalLabel">
-                            Tracking Status Evaluasi
-                            @if ($this->getSelectedBuktiDukungName())
-                                <br>
-                                <small class="text-muted">{{ $this->getSelectedBuktiDukungName() }}</small>
-                            @endif
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="px-4 py-3">
-                            <style>
-                                .tracking-timeline {
-                                    position: relative;
-                                    padding-left: 0;
-                                    list-style: none;
-                                }
-
-                                .tracking-item {
-                                    position: relative;
-                                    padding-bottom: 2.5rem;
-                                    padding-left: 4rem;
-                                }
-
-                                .tracking-item:last-child {
-                                    padding-bottom: 0;
-                                }
-
-                                .tracking-item::before {
-                                    content: '';
-                                    position: absolute;
-                                    left: 1.125rem;
-                                    top: 2.5rem;
-                                    bottom: -0.5rem;
-                                    width: 2px;
-                                    background: #e9ecef;
-                                }
-
-                                .tracking-item:last-child::before {
-                                    display: none;
-                                }
-
-                                .tracking-icon {
-                                    position: absolute;
-                                    left: 0;
-                                    top: 0;
-                                    width: 2.5rem;
-                                    height: 2.5rem;
-                                    border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    font-size: 1.2rem;
-                                    font-weight: 600;
-                                    z-index: 1;
-                                }
-
-                                .tracking-icon.success {
-                                    background: #198754;
-                                    color: white;
-                                }
-
-                                .tracking-icon.danger {
-                                    background: #dc3545;
-                                    color: white;
-                                }
-
-                                .tracking-icon.warning {
-                                    background: #ffc107;
-                                    color: white;
-                                }
-
-                                .tracking-icon.null {
-                                    background: #6c757d;
-                                    color: white;
-                                }
-
-                                .tracking-date {
-                                    color: #6c757d;
-                                    font-size: 0.875rem;
-                                    font-weight: 500;
-                                    margin-bottom: 0.5rem;
-                                }
-
-                                .tracking-status {
-                                    font-size: 1.125rem;
-                                    font-weight: 600;
-                                    margin-bottom: 0.5rem;
-                                }
-
-                                .tracking-desc {
-                                    color: #6c757d;
-                                    margin-bottom: 0.25rem;
-                                }
-                            </style>
-
-                            <ul class="tracking-timeline">
-                                @php
-                                    $trackingData = $this->getTrackingData();
-                                @endphp
-
-                                @if (empty($trackingData))
-                                    <div class="alert alert-info text-center">
-                                        <i class="ri-information-line fs-3"></i>
-                                        <p class="mb-0 mt-2">Pilih OPD/bukti dukung untuk melihat tracking evaluasi.
-                                        </p>
-                                    </div>
-                                @else
-                                    @foreach ($trackingData as $index => $item)
-                                        <li class="tracking-item">
-                                            <div class="tracking-icon {{ $item['status'] }}">
-                                                <i class="{{ $item['icon'] }}"></i>
-                                            </div>
-                                            @if ($item['date'])
-                                                <div class="tracking-date">
-                                                    <i class="ri-calendar-line me-1"></i>{{ $item['date'] }}
-                                                </div>
-                                            @endif
-                                            <div class="tracking-status">{{ $item['title'] }}</div>
-
-                                            @if ($item['nilai'])
-                                                <div class="tracking-desc">
-                                                    <strong>Nilai:</strong> {{ $item['nilai'] }}
-                                                    @if ($item['nilai_numerik'])
-                                                        - {{ number_format($item['nilai_numerik'], 2) }}%
-                                                    @endif
-                                                </div>
-                                            @endif
-
-                                            @if ($item['keterangan'])
-                                                <div class="tracking-desc">
-                                                    <strong>Keterangan:</strong> {{ $item['keterangan'] }}
-                                                </div>
-                                            @endif
-
-                                            @if (!$item['date'] && $item['status'] == 'null')
-                                                <div class="tracking-desc text-muted fst-italic">
-                                                    Belum ada data
-                                                </div>
-                                            @endif
-                                        </li>
-                                    @endforeach
-                                @endif
-                            </ul>
-                        </div>
-                    </div>
-
-                </div><!-- /.modal-content -->
-            </div><!-- /.modal-dialog -->
-        </div><!-- /.modal -->
-
-        @script
-            <script>
-                // Listen for close-modal event
-                $wire.on('close-modal', (modalId) => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-                    if (modal) {
-                        modal.hide();
-                    }
-                });
-            </script>
-        @endscript
-
     </div>
+</div>
+
+<!-- Tracking Modal -->
+<div wire:ignore.self id="trackingModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
+    aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="myModalLabel">
+                    Tracking Status Evaluasi
+                    @if ($this->getSelectedBuktiDukungName())
+                        <br>
+                        <small class="text-muted">{{ $this->getSelectedBuktiDukungName() }}</small>
+                    @endif
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="px-4 py-3">
+                    <style>
+                        .tracking-timeline {
+                            position: relative;
+                            padding-left: 0;
+                            list-style: none;
+                        }
+
+                        .tracking-item {
+                            position: relative;
+                            padding-bottom: 2.5rem;
+                            padding-left: 4rem;
+                        }
+
+                        .tracking-item:last-child {
+                            padding-bottom: 0;
+                        }
+
+                        .tracking-item::before {
+                            content: '';
+                            position: absolute;
+                            left: 1.125rem;
+                            top: 2.5rem;
+                            bottom: -0.5rem;
+                            width: 2px;
+                            background: #e9ecef;
+                        }
+
+                        .tracking-item:last-child::before {
+                            display: none;
+                        }
+
+                        .tracking-icon {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 2.5rem;
+                            height: 2.5rem;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 1.2rem;
+                            font-weight: 600;
+                            z-index: 1;
+                        }
+
+                        .tracking-icon.success {
+                            background: #198754;
+                            color: white;
+                        }
+
+                        .tracking-icon.danger {
+                            background: #dc3545;
+                            color: white;
+                        }
+
+                        .tracking-icon.warning {
+                            background: #ffc107;
+                            color: white;
+                        }
+
+                        .tracking-icon.null {
+                            background: #6c757d;
+                            color: white;
+                        }
+
+                        .tracking-date {
+                            color: #6c757d;
+                            font-size: 0.875rem;
+                            font-weight: 500;
+                            margin-bottom: 0.5rem;
+                        }
+
+                        .tracking-status {
+                            font-size: 1.125rem;
+                            font-weight: 600;
+                            margin-bottom: 0.5rem;
+                        }
+
+                        .tracking-desc {
+                            color: #6c757d;
+                            margin-bottom: 0.25rem;
+                        }
+                    </style>
+
+                    <ul class="tracking-timeline">
+                        @php
+                            $trackingData = $this->getTrackingData();
+                        @endphp
+
+                        @if (empty($trackingData))
+                            <div class="alert alert-info text-center">
+                                <i class="ri-information-line fs-3"></i>
+                                <p class="mb-0 mt-2">Pilih OPD/bukti dukung untuk melihat tracking evaluasi.
+                                </p>
+                            </div>
+                        @else
+                            @foreach ($trackingData as $index => $item)
+                                <li class="tracking-item">
+                                    <div class="tracking-icon {{ $item['status'] }}">
+                                        <i class="{{ $item['icon'] }}"></i>
+                                    </div>
+                                    @if ($item['date'])
+                                        <div class="tracking-date">
+                                            <i class="ri-calendar-line me-1"></i>{{ $item['date'] }}
+                                        </div>
+                                    @endif
+                                    <div class="tracking-status">{{ $item['title'] }}</div>
+
+                                    @if ($item['nilai'])
+                                        <div class="tracking-desc">
+                                            <strong>Nilai:</strong> {{ $item['nilai'] }}
+                                            @if ($item['nilai_numerik'])
+                                                - {{ number_format($item['nilai_numerik'], 2) }}%
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    @if ($item['keterangan'])
+                                        <div class="tracking-desc">
+                                            <strong>Keterangan:</strong> {{ $item['keterangan'] }}
+                                        </div>
+                                    @endif
+
+                                    @if (!$item['date'] && $item['status'] == 'null')
+                                        <div class="tracking-desc text-muted fst-italic">
+                                            Belum ada data
+                                        </div>
+                                    @endif
+                                </li>
+                            @endforeach
+                        @endif
+                    </ul>
+                </div>
+            </div>
+
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+@script
+    <script>
+        // Listen for close-modal event
+        $wire.on('close-modal', (modalId) => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+            if (modal) {
+                modal.hide();
+            }
+        });
+    </script>
+@endscript
+
+</div>
 </div>

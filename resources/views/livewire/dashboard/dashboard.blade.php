@@ -269,8 +269,7 @@
                             <div class="flex-grow-1 overflow-hidden ms-3">
                                 <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Jumlah Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
-                                    <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="{{ $this->jumlahKomponen }}">0</span></h4>
+                                    <h4 class="fs-4 flex-grow-1 mb-0"><span>{{ $this->jumlahKomponen }}</span></h4>
                                     {{-- <span class="badge badge-soft-danger fs-12"><i
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>5.02 %</span> --}}
                                 </div>
@@ -293,8 +292,7 @@
                             <div class="flex-grow-1 ms-3">
                                 <p class="text-uppercase fw-medium text-muted mb-3">Jumlah Sub Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
-                                    <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="{{ $this->jumlahSubKomponen }}">0</span></h4>
+                                    <h4 class="fs-4 flex-grow-1 mb-0"><span>{{ $this->jumlahSubKomponen }}</span></h4>
                                     {{-- <span class="badge badge-soft-success fs-12"><i
                                             class="ri-arrow-up-s-line fs-13 align-middle me-1"></i>3.58 %</span> --}}
                                 </div>
@@ -318,9 +316,8 @@
                                 <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
                                     Jumlah Kriteria Komponen</p>
                                 <div class="d-flex align-items-center mb-3">
-                                    <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="{{ $this->jumlahKriteriaKomponen }}">0</span></h4>
-                                    {{-- <span class="badge badge-soft-danger fs-12"><i
+                                    <h4 class="fs-4 flex-grow-1 mb-0"><span>{{ $this->jumlahKriteriaKomponen }}</span></h4>
+                                        {{-- <span class="badge badge-soft-danger fs-12"><i
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
                                         %</span> --}}
                                 </div>
@@ -345,8 +342,7 @@
                                 <p class="text-uppercase fw-medium text-muted text-truncate mb-3">
                                     Jumlah Bukti Dukung</p>
                                 <div class="d-flex align-items-center mb-3">
-                                    <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value"
-                                            data-target="{{ $this->jumlahBuktiDukung }}">0</span></h4>
+                                    <h4 class="fs-4 flex-grow-1 mb-0"><span>{{ $this->jumlahBuktiDukung }}</span></h4>
                                     {{-- <span class="badge badge-soft-danger fs-12"><i
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
                                         %</span> --}}
@@ -377,11 +373,9 @@
                                     Kriteria Komponen Dinilai</p>
                                 <div class="d-flex align-items-center mb-3">
                                     <h4 class="fs-4 flex-grow-1 mb-0">
-                                        <span class="counter-value"
-                                            data-target="{{ $this->jumlahKriteriaKomponenDinilai }}">0</span>
+                                        <span>{{ $this->jumlahKriteriaKomponenDinilai }}</span>
                                         <span class="text-muted"> / </span>
-                                        <span class="counter-value"
-                                            data-target="{{ $this->totalKriteriaKomponenDiKriteria }}">0</span>
+                                        <span>{{ $this->totalKriteriaKomponenDiKriteria }}</span>
                                     </h4>
                                 </div>
                                 <p class="text-muted text-truncate mb-0">
@@ -417,11 +411,9 @@
                                     Bukti Dukung Dinilai</p>
                                 <div class="d-flex align-items-center mb-3">
                                     <h4 class="fs-4 flex-grow-1 mb-0">
-                                        <span class="counter-value"
-                                            data-target="{{ $this->jumlahBuktiDukungDinilai }}">0</span>
+                                        <span>{{ $this->jumlahBuktiDukungDinilai }}</span>
                                         <span class="text-muted"> / </span>
-                                        <span class="counter-value"
-                                            data-target="{{ $this->totalBuktiDukungDiBukti }}">0</span>
+                                        <span>{{ $this->totalBuktiDukungDiBukti }}</span>
                                     </h4>
                                 </div>
                                 <p class="text-muted text-truncate mb-0">
