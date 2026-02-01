@@ -32,15 +32,25 @@
                         <div class="live-preview">
                             <div class="row mt-3 mb-3">
                                 <div class="col-lg-3">
-                                    <label for="nameInput" class="form-label">OPD:</label>
+                                    <label for="nameInput" class="form-label">OPD (Penilaian Mandiri):</label>
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="buka_penilaian_mandiri" type="date" class="form-control"
-                                        id="opdBukaInput">
+                                    <label for="opdBukaInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Buka</label>
+                                    <input wire:model="buka_penilaian_mandiri" type="datetime-local"
+                                        class="form-control" id="opdBukaInput">
+                                    @error('buka_penilaian_mandiri')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="tutup_penilaian_mandiri" type="date" class="form-control"
-                                        id="opdTutupInput">
+                                    <label for="opdTutupInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Tutup</label>
+                                    <input wire:model="tutup_penilaian_mandiri" type="datetime-local"
+                                        class="form-control" id="opdTutupInput">
+                                    @error('tutup_penilaian_mandiri')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -48,25 +58,45 @@
                                     <label for="nameInput" class="form-label">Verifikator:</label>
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="buka_penilaian_verifikator" type="date" class="form-control"
-                                        id="verifikatorBukaInput">
+                                    <label for="verifikatorBukaInput" class="form-label text-muted small">Tanggal &
+                                        Waktu Buka</label>
+                                    <input wire:model="buka_penilaian_verifikator" type="datetime-local"
+                                        class="form-control" id="verifikatorBukaInput">
+                                    @error('buka_penilaian_verifikator')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="tutup_penilaian_verifikator" type="date" class="form-control"
-                                        id="verifikatorTutupInput">
+                                    <label for="verifikatorTutupInput" class="form-label text-muted small">Tanggal &
+                                        Waktu Tutup</label>
+                                    <input wire:model="tutup_penilaian_verifikator" type="datetime-local"
+                                        class="form-control" id="verifikatorTutupInput">
+                                    @error('tutup_penilaian_verifikator')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-lg-3">
-                                    <label for="nameInput" class="form-label">Penjamin:</label>
+                                    <label for="nameInput" class="form-label">Penjamin Mutu:</label>
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="buka_penilaian_penjamin" type="date" class="form-control"
-                                        id="penjaminBukaInput">
+                                    <label for="penjaminBukaInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Buka</label>
+                                    <input wire:model="buka_penilaian_penjamin" type="datetime-local"
+                                        class="form-control" id="penjaminBukaInput">
+                                    @error('buka_penilaian_penjamin')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="tutup_penilaian_penjamin" type="date" class="form-control"
-                                        id="penjaminTutupInput">
+                                    <label for="penjaminTutupInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Tutup</label>
+                                    <input wire:model="tutup_penilaian_penjamin" type="datetime-local"
+                                        class="form-control" id="penjaminTutupInput">
+                                    @error('tutup_penilaian_penjamin')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -74,12 +104,22 @@
                                     <label for="nameInput" class="form-label">Penilai:</label>
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="buka_penilaian_penilai" type="date" class="form-control"
-                                        id="penilaiBukaInput">
+                                    <label for="penilaiBukaInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Buka</label>
+                                    <input wire:model="buka_penilaian_penilai" type="datetime-local"
+                                        class="form-control" id="penilaiBukaInput">
+                                    @error('buka_penilaian_penilai')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                                 <div class="col-lg-4">
-                                    <input wire:model="tutup_penilaian_penilai" type="date" class="form-control"
-                                        id="penilaiTutupInput">
+                                    <label for="penilaiTutupInput" class="form-label text-muted small">Tanggal & Waktu
+                                        Tutup</label>
+                                    <input wire:model="tutup_penilaian_penilai" type="datetime-local"
+                                        class="form-control" id="penilaiTutupInput">
+                                    @error('tutup_penilaian_penilai')
+                                        <span class="text-danger small">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -92,7 +132,8 @@
                     <div class="card-header align-items-center d-flex">
                         <h4 class="card-title mb-0 flex-grow-1">Tahun</h4>
                         <button type="button" class="btn btn-primary add-btn" data-bs-toggle="modal"
-                            data-bs-target="#addTahunModal"><i class="ri-add-line align-bottom me-1"></i>Tambah</button>
+                            data-bs-target="#addTahunModal"><i
+                                class="ri-add-line align-bottom me-1"></i>Tambah</button>
                     </div><!-- end card header -->
 
                     <div class="card-body">
@@ -120,7 +161,8 @@
                                                             {{ $tahun->is_active ? 'checked' : '' }}
                                                             class="form-check-input" type="checkbox" role="switch"
                                                             id="switch{{ $tahun->id }}">
-                                                        <label class="form-check-label" for="switch{{ $tahun->id }}">
+                                                        <label class="form-check-label"
+                                                            for="switch{{ $tahun->id }}">
                                                             {{ $tahun->is_active ? 'Aktif' : 'Nonaktif' }}
                                                         </label>
                                                     </div>

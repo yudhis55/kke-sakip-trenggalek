@@ -21,7 +21,7 @@ class Pengaturan extends Component
 
     public $buka_penilaian_mandiri, $tutup_penilaian_mandiri, $buka_penilaian_verifikator, $tutup_penilaian_verifikator, $buka_penilaian_penjamin, $tutup_penilaian_penjamin, $buka_penilaian_penilai, $tutup_penilaian_penilai;
     public $tahun_id;
-    public $maks_bobot_komponen;
+    public $maks_bobot_komponen = 100; // Default 100%
 
     // Tahun properties
     public $tahun_input;
@@ -56,15 +56,15 @@ class Pengaturan extends Component
         $setting = Setting::where('tahun_id', $this->tahun_id)->first();
 
         if ($setting) {
-            // Format tanggal ke Y-m-d untuk input type="date"
-            $this->buka_penilaian_mandiri = $setting->buka_penilaian_mandiri ? date('Y-m-d', strtotime($setting->buka_penilaian_mandiri)) : null;
-            $this->tutup_penilaian_mandiri = $setting->tutup_penilaian_mandiri ? date('Y-m-d', strtotime($setting->tutup_penilaian_mandiri)) : null;
-            $this->buka_penilaian_verifikator = $setting->buka_penilaian_verifikator ? date('Y-m-d', strtotime($setting->buka_penilaian_verifikator)) : null;
-            $this->tutup_penilaian_verifikator = $setting->tutup_penilaian_verifikator ? date('Y-m-d', strtotime($setting->tutup_penilaian_verifikator)) : null;
-            $this->buka_penilaian_penjamin = $setting->buka_penilaian_penjamin ? date('Y-m-d', strtotime($setting->buka_penilaian_penjamin)) : null;
-            $this->tutup_penilaian_penjamin = $setting->tutup_penilaian_penjamin ? date('Y-m-d', strtotime($setting->tutup_penilaian_penjamin)) : null;
-            $this->buka_penilaian_penilai = $setting->buka_penilaian_penilai ? date('Y-m-d', strtotime($setting->buka_penilaian_penilai)) : null;
-            $this->tutup_penilaian_penilai = $setting->tutup_penilaian_penilai ? date('Y-m-d', strtotime($setting->tutup_penilaian_penilai)) : null;
+            // Format tanggal ke Y-m-d\TH:i untuk input type="datetime-local"
+            $this->buka_penilaian_mandiri = $setting->buka_penilaian_mandiri ? date('Y-m-d\TH:i', strtotime($setting->buka_penilaian_mandiri)) : null;
+            $this->tutup_penilaian_mandiri = $setting->tutup_penilaian_mandiri ? date('Y-m-d\TH:i', strtotime($setting->tutup_penilaian_mandiri)) : null;
+            $this->buka_penilaian_verifikator = $setting->buka_penilaian_verifikator ? date('Y-m-d\TH:i', strtotime($setting->buka_penilaian_verifikator)) : null;
+            $this->tutup_penilaian_verifikator = $setting->tutup_penilaian_verifikator ? date('Y-m-d\TH:i', strtotime($setting->tutup_penilaian_verifikator)) : null;
+            $this->buka_penilaian_penjamin = $setting->buka_penilaian_penjamin ? date('Y-m-d\TH:i', strtotime($setting->buka_penilaian_penjamin)) : null;
+            $this->tutup_penilaian_penjamin = $setting->tutup_penilaian_penjamin ? date('Y-m-d\TH:i', strtotime($setting->tutup_penilaian_penjamin)) : null;
+            $this->buka_penilaian_penilai = $setting->buka_penilaian_penilai ? date('Y-m-d\TH:i', strtotime($setting->buka_penilaian_penilai)) : null;
+            $this->tutup_penilaian_penilai = $setting->tutup_penilaian_penilai ? date('Y-m-d\TH:i', strtotime($setting->tutup_penilaian_penilai)) : null;
             $this->maks_bobot_komponen = $setting->maks_bobot_komponen ?? 100;
         } else {
             // Reset jika tidak ada setting untuk tahun ini
@@ -116,7 +116,7 @@ class Pengaturan extends Component
                 'tutup_penilaian_penjamin' => $this->tutup_penilaian_penjamin,
                 'buka_penilaian_penilai' => $this->buka_penilaian_penilai,
                 'tutup_penilaian_penilai' => $this->tutup_penilaian_penilai,
-                'maks_bobot_komponen' => $this->maks_bobot_komponen,
+                'maks_bobot_komponen' => $this->maks_bobot_komponen ?? 100, // Fallback ke 100 jika null
             ]
         );
 
