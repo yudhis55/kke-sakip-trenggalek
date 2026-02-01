@@ -48,9 +48,20 @@ class EsakipSyncService
         }
 
         // Get document types to sync
-        $documentTypes = $documentType
-            ? [$documentType => config("esakip.document_types.{$documentType}")]
-            : config('esakip.document_types');
+        if ($documentType) {
+            if (is_array($documentType)) {
+                // Jika array, map ke config
+                $documentTypes = [];
+                foreach ($documentType as $type) {
+                    $documentTypes[$type] = config("esakip.document_types.{$type}");
+                }
+            } else {
+                // Jika string
+                $documentTypes = [$documentType => config("esakip.document_types.{$documentType}")];
+            }
+        } else {
+            $documentTypes = config('esakip.document_types');
+        }
 
         $preview = [
             'tahun' => $tahun->tahun,
@@ -88,6 +99,62 @@ class EsakipSyncService
                             'lainnya_count' => count($filteredLainnya),
                             'total_documents' => count($documents),
                         ]);
+                    }
+
+                    // Fetch dokumen bersama dari Pemkab API (opd_id=1) tanpa perlu OPD di database
+                    $sharedDocs = $this->fetchSharedDocumentsFromEsakip($type, $tahun->tahun);
+
+                    Log::info("Preview: Fetched shared documents from Pemkab API", [
+                        'document_type' => $type,
+                        'fetched_count' => count($sharedDocs),
+                    ]);
+
+                    // Filter hanya dokumen dengan opd_id = 1 (dokumen bersama)
+                    $sharedDocsFiltered = array_filter($sharedDocs, function ($doc) {
+                        $isShared = isset($doc['opd_id']) && (int)$doc['opd_id'] === 1;
+                        if ($isShared) {
+                            Log::info("Preview: Found shared document", [
+                                'file' => $doc['file'] ?? 'unknown',
+                                'keterangan' => $doc['keterangan'] ?? 'no description',
+                            ]);
+                        }
+                        return $isShared;
+                    });
+
+                    Log::info("Preview: After filtering shared docs", [
+                        'shared_count' => count($sharedDocsFiltered),
+                    ]);
+
+                    if (!empty($sharedDocsFiltered)) {
+                        // Hanya merge jika bukan dokumen milik OPD yang sama
+                        $documentsToMerge = [];
+                        foreach ($sharedDocsFiltered as $sharedDoc) {
+                            // Cek apakah dokumen ini sudah ada di $documents
+                            $isDuplicate = false;
+                            foreach ($documents as $existingDoc) {
+                                if (
+                                    isset($existingDoc['file']) && isset($sharedDoc['file']) &&
+                                    $existingDoc['file'] === $sharedDoc['file']
+                                ) {
+                                    $isDuplicate = true;
+                                    break;
+                                }
+                            }
+                            if (!$isDuplicate) {
+                                $documentsToMerge[] = $sharedDoc;
+                            }
+                        }
+
+                        if (!empty($documentsToMerge)) {
+                            $documents = array_merge($documents, $documentsToMerge);
+
+                            Log::info("Preview: Merged shared documents from Pemkab", [
+                                'document_type' => $type,
+                                'opd' => $opd->nama,
+                                'shared_count' => count($documentsToMerge),
+                                'total_documents' => count($documents),
+                            ]);
+                        }
                     }
 
                     if (empty($documents)) {
@@ -156,9 +223,21 @@ class EsakipSyncService
             throw new \Exception("Tidak ada OPD dengan mapping esakip_opd_id. Silakan isi esakip_opd_id di master OPD terlebih dahulu.");
         }
 
-        $documentTypes = $documentType
-            ? [$documentType => config("esakip.document_types.{$documentType}")]
-            : config('esakip.document_types');
+        // Get document types to sync
+        if ($documentType) {
+            if (is_array($documentType)) {
+                // Jika array, map ke config
+                $documentTypes = [];
+                foreach ($documentType as $type) {
+                    $documentTypes[$type] = config("esakip.document_types.{$type}");
+                }
+            } else {
+                // Jika string
+                $documentTypes = [$documentType => config("esakip.document_types.{$documentType}")];
+            }
+        } else {
+            $documentTypes = config('esakip.document_types');
+        }
 
         $results = [
             'success_count' => 0,
@@ -258,7 +337,56 @@ class EsakipSyncService
             ]);
         }
 
-        // 2.2. Deteksi Dokumen Bersama (opd_id = 1)
+        // 2.2. Fetch dokumen bersama dari Pemkab API (opd_id=1) tanpa perlu OPD di database
+        $sharedDocs = $this->fetchSharedDocumentsFromEsakip($documentType, $tahun->tahun);
+
+        Log::info("Sync: Fetched shared documents from Pemkab API", [
+            'document_type' => $documentType,
+            'fetched_count' => count($sharedDocs),
+        ]);
+
+        // Filter hanya dokumen dengan opd_id = 1 (dokumen bersama)
+        $sharedDocsFiltered = array_filter($sharedDocs, function ($doc) {
+            return isset($doc['opd_id']) && (int)$doc['opd_id'] === 1;
+        });
+
+        Log::info("Sync: After filtering shared docs", [
+            'shared_count' => count($sharedDocsFiltered),
+        ]);
+
+        if (!empty($sharedDocsFiltered)) {
+            // Hanya merge jika bukan dokumen milik OPD yang sama
+            $documentsToMerge = [];
+            foreach ($sharedDocsFiltered as $sharedDoc) {
+                // Cek apakah dokumen ini sudah ada di $documents
+                $isDuplicate = false;
+                foreach ($documents as $existingDoc) {
+                    if (
+                        isset($existingDoc['file']) && isset($sharedDoc['file']) &&
+                        $existingDoc['file'] === $sharedDoc['file']
+                    ) {
+                        $isDuplicate = true;
+                        break;
+                    }
+                }
+                if (!$isDuplicate) {
+                    $documentsToMerge[] = $sharedDoc;
+                }
+            }
+
+            if (!empty($documentsToMerge)) {
+                $documents = array_merge($documents, $documentsToMerge);
+
+                Log::info("Merged shared documents from Pemkab", [
+                    'document_type' => $documentType,
+                    'opd' => $opd->nama,
+                    'shared_count' => count($documentsToMerge),
+                    'total_documents' => count($documents),
+                ]);
+            }
+        }
+
+        // 2.3. Deteksi Dokumen Bersama (opd_id = 1)
         // Jika ada dokumen bersama, sync ke SEMUA OPD
         $isSharedDocument = false;
         foreach ($documents as $document) {
@@ -657,6 +785,98 @@ class EsakipSyncService
      * @param int $opdId
      * @return array
      */
+    /**
+     * Fetch dokumen bersama dari Pemkab (opd_id=1) langsung dari API E-SAKIP
+     * Tidak memerlukan OPD Pemkab di database lokal
+     *
+     * @param string $documentType
+     * @param int $tahun
+     * @return array
+     */
+    protected function fetchSharedDocumentsFromEsakip($documentType, $tahun)
+    {
+        $endpoint = config('esakip.endpoints.document_base') . '/' . $documentType;
+        $url = $this->apiBaseUrl . $endpoint;
+
+        // Log request details
+        Log::info("Fetching shared documents from E-SAKIP Pemkab", [
+            'url' => $url,
+            'document_type' => $documentType,
+            'tahun' => $tahun,
+            'opd' => 1, // Hardcode opd=1 untuk Pemkab
+        ]);
+
+        try {
+            $response = Http::connectTimeout(60)
+                ->timeout($this->timeout)
+                ->withoutVerifying()
+                ->retry(5, 200)
+                ->get($url, [
+                    'tahun' => $tahun,
+                    'opd' => 1, // Hardcode opd=1 untuk dokumen bersama Pemkab
+                ]);
+
+            // Log response status
+            Log::info("E-SAKIP Pemkab Response", [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+
+                // Validate response structure
+                if (!isset($result['data']) || empty($result['data'])) {
+                    Log::warning("E-SAKIP Pemkab returned empty data", [
+                        'full_response' => $result,
+                    ]);
+                    return [];
+                }
+
+                $data = $result['data'];
+                $allDocuments = [];
+
+                if (is_array($data) || is_object($data)) {
+                    foreach ($data as $opdName => $documents) {
+                        Log::info("Processing Pemkab documents", [
+                            'opd_name_key' => $opdName,
+                            'documents_count' => is_array($documents) ? count($documents) : 0,
+                        ]);
+
+                        if (is_array($documents)) {
+                            foreach ($documents as $doc) {
+                                // Filter by tahun for periode-type documents
+                                if (isset($doc['jenis_periode']) && $doc['jenis_periode'] === 'periode') {
+                                    if (isset($doc['periode']) && $this->isPeriodeMatchYear($doc['periode'], $tahun)) {
+                                        $allDocuments[] = $this->normalizeDocument($doc);
+                                    }
+                                } else {
+                                    // For tahun-type documents, include all
+                                    $allDocuments[] = $this->normalizeDocument($doc);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Log::info("E-SAKIP Pemkab documents fetched", [
+                    'total_documents' => count($allDocuments),
+                ]);
+
+                return $allDocuments;
+            }
+
+            Log::warning("API esakip Pemkab failed: " . $response->status() . " - " . $response->body());
+            return [];
+        } catch (\Exception $e) {
+            Log::error("Failed to fetch Pemkab from esakip: " . $e->getMessage(), [
+                'exception' => $e,
+                'url' => $url,
+            ]);
+            return [];
+        }
+    }
+
     /**
      * Fetch documents from E-SAKIP API (New Structure)
      *

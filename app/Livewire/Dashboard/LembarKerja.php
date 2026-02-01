@@ -56,6 +56,10 @@ class LembarKerja extends Component
     public $is_perubahan = false;
     public $ganti_semua_dokumen = false;
     public $is_final = false;
+    public $file_count = 0; // Jumlah file yang sedang diupload
+    public $temporary_file_names = []; // Nama file temporary untuk tampilan
+    public $file_page_numbers = []; // Page numbers untuk setiap file [index => page_number]
+    public $is_setting_upload_page = false; // Flag untuk detect context modal (upload vs existing file)
 
     // Penilaian properties
     public $tingkatan_nilai_id = null;
@@ -140,6 +144,10 @@ class LembarKerja extends Component
         $this->keterangan_upload = '';
         $this->is_perubahan = false;
         $this->ganti_semua_dokumen = false;
+        $this->file_count = 0;
+        $this->temporary_file_names = [];
+        $this->file_page_numbers = [];
+        $this->is_setting_upload_page = false;
 
         // Dispatch event ke Alpine untuk reset tab
         $this->dispatch('filter-changed');
@@ -157,6 +165,10 @@ class LembarKerja extends Component
         $this->page_number = null;
         $this->is_perubahan = false;
         $this->ganti_semua_dokumen = false;
+        $this->file_count = 0;
+        $this->temporary_file_names = [];
+        $this->file_page_numbers = [];
+        $this->is_setting_upload_page = false;
 
         // Reset penilaian states
         $this->tingkatan_nilai_id = null;
@@ -843,7 +855,7 @@ class LembarKerja extends Component
      */
     private function cekAksesWaktu()
     {
-        $setting = Setting::first();
+        $setting = Setting::where('tahun_id', $this->tahun_id)->first();
         if (!$setting) {
             return [
                 'allowed' => false,
@@ -926,6 +938,13 @@ class LembarKerja extends Component
      */
     public function uploadBuktiDukung()
     {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
         $this->validate([
             'file_bukti_dukung' => 'required|array',
             'file_bukti_dukung.*' => 'file|mimes:pdf',
@@ -942,7 +961,7 @@ class LembarKerja extends Component
 
         // Upload files terlebih dahulu
         $uploadedFiles = [];
-        foreach ($this->file_bukti_dukung as $file) {
+        foreach ($this->file_bukti_dukung as $index => $file) {
             $path = $file->store('bukti_dukung', 'public');
 
             $uploadedFiles[] = [
@@ -955,7 +974,7 @@ class LembarKerja extends Component
                 'tanggal_publish' => now()->toDateString(), // Tanggal upload
                 'from_esakip' => false,
                 'uploaded_at' => now()->toDateTimeString(),
-                'page_number' => null, // Page number per file
+                'page_number' => $this->file_page_numbers[$index] ?? 1, // Gunakan page_number yang di-set user, default 1
             ];
         }
 
@@ -976,7 +995,6 @@ class LembarKerja extends Component
                 'role_id' => $opdRoleId,
                 'link_file' => $uploadedFiles,
                 'keterangan' => $this->keterangan_upload,
-                'page_number' => $this->page_number,
                 'is_perubahan' => $this->is_perubahan,
             ]);
         } else {
@@ -1007,7 +1025,6 @@ class LembarKerja extends Component
             $penilaian->update([
                 'link_file' => $mergedFiles,
                 'keterangan' => $this->keterangan_upload,
-                'page_number' => $this->page_number,
                 'is_perubahan' => $this->is_perubahan,
             ]);
         }
@@ -1055,7 +1072,6 @@ class LembarKerja extends Component
                             'role_id' => $opdRoleId,
                             'link_file' => $uploadedFiles,
                             'keterangan' => $this->keterangan_upload . ' (Auto-copy dari bukti dukung serupa)',
-                            'page_number' => $this->page_number,
                             'is_perubahan' => false,
                         ]);
                     } else {
@@ -1063,7 +1079,6 @@ class LembarKerja extends Component
                         $existingPenilaianOther->update([
                             'link_file' => $uploadedFiles,
                             'keterangan' => $this->keterangan_upload . ' (Auto-copy dari bukti dukung serupa)',
-                            'page_number' => $this->page_number,
                         ]);
                     }
                     $copiedCount++;
@@ -1088,6 +1103,13 @@ class LembarKerja extends Component
      */
     public function simpanPenilaian()
     {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
         $this->validate([
             'tingkatan_nilai_id' => 'required|exists:tingkatan_nilai,id',
         ]);
@@ -1210,6 +1232,13 @@ class LembarKerja extends Component
      */
     public function simpanVerifikasi()
     {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
         $this->validate([
             'is_verified' => 'required|boolean',
             'keterangan_verifikasi' => 'nullable|string',
@@ -1329,9 +1358,69 @@ class LembarKerja extends Component
     /**
      * Open modal set page number dengan pre-fill data
      */
+    /**
+     * Update file count saat file ditambah/dihapus
+     */
+    public function updatedFileBuktiDukung()
+    {
+        $this->file_count = is_array($this->file_bukti_dukung) ? count($this->file_bukti_dukung) : 0;
+
+        // Extract nama file untuk display
+        $this->temporary_file_names = [];
+        if (is_array($this->file_bukti_dukung)) {
+            foreach ($this->file_bukti_dukung as $index => $file) {
+                $filename = is_object($file) && method_exists($file, 'getClientOriginalName')
+                    ? $file->getClientOriginalName()
+                    : "Dokumen " . ($index + 1);
+                $this->temporary_file_names[$index] = $filename;
+            }
+        }
+    }
+
+    /**
+     * Open modal untuk set page number sebelum upload (untuk file temporary)
+     */
+    public function openSetPageNumberForUpload($fileIndex)
+    {
+        $this->file_index = $fileIndex;
+        $this->is_setting_upload_page = true; // Set flag untuk upload context
+        // Load existing page number jika sudah pernah di-set, default 1
+        $this->page_number = $this->file_page_numbers[$fileIndex] ?? 1;
+    }
+
+    /**
+     * Save page number untuk file temporary sebelum upload
+     */
+    public function savePageNumberForUpload()
+    {
+        $this->validate([
+            'page_number' => 'required|integer|min:1',
+            'file_index' => 'required|integer|min:0',
+        ], [
+            'page_number.required' => 'Nomor halaman harus diisi',
+            'page_number.integer' => 'Nomor halaman harus berupa angka',
+            'page_number.min' => 'Nomor halaman harus minimal 1',
+        ]);
+
+        // Simpan page_number ke array
+        $this->file_page_numbers[$this->file_index] = $this->page_number;
+
+        flash()
+            ->use('theme.ruby')
+            ->option('position', 'bottom-right')
+            ->success("Halaman {$this->page_number} berhasil di-set untuk File " . ($this->file_index + 1));
+
+        // Reset flag
+        $this->is_setting_upload_page = false;
+
+        // Dispatch event untuk close modal
+        $this->dispatch('closeModal');
+    }
+
     public function openSetPageNumberModal($fileIndex)
     {
         $this->file_index = $fileIndex;
+        $this->is_setting_upload_page = false; // Set flag untuk existing file context
 
         // Load page_number dari file yang dipilih
         $files = $this->selectedFileBuktiDukung;

@@ -2463,13 +2463,44 @@
                                                 @endif
                                             </div>
                                             <div x-show="menu === 'unggah'" aria-labelledby="v-pills-profile-tab">
-                                                <div class="mb-2" x-data="{ isUploading: false, hasFiles: false }"
-                                                    @filepond-upload-started.window="isUploading = true; hasFiles = true"
-                                                    @filepond-upload-completed.window="isUploading = false"
-                                                    @filepond-upload-file-removed.window="if ($event.detail.isEmpty) { hasFiles = false; isUploading = false }">
-                                                    <div class="ms-3">
-                                                        <x-filepond::upload wire:model="file_bukti_dukung" multiple />
+                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                    <div class="mb-2" x-data="{ isUploading: false, hasFiles: false }"
+                                                        @filepond-upload-started.window="isUploading = true; hasFiles = true"
+                                                        @filepond-upload-completed.window="isUploading = false"
+                                                        @filepond-upload-file-removed.window="if ($event.detail.isEmpty) { hasFiles = false; isUploading = false }">
+                                                        <div class="ms-3">
+                                                            <div class="row align-items-start">
+                                                                {{-- Dynamic column: col-12 saat kosong, col-10 saat ada file --}}
+                                                                <div :class="{{ $file_count }} > 0 ? 'col-10' : 'col-12'">
+                                                                    <x-filepond::upload wire:model="file_bukti_dukung" multiple />
+                                                                </div>
 
+                                                            {{-- Tombol Set Halaman per file - hanya muncul saat ada file --}}
+                                                            @if ($file_count > 0)
+                                                                <div class="col-2 d-grid gap-2" style="margin-top: 76px;">
+                                                                    @foreach (range(0, $file_count - 1) as $index)
+                                                                        @php
+                                                                            $hasPageNumber = isset($file_page_numbers[$index]);
+                                                                            $pageNum = $file_page_numbers[$index] ?? null;
+                                                                        @endphp
+                                                                        <button type="button"
+                                                                            wire:click="openSetPageNumberForUpload({{ $index }})"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#modalSetPageNumber"
+                                                                            class="btn {{ $hasPageNumber ? 'btn-primary' : 'btn-outline-primary' }} btn-label"
+                                                                            style="min-height: 46px;"
+                                                                            title="Set halaman untuk {{ $temporary_file_names[$index] ?? 'Dokumen ' . ($index + 1) }}">
+                                                                            <i class="ri-bookmark-line label-icon align-middle fs-16 me-1"></i>
+                                                                            @if ($hasPageNumber)
+                                                                                <small>Hal. {{ $pageNum }}</small>
+                                                                            @else
+                                                                                <small>Set Halaman</small>
+                                                                            @endif
+                                                                        </button>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                        </div>
                                                         <div class="mb-3 mt-3">
                                                             <label for="keterangan_upload" class="form-label">
                                                                 Keterangan
@@ -2488,24 +2519,6 @@
                                                                 upload file
                                                                 selesai
                                                             </div>
-                                                        </div>
-
-                                                        <div class="mb-3">
-                                                            <label for="page_number" class="form-label">
-                                                                Halaman
-                                                            </label>
-                                                            <input wire:model="page_number"
-                                                                class="form-control @error('page_number') is-invalid @enderror"
-                                                                type="number" id="page_number" min="1"
-                                                                :disabled="isUploading" placeholder="Contoh: 15">
-                                                            <div class="form-text">
-                                                                <i class="ri-bookmark-line"></i>
-                                                                Tandai nomor halaman awal jika menggunakan dokumen
-                                                                bersama
-                                                            </div>
-                                                            @error('page_number')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
                                                         </div>
 
                                                         <div class="form-check form-switch mb-3">
@@ -2535,6 +2548,7 @@
                                                             </div>
                                                         </div>
 
+
                                                         <button wire:click="uploadBuktiDukung"
                                                             class="btn btn-primary mt-2"
                                                             :disabled="isUploading || !hasFiles">
@@ -2557,6 +2571,16 @@
                                                         @endif
                                                     </div>
                                                 </div>
+                                            @else
+                                                <div class="alert alert-warning mt-3 mx-3">
+                                                    <i class="ri-alert-line me-2"></i>
+                                                    <strong>Fitur Unggah Dokumen Tidak Tersedia</strong>
+                                                    <p class="mb-0 mt-2">
+                                                        @php $aksesCheck = $this->cekAksesWaktu(); @endphp
+                                                        {{ $aksesCheck['message'] }}
+                                                    </p>
+                                                </div>
+                                            @endif
                                             </div>
                                             <div x-show="menu === 'penilaian'"
                                                 aria-labelledby="tombol-penilaian-mandiri">
@@ -2696,18 +2720,25 @@
                                                                     </div>
 
                                                                     <div class="mt-3">
-                                                                        <button type="button" class="btn btn-primary"
-                                                                            wire:click="simpanPenilaian"
-                                                                            {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
-                                                                            <i class="ri-save-line me-1"></i>
-                                                                            {{ $is_editing_penilaian ? 'Update Penilaian' : 'Simpan Penilaian' }}
-                                                                        </button>
-                                                                        @if ($is_editing_penilaian)
-                                                                            <button type="button"
-                                                                                class="btn btn-secondary"
-                                                                                wire:click="batalEditPenilaian">
-                                                                                <i class="ri-close-line me-1"></i>Batal
+                                                                        @if ($this->dalamRentangAkses)
+                                                                            <button type="button" class="btn btn-primary"
+                                                                                wire:click="simpanPenilaian"
+                                                                                {{ $tingkatan_nilai_id ? '' : 'disabled' }}>
+                                                                                <i class="ri-save-line me-1"></i>
+                                                                                {{ $is_editing_penilaian ? 'Update Penilaian' : 'Simpan Penilaian' }}
                                                                             </button>
+                                                                            @if ($is_editing_penilaian)
+                                                                                <button type="button"
+                                                                                    class="btn btn-secondary"
+                                                                                    wire:click="batalEditPenilaian">
+                                                                                    <i class="ri-close-line me-1"></i>Batal
+                                                                                </button>
+                                                                            @endif
+                                                                        @else
+                                                                            <div class="alert alert-warning">
+                                                                                <i class="ri-alert-line me-2"></i>
+                                                                                Fitur penilaian tidak tersedia di luar rentang waktu input.
+                                                                            </div>
                                                                         @endif
                                                                     </div>
                                                                 @else
@@ -2858,10 +2889,17 @@
                                                                             class="text-danger small">{{ $message }}</span>
                                                                     @enderror
                                                                 </div>
-                                                                <button wire:click="simpanVerifikasi"
-                                                                    class="btn btn-primary">
-                                                                    <i class="ri-save-line me-1"></i>Simpan
-                                                                </button>
+                                                                @if ($this->dalamRentangAkses)
+                                                                    <button wire:click="simpanVerifikasi"
+                                                                        class="btn btn-primary">
+                                                                        <i class="ri-save-line me-1"></i>Simpan
+                                                                    </button>
+                                                                @else
+                                                                    <div class="alert alert-warning mt-2">
+                                                                        <i class="ri-alert-line me-2"></i>
+                                                                        Fitur verifikasi tidak tersedia di luar rentang waktu input.
+                                                                    </div>
+                                                                @endif
                                                                 @error('is_verified')
                                                                     <div class="text-danger small mt-2">
                                                                         {{ $message }}</div>
@@ -3028,6 +3066,9 @@
                     <div class="modal-header">
                         <h5 class="modal-title" id="modalSetPageNumberLabel">
                             <i class="ri-bookmark-line me-2"></i>Set Nomor Halaman
+                            @if ($is_setting_upload_page && isset($temporary_file_names[$file_index]))
+                                <br><small class="text-muted">{{ $temporary_file_names[$file_index] }}</small>
+                            @endif
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
@@ -3037,28 +3078,47 @@
                             <label for="page_number_input" class="form-label">Nomor Halaman</label>
                             <input type="number" wire:model="page_number" class="form-control"
                                 id="page_number_input" min="1"
-                                placeholder="Masukkan nomor halaman (opsional)">
+                                placeholder="Masukkan nomor halaman (contoh: 15)">
                             @error('page_number')
                                 <div class="text-danger mt-1 small">{{ $message }}</div>
                             @enderror
                             <small class="text-muted">
                                 <i class="ri-information-line"></i>
-                                Nomor halaman akan digunakan untuk membuka PDF pada halaman tertentu.
+                                @if ($is_setting_upload_page)
+                                    Nomor halaman akan disimpan dan digunakan saat dokumen ini diupload.
+                                @else
+                                    Nomor halaman akan digunakan untuk membuka PDF pada halaman tertentu.
+                                @endif
                             </small>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                        <button type="button" wire:click="updatePageNumber" class="btn btn-primary"
-                            wire:loading.attr="disabled">
-                            <span wire:loading.remove wire:target="updatePageNumber">
-                                <i class="ri-save-line me-1"></i>Simpan
-                            </span>
-                            <span wire:loading wire:target="updatePageNumber">
-                                <span class="spinner-border spinner-border-sm me-1"></span>
-                                Menyimpan...
-                            </span>
-                        </button>
+                        @if ($is_setting_upload_page)
+                            {{-- Button untuk file upload (temporary) --}}
+                            <button type="button" wire:click="savePageNumberForUpload" class="btn btn-primary"
+                                data-bs-dismiss="modal" wire:loading.attr="disabled">
+                                <span wire:loading.remove wire:target="savePageNumberForUpload">
+                                    <i class="ri-save-line me-1"></i>Simpan
+                                </span>
+                                <span wire:loading wire:target="savePageNumberForUpload">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    Menyimpan...
+                                </span>
+                            </button>
+                        @else
+                            {{-- Button untuk file existing --}}
+                            <button type="button" wire:click="updatePageNumber" class="btn btn-primary"
+                                wire:loading.attr="disabled">
+                                <span wire:loading.remove wire:target="updatePageNumber">
+                                    <i class="ri-save-line me-1"></i>Simpan
+                                </span>
+                                <span wire:loading wire:target="updatePageNumber">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    Menyimpan...
+                                </span>
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
