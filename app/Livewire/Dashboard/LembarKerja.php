@@ -22,6 +22,7 @@ use App\Models\PenilaianHistory;
 use Livewire\Attributes\Computed;
 use Spatie\LivewireFilepond\WithFilePond;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use function Flasher\Prime\flash;
@@ -1359,54 +1360,80 @@ class LembarKerja extends Component
             return;
         }
 
+        // Authorization check - hanya admin dan OPD yang bisa hapus dokumen
+        if (!in_array(Auth::user()->role->jenis, ['admin', 'opd'])) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Anda tidak memiliki akses untuk menghapus dokumen.');
+            return;
+        }
+
         if (!$this->bukti_dukung_id || !$this->opd_session) {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Bukti dukung tidak ditemukan.');
             return;
         }
 
-        // Cari record penilaian OPD
+        // Get role OPD - dokumen selalu diupload oleh role OPD
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+
+        if (!$opdRoleId) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Role OPD tidak ditemukan di sistem.');
+            return;
+        }
+
+        // Cari record penilaian OPD (bukan role user yang login!)
         $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_session)
             ->where('bukti_dukung_id', $this->bukti_dukung_id)
             ->where('opd_id', $this->opd_session)
-            ->where('role_id', Auth::user()->role_id)
+            ->where('role_id', $opdRoleId)  // Cari penilaian dari role OPD
             ->first();
 
-        if ($penilaian && $penilaian->link_file) {
+        if (!$penilaian || !$penilaian->link_file) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
+            return;
+        }
+
+        try {
             // Hapus file dari storage
             $files = $penilaian->link_file;
-            if ($files) {
+            if (is_array($files)) {
                 foreach ($files as $file) {
-                    if (isset($file['path'])) {
+                    if (isset($file['path']) && !isset($file['from_esakip'])) {
+                        // Hanya hapus file local, jangan hapus yang dari E-SAKIP
                         Storage::disk('public')->delete($file['path']);
                     }
                 }
             }
 
-            // Update record - hapus link_file, reset data upload, dan hapus nilai penilaian
+            // Update record - reset link_file dan data terkait upload
+            // RECORD TETAP ADA untuk audit trail (akan dihapus di level delete induk jika memang tidak ada data penting)
             $penilaian->update([
                 'link_file' => null,
                 'is_perubahan' => false,
-                'keterangan' => null,
-                'tingkatan_nilai_id' => null,  // Reset nilai penilaian juga
-                'is_final' => false,
             ]);
 
-            // Record history - Hapus dokumen dan nilai
+            // Record history - Hapus dokumen saja
             $penilaian->recordHistory(
                 userId: Auth::id(),
                 roleId: Auth::user()->role_id,
                 opdId: $this->opd_session,
                 kriteriaKomponenId: $this->kriteria_komponen_session,
                 buktiDukungId: $this->bukti_dukung_id,
-                tingkatanNilaiId: null,
+                tingkatanNilaiId: $penilaian->tingkatan_nilai_id,
                 isVerified: $penilaian->is_verified,
-                keterangan: 'Menghapus semua file bukti dukung dan penilaian',
+                keterangan: 'Menghapus file dokumen',
                 isPerubahan: true
             );
 
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File bukti dukung dan penilaian berhasil dihapus.');
-        } else {
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
+            flash()->use('theme.ruby')->option('position', 'bottom-right')
+                ->success('File dokumen berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Log::error('Error deleting file bukti dukung: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'bukti_dukung_id' => $this->bukti_dukung_id,
+                'opd_id' => $this->opd_session,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus file: ' . $e->getMessage());
         }
     }
 
