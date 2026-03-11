@@ -11,6 +11,7 @@ use App\Models\JenisNilai;
 use App\Models\KriteriaKomponen;
 use App\Models\BuktiDukung;
 use App\Models\Role;
+use Illuminate\Support\Facades\DB;
 
 class Mapping extends Component
 {
@@ -600,39 +601,340 @@ class Mapping extends Component
         unset($this->fullMapping);
     }
 
+    /**
+     * Helper: Check apakah penilaian memiliki data penting (untuk audit trail)
+     * Data penting: tingkatan_nilai_id, is_verified, keterangan
+     */
+    private function hasImportantPenilaianData($penilaianIds)
+    {
+        if (empty($penilaianIds)) {
+            return false;
+        }
+
+        return \App\Models\Penilaian::whereIn('id', $penilaianIds)
+            ->where(function ($query) {
+                $query->whereNotNull('tingkatan_nilai_id')
+                    ->orWhereNotNull('is_verified');
+            })
+            ->exists();
+    }
+
     public function deleteBuktiDukung($id)
     {
         $bukti = BuktiDukung::find($id);
-        if ($bukti) {
+        if (!$bukti) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Bukti dukung tidak ditemukan.');
+            return;
+        }
+
+        // Get semua penilaian yang menggunakan bukti ini
+        $penilaianRecords = \App\Models\Penilaian::where('bukti_dukung_id', $id)->get();
+        $countPenilaian = $penilaianRecords->count();
+
+        if ($countPenilaian > 0) {
+            // Check apakah ada data penting
+            $hasImportantData = $this->hasImportantPenilaianData($penilaianRecords->pluck('id')->toArray());
+
+            if ($hasImportantData) {
+                // Ada data penting (nilai/verifikasi/keterangan) → PREVENT DELETE
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus bukti dukung. Terdapat {$countPenilaian} data penilaian");
+                return;
+            }
+
+            // Tidak ada data penting → CASCADE DELETE (hapus penilaian juga)
+            try {
+                DB::transaction(function () use ($bukti, $countPenilaian) {
+                    // Hapus penilaian terlebih dahulu (record kosong/tidak penting)
+                    \App\Models\Penilaian::where('bukti_dukung_id', $bukti->id)->delete();
+                    // Hapus bukti dukung
+                    $bukti->delete();
+                });
+                unset($this->fullMapping);
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->success("Bukti dukung dan {$countPenilaian} record penilaian kosong berhasil dihapus.");
+                return;
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        // Tidak ada penilaian sama sekali → DIRECT DELETE
+        try {
             $bukti->delete();
             unset($this->fullMapping);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil dihapus.');
+        } catch (\Exception $e) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus bukti dukung: ' . $e->getMessage());
         }
     }
 
     public function deleteKriteriaKomponen($id)
     {
         $kriteria = KriteriaKomponen::find($id);
-        if ($kriteria) {
+        if (!$kriteria) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Kriteria komponen tidak ditemukan.');
+            return;
+        }
+
+        // Get semua penilaian yang menggunakan kriteria ini
+        $penilaianKriteria = \App\Models\Penilaian::where('kriteria_komponen_id', $id)->get();
+        $countPenilaianKriteria = $penilaianKriteria->count();
+
+        // Check apakah penilaian kriteria punya data penting
+        if ($countPenilaianKriteria > 0 && $this->hasImportantPenilaianData($penilaianKriteria->pluck('id')->toArray())) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')
+                ->error("Tidak dapat menghapus kriteria komponen. Terdapat {$countPenilaianKriteria} data penilaian");
+            return;
+        }
+
+        // Check apakah ada bukti dukung
+        $buktiDukungIds = $kriteria->bukti_dukung()->pluck('id')->toArray();
+        $countBuktiDukung = count($buktiDukungIds);
+
+        if ($countBuktiDukung > 0) {
+            // Check apakah bukti dukung punya penilaian dengan data penting
+            $penilaianBukti = \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->get();
+            $countPenilaianBukti = $penilaianBukti->count();
+
+            if ($countPenilaianBukti > 0 && $this->hasImportantPenilaianData($penilaianBukti->pluck('id')->toArray())) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus kriteria komponen. Bukti dukung yang terhubung memiliki {$countPenilaianBukti} data penilaian");
+                return;
+            }
+
+            // Bukti dukung ada + mungkin ada penilaian kosong → CASCADE DELETE
+            try {
+                DB::transaction(function () use ($kriteria, $buktiDukungIds, $countBuktiDukung, $countPenilaianKriteria, $countPenilaianBukti) {
+                    // Hapus penilaian bukti dukung (jika ada)
+                    if ($countPenilaianBukti > 0) {
+                        \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->delete();
+                    }
+                    // Hapus penilaian kriteria (jika ada)
+                    if ($countPenilaianKriteria > 0) {
+                        \App\Models\Penilaian::where('kriteria_komponen_id', $kriteria->id)->delete();
+                    }
+                    // Hapus bukti dukung
+                    $kriteria->bukti_dukung()->delete();
+                    // Hapus kriteria
+                    $kriteria->delete();
+                });
+                unset($this->fullMapping);
+
+                $totalPenilaian = $countPenilaianKriteria + $countPenilaianBukti;
+                $message = "Kriteria komponen dan {$countBuktiDukung} bukti dukung";
+                if ($totalPenilaian > 0) {
+                    $message .= " (serta {$totalPenilaian} record penilaian kosong)";
+                }
+                $message .= " berhasil dihapus.";
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success($message);
+                return;
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        // Tidak ada bukti dukung, tapi mungkin ada penilaian kosong di kriteria
+        if ($countPenilaianKriteria > 0) {
+            try {
+                DB::transaction(function () use ($kriteria, $countPenilaianKriteria) {
+                    // Hapus penilaian kriteria
+                    \App\Models\Penilaian::where('kriteria_komponen_id', $kriteria->id)->delete();
+                    // Hapus kriteria
+                    $kriteria->delete();
+                });
+                unset($this->fullMapping);
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->success("Kriteria komponen dan {$countPenilaianKriteria} data penilaian berhasil dihapus.");
+                return;
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        // Tidak ada bukti dukung dan tidak ada penilaian - DIRECT DELETE
+        try {
             $kriteria->delete();
             unset($this->fullMapping);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Kriteria komponen berhasil dihapus.');
+        } catch (\Exception $e) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus kriteria komponen: ' . $e->getMessage());
         }
     }
 
     public function deleteSubKomponen($id)
     {
         $subKomponen = SubKomponen::find($id);
-        if ($subKomponen) {
+        if (!$subKomponen) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Sub komponen tidak ditemukan.');
+            return;
+        }
+
+        // Check apakah ada kriteria komponen
+        $kriteriaIds = $subKomponen->kriteria_komponen()->pluck('id')->toArray();
+        $countKriteria = count($kriteriaIds);
+
+        if ($countKriteria > 0) {
+            // Check apakah ada penilaian dengan data penting
+            $penilaianKriteria = \App\Models\Penilaian::whereIn('kriteria_komponen_id', $kriteriaIds)->get();
+            $countPenilaianKriteria = $penilaianKriteria->count();
+
+            if ($countPenilaianKriteria > 0 && $this->hasImportantPenilaianData($penilaianKriteria->pluck('id')->toArray())) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus sub komponen. Kriteria yang terhubung memiliki {$countPenilaianKriteria} data penilaian");
+                return;
+            }
+
+            // Check bukti dukung dari kriteria
+            $buktiDukungIds = \App\Models\BuktiDukung::whereIn('kriteria_komponen_id', $kriteriaIds)->pluck('id')->toArray();
+            $penilaianBukti = \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->get();
+            $countPenilaianBukti = $penilaianBukti->count();
+
+            if ($countPenilaianBukti > 0 && $this->hasImportantPenilaianData($penilaianBukti->pluck('id')->toArray())) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus sub komponen. Bukti dukung yang terhubung memiliki {$countPenilaianBukti} data penilaian");
+                return;
+            }
+
+            // Ada kriteria + mungkin ada penilaian kosong → CASCADE DELETE
+            try {
+                DB::transaction(function () use ($subKomponen, $countKriteria, $buktiDukungIds, $countPenilaianKriteria, $countPenilaianBukti) {
+                    // Hapus penilaian bukti dukung (jika ada)
+                    if ($countPenilaianBukti > 0) {
+                        \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->delete();
+                    }
+                    // Hapus penilaian kriteria (jika ada)
+                    if ($countPenilaianKriteria > 0) {
+                        \App\Models\Penilaian::whereIn('kriteria_komponen_id', $subKomponen->kriteria_komponen()->pluck('id'))->delete();
+                    }
+                    // Hapus bukti dukung dari semua kriteria
+                    foreach ($subKomponen->kriteria_komponen as $kriteria) {
+                        $kriteria->bukti_dukung()->delete();
+                    }
+                    // Hapus kriteria komponen
+                    $subKomponen->kriteria_komponen()->delete();
+                    // Hapus sub komponen
+                    $subKomponen->delete();
+                });
+                unset($this->fullMapping);
+
+                $totalPenilaian = $countPenilaianKriteria + $countPenilaianBukti;
+                $message = "Sub komponen dan {$countKriteria} kriteria komponen (beserta bukti dukung)";
+                if ($totalPenilaian > 0) {
+                    $message .= " serta {$totalPenilaian} data penilaian";
+                }
+                $message .= " berhasil dihapus.";
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success($message);
+                return;
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        // Tidak ada kriteria - DIRECT DELETE
+        try {
             $subKomponen->delete();
             unset($this->fullMapping);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Sub komponen berhasil dihapus.');
+        } catch (\Exception $e) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus sub komponen: ' . $e->getMessage());
         }
     }
 
     public function deleteKomponen($id)
     {
         $komponen = Komponen::find($id);
-        if ($komponen) {
+        if (!$komponen) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Komponen tidak ditemukan.');
+            return;
+        }
+
+        // Check apakah ada sub komponen
+        $subKomponenIds = $komponen->sub_komponen()->pluck('id')->toArray();
+        $countSubKomponen = count($subKomponenIds);
+
+        if ($countSubKomponen > 0) {
+            // Check apakah ada kriteria dari sub komponen tersebut
+            $kriteriaIds = \App\Models\KriteriaKomponen::whereIn('sub_komponen_id', $subKomponenIds)->pluck('id')->toArray();
+
+            if (count($kriteriaIds) > 0) {
+                // Check apakah ada penilaian kriteria dengan data penting
+                $penilaianKriteria = \App\Models\Penilaian::whereIn('kriteria_komponen_id', $kriteriaIds)->get();
+                $countPenilaianKriteria = $penilaianKriteria->count();
+
+                if ($countPenilaianKriteria > 0 && $this->hasImportantPenilaianData($penilaianKriteria->pluck('id')->toArray())) {
+                    flash()->use('theme.ruby')->option('position', 'bottom-right')
+                        ->error("Tidak dapat menghapus komponen. Terdapat {$countPenilaianKriteria} penilaian pada kriteria");
+                    return;
+                }
+
+                // Check bukti dukung
+                $buktiDukungIds = \App\Models\BuktiDukung::whereIn('kriteria_komponen_id', $kriteriaIds)->pluck('id')->toArray();
+                $penilaianBukti = \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->get();
+                $countPenilaianBukti = $penilaianBukti->count();
+
+                if ($countPenilaianBukti > 0 && $this->hasImportantPenilaianData($penilaianBukti->pluck('id')->toArray())) {
+                    flash()->use('theme.ruby')->option('position', 'bottom-right')
+                        ->error("Tidak dapat menghapus komponen. Bukti dukung yang terhubung memiliki {$countPenilaianBukti} penilaian");
+                    return;
+                }
+            }
+
+            // Ada sub komponen + mungkin ada penilaian kosong → CASCADE DELETE
+            try {
+                $totalPenilaian = 0;
+                DB::transaction(function () use ($komponen, $countSubKomponen, &$totalPenilaian) {
+                    // Hapus semua penilaian kosong terlebih dahulu
+                    $kriteriaIds = \App\Models\KriteriaKomponen::whereIn('sub_komponen_id', $komponen->sub_komponen()->pluck('id'))->pluck('id')->toArray();
+                    $buktiDukungIds = \App\Models\BuktiDukung::whereIn('kriteria_komponen_id', $kriteriaIds)->pluck('id')->toArray();
+
+                    // Hapus penilaian bukti dukung
+                    $deletedBukti = \App\Models\Penilaian::whereIn('bukti_dukung_id', $buktiDukungIds)->delete();
+                    // Hapus penilaian kriteria
+                    $deletedKriteria = \App\Models\Penilaian::whereIn('kriteria_komponen_id', $kriteriaIds)->delete();
+                    $totalPenilaian = $deletedBukti + $deletedKriteria;
+
+                    // Hapus bukti dukung dari semua kriteria di semua sub komponen
+                    foreach ($komponen->sub_komponen as $subKomponen) {
+                        foreach ($subKomponen->kriteria_komponen as $kriteria) {
+                            $kriteria->bukti_dukung()->delete();
+                        }
+                        $subKomponen->kriteria_komponen()->delete();
+                    }
+                    // Hapus sub komponen
+                    $komponen->sub_komponen()->delete();
+                    // Hapus komponen
+                    $komponen->delete();
+                });
+                unset($this->fullMapping);
+
+                $message = "Komponen dan {$countSubKomponen} sub komponen (beserta kriteria & bukti dukung)";
+                if ($totalPenilaian > 0) {
+                    $message .= " serta {$totalPenilaian} record penilaian kosong";
+                }
+                $message .= " berhasil dihapus.";
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success($message);
+                return;
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        // Tidak ada sub komponen - DIRECT DELETE
+        try {
             $komponen->delete();
             unset($this->fullMapping);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Komponen berhasil dihapus.');
+        } catch (\Exception $e) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus komponen: ' . $e->getMessage());
         }
     }
 }
