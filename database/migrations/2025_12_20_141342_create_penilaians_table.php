@@ -17,8 +17,8 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->foreignId('tingkatan_nilai_id')->nullable()->constrained('tingkatan_nilai')->restrictOnDelete();
             $table->foreignId('file_bukti_dukung_id')->nullable()->constrained('file_bukti_dukung')->restrictOnDelete();
-            $table->foreignId('bukti_dukung_id')->nullable()->constrained('bukti_dukung')->restrictOnDelete();
-            $table->foreignId('kriteria_komponen_id')->constrained('kriteria_komponen')->restrictOnDelete();
+            $table->foreignId('bukti_dukung_id')->nullable()->constrained('bukti_dukung')->cascadeOnDelete();
+            $table->foreignId('kriteria_komponen_id')->constrained('kriteria_komponen')->cascadeOnDelete();
             $table->foreignId('opd_id')->constrained('opd')->restrictOnDelete();
             $table->foreignId('role_id')->constrained('role')->restrictOnDelete();
             $table->timestamps();
