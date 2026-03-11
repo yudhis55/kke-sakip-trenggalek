@@ -12,6 +12,7 @@ use App\Models\Role;
 use Livewire\WithPagination;
 use Livewire\WithoutUrlPagination;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use function Flasher\Prime\flash;
 
 class Pengaturan extends Component
@@ -242,14 +243,32 @@ class Pengaturan extends Component
         if ($this->tahun_id_to_delete) {
             $tahun = Tahun::find($this->tahun_id_to_delete);
 
+            if (!$tahun) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Tahun tidak ditemukan.');
+                return;
+            }
+
             if ($tahun->is_active) {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Tidak dapat menghapus tahun yang sedang aktif.');
                 return;
             }
 
-            $tahun->delete();
-            $this->tahun_id_to_delete = null;
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tahun berhasil dihapus.');
+            // Check apakah tahun ini digunakan di kriteria komponen
+            $countKriteria = \App\Models\KriteriaKomponen::where('tahun_id', $tahun->id)->count();
+
+            if ($countKriteria > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus tahun. Terdapat {$countKriteria} kriteria komponen yang menggunakan tahun ini.");
+                return;
+            }
+
+            try {
+                $tahun->delete();
+                $this->tahun_id_to_delete = null;
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tahun berhasil dihapus.');
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus tahun: ' . $e->getMessage());
+            }
         }
     }
 
@@ -338,9 +357,38 @@ class Pengaturan extends Component
     public function deleteUser()
     {
         if ($this->user_id_to_delete) {
-            User::find($this->user_id_to_delete)->delete();
-            $this->user_id_to_delete = null;
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('User berhasil dihapus.');
+            $user = User::find($this->user_id_to_delete);
+
+            if (!$user) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('User tidak ditemukan.');
+                return;
+            }
+
+            // Check apakah user ini memiliki penilaian
+            $countPenilaian = \App\Models\Penilaian::where('user_id', $user->id)->count();
+
+            if ($countPenilaian > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus user. Terdapat {$countPenilaian} penilaian yang dibuat oleh user ini (untuk audit trail).");
+                return;
+            }
+
+            // Check penilaian history
+            $countHistory = \App\Models\PenilaianHistory::where('user_id', $user->id)->count();
+
+            if ($countHistory > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus user. Terdapat {$countHistory} history penilaian dari user ini (untuk audit trail).");
+                return;
+            }
+
+            try {
+                $user->delete();
+                $this->user_id_to_delete = null;
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('User berhasil dihapus.');
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus user: ' . $e->getMessage());
+            }
         }
     }
 
@@ -413,9 +461,60 @@ class Pengaturan extends Component
     public function deleteJenisNilai()
     {
         if ($this->jenis_nilai_id_to_delete) {
-            \App\Models\JenisNilai::find($this->jenis_nilai_id_to_delete)->delete();
-            $this->jenis_nilai_id_to_delete = null;
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Jenis nilai berhasil dihapus.');
+            $jenisNilai = \App\Models\JenisNilai::find($this->jenis_nilai_id_to_delete);
+
+            if (!$jenisNilai) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Jenis nilai tidak ditemukan.');
+                return;
+            }
+
+            // Check apakah jenis nilai ini digunakan di kriteria komponen
+            $countKriteria = \App\Models\KriteriaKomponen::where('jenis_nilai_id', $jenisNilai->id)->count();
+
+            if ($countKriteria > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus jenis nilai. Terdapat {$countKriteria} kriteria komponen yang menggunakan jenis nilai ini.");
+                return;
+            }
+
+            // Check apakah jenis nilai ini memiliki tingkatan nilai
+            $countTingkatan = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilai->id)->count();
+
+            if ($countTingkatan > 0) {
+                // Ada tingkatan nilai - cascade delete jika belum digunakan
+                $tingkatanIds = \App\Models\TingkatanNilai::where('jenis_nilai_id', $jenisNilai->id)->pluck('id')->toArray();
+                $countPenilaian = \App\Models\Penilaian::whereIn('tingkatan_nilai_id', $tingkatanIds)->count();
+
+                if ($countPenilaian > 0) {
+                    flash()->use('theme.ruby')->option('position', 'bottom-right')
+                        ->error("Tidak dapat menghapus jenis nilai. Tingkatan nilai yang terhubung memiliki {$countPenilaian} penilaian.");
+                    return;
+                }
+
+                // Cascade delete tingkatan nilai
+                try {
+                    \DB::transaction(function () use ($jenisNilai, $countTingkatan) {
+                        $jenisNilai->tingkatan_nilai()->delete();
+                        $jenisNilai->delete();
+                    });
+                    $this->jenis_nilai_id_to_delete = null;
+                    flash()->use('theme.ruby')->option('position', 'bottom-right')
+                        ->success("Jenis nilai dan {$countTingkatan} tingkatan nilai berhasil dihapus.");
+                    return;
+                } catch (\Exception $e) {
+                    flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus: ' . $e->getMessage());
+                    return;
+                }
+            }
+
+            // Tidak ada tingkatan nilai - langsung hapus
+            try {
+                $jenisNilai->delete();
+                $this->jenis_nilai_id_to_delete = null;
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Jenis nilai berhasil dihapus.');
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus jenis nilai: ' . $e->getMessage());
+            }
         }
     }
 
@@ -479,9 +578,29 @@ class Pengaturan extends Component
     public function deleteTingkatanNilai()
     {
         if ($this->tingkatan_nilai_id_to_delete) {
-            \App\Models\TingkatanNilai::find($this->tingkatan_nilai_id_to_delete)->delete();
-            $this->tingkatan_nilai_id_to_delete = null;
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tingkatan nilai berhasil dihapus.');
+            $tingkatanNilai = \App\Models\TingkatanNilai::find($this->tingkatan_nilai_id_to_delete);
+
+            if (!$tingkatanNilai) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Tingkatan nilai tidak ditemukan.');
+                return;
+            }
+
+            // Check apakah tingkatan nilai ini digunakan dalam penilaian
+            $countPenilaian = \App\Models\Penilaian::where('tingkatan_nilai_id', $tingkatanNilai->id)->count();
+
+            if ($countPenilaian > 0) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')
+                    ->error("Tidak dapat menghapus tingkatan nilai. Terdapat {$countPenilaian} penilaian yang menggunakan tingkatan nilai ini.");
+                return;
+            }
+
+            try {
+                $tingkatanNilai->delete();
+                $this->tingkatan_nilai_id_to_delete = null;
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Tingkatan nilai berhasil dihapus.');
+            } catch (\Exception $e) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus tingkatan nilai: ' . $e->getMessage());
+            }
         }
     }
 
