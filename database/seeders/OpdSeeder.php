@@ -55,6 +55,15 @@ class OpdSeeder extends Seeder
             ['nama' => 'Badan Perencanaan Pembangunan, Penelitian Dan Pengembangan Daerah', 'esakip_opd_id' => '22'],
             ['nama' => 'Badan Keuangan Daerah', 'esakip_opd_id' => '23'],
             ['nama' => 'Badan Kepegawaian Daerah', 'esakip_opd_id' => '24'],
+
+            ['nama' => 'Dinas Pendidikan', 'esakip_opd_id' => '43'],
+            ['nama' => 'Dinas Lingkungan Hidup', 'esakip_opd_id' => '44'],
+            ['nama' => 'Dinas Perumahan, Kawasan Permukiman dan Perhubungan', 'esakip_opd_id' => '45'],
+            ['nama' => 'Dinas Peternakan dan Perikanan', 'esakip_opd_id' => '46'],
+            ['nama' => 'Dinas Pemuda dan Olah Raga', 'esakip_opd_id' => '47'],
+            ['nama' => 'Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah', 'esakip_opd_id' => '48'],
+            ['nama' => 'Badan Pengelolaan Keuangan dan Pendapatan Daerah', 'esakip_opd_id' => '49'],
+            ['nama' => 'Badan Kepegawaian dan Pengembangan Sumber Daya Manusia', 'esakip_opd_id' => '50'],
         ];
 
         foreach ($data as $opd) {

@@ -24,6 +24,7 @@
 @endphp
 
 <div class="page-content">
+    {{-- @dump($opd_session, $komponen_session, $sub_komponen_session, $kriteria_komponen_session) --}}
     <style>
         .badge-pulsate {
             display: inline-block;
@@ -67,7 +68,7 @@
         }
     </style>
     <div x-data="{ tab: 'bukti_dukung', menu: 'dokumen' }" x-on:filter-changed.window="tab = 'bukti_dukung'; menu = 'dokumen'"
-        class="container-fluid" x-cloak>
+        @reload-page.window="setTimeout(() => window.location.reload(), 300)" class="container-fluid" x-cloak>
 
         <!-- start page title -->
         <div class="row">

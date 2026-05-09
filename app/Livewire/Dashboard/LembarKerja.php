@@ -102,27 +102,44 @@ class LembarKerja extends Component
     // Reset state saat filter berubah
     public function updatedKomponenSession()
     {
+        // Check if kriteria was already set (untuk conditional refresh)
+        $kriteriaWasSet = $this->kriteria_komponen_session != null;
+
         // Reset filter cascade
         $this->sub_komponen_session = null;
         $this->kriteria_komponen_session = null;
 
         // Reset state form
         $this->resetStateOnFilterChange();
+
+        // Only reload jika ada kriteria sebelumnya (untuk menghindari refresh yang tidak perlu)
+        if ($kriteriaWasSet) {
+            $this->dispatch('reload-page');
+        }
     }
 
     public function updatedSubKomponenSession()
     {
+        // Check if kriteria was already set (untuk conditional refresh)
+        $kriteriaWasSet = $this->kriteria_komponen_session != null;
+
         // Reset filter cascade
         $this->kriteria_komponen_session = null;
 
         // Reset state form
         $this->resetStateOnFilterChange();
+
+        // Only reload jika ada kriteria sebelumnya (untuk menghindari refresh yang tidak perlu)
+        if ($kriteriaWasSet) {
+            $this->dispatch('reload-page');
+        }
     }
 
     public function updatedKriteriaKomponenSession()
     {
         // Reset state form
         $this->resetStateOnFilterChange();
+        // Tidak perlu reload saat select kriteria (ini selection final)
     }
 
     private function resetStateOnFilterChange()

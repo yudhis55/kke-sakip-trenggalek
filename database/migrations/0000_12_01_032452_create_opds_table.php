@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('opd', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
+            $table->integer('active_until_year')->nullable();
             $table->timestamps();
         });
     }

@@ -103,7 +103,16 @@ class UserSeeder extends Seeder
             "Inspektorat",
             "Bappedalitbang",
             "Bakeuda",
-            "Bkd"
+            "Bkd",
+
+            "Dindik",
+            "DLH",
+            "Disperkimhub",
+            "Disnakper",
+            "Dispora",
+            "Bappedalitbangristek",
+            "BPKPD",
+            "BKPSDM",
         ];
 
         $opds = DB::table('opd')->get();
