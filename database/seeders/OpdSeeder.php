@@ -56,14 +56,30 @@ class OpdSeeder extends Seeder
             ['nama' => 'Badan Keuangan Daerah', 'esakip_opd_id' => '23'],
             ['nama' => 'Badan Kepegawaian Daerah', 'esakip_opd_id' => '24'],
 
-            ['nama' => 'Dinas Pendidikan', 'esakip_opd_id' => '43'],
-            ['nama' => 'Dinas Lingkungan Hidup', 'esakip_opd_id' => '44'],
-            ['nama' => 'Dinas Perumahan, Kawasan Permukiman dan Perhubungan', 'esakip_opd_id' => '45'],
-            ['nama' => 'Dinas Peternakan dan Perikanan', 'esakip_opd_id' => '46'],
-            ['nama' => 'Dinas Pemuda dan Olah Raga', 'esakip_opd_id' => '47'],
-            ['nama' => 'Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah', 'esakip_opd_id' => '48'],
-            ['nama' => 'Badan Pengelolaan Keuangan dan Pendapatan Daerah', 'esakip_opd_id' => '49'],
-            ['nama' => 'Badan Kepegawaian dan Pengembangan Sumber Daya Manusia', 'esakip_opd_id' => '50'],
+            // OPD BARU 2026 dengan mapping reorganisasi (tahun_mulai_berlaku dan predecessor_opd_id)
+            // Disdikpora (5) SPLIT → Disdik (43) + Pemuda Olahraga (47)
+            ['nama' => 'Dinas Pendidikan', 'esakip_opd_id' => '43', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 5],
+
+            // Perumahan & Lingkungan (8) SPLIT → Lingkungan Hidup (44)
+            ['nama' => 'Dinas Lingkungan Hidup', 'esakip_opd_id' => '44', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 8],
+
+            // Perumahan & Lingkungan (8) + Perhubungan (15) REORGANIZE → Perumahan & Perhubungan (45)
+            ['nama' => 'Dinas Perumahan, Kawasan Permukiman dan Perhubungan', 'esakip_opd_id' => '45', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 15],
+
+            // Peternakan (42) + Perikanan (20) MERGER → Peternakan dan Perikanan (46)
+            ['nama' => 'Dinas Peternakan dan Perikanan', 'esakip_opd_id' => '46', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 42],
+
+            // Disdikpora (5) SPLIT → Dinas Pemuda Olahraga (47)
+            ['nama' => 'Dinas Pemuda dan Olah Raga', 'esakip_opd_id' => '47', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 5],
+
+            // Bappeda (22) RENAME → Bappeda Riset (48)
+            ['nama' => 'Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah', 'esakip_opd_id' => '48', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 22],
+
+            // Bakeuda (23) RENAME → Bakeuda Baru (49)
+            ['nama' => 'Badan Pengelolaan Keuangan dan Pendapatan Daerah', 'esakip_opd_id' => '49', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 23],
+
+            // BKD (24) RENAME → BKD Baru (50)
+            ['nama' => 'Badan Kepegawaian dan Pengembangan Sumber Daya Manusia', 'esakip_opd_id' => '50', 'tahun_mulai_berlaku' => 2026, 'predecessor_opd_id' => 24],
         ];
 
         foreach ($data as $opd) {

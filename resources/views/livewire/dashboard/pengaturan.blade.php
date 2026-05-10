@@ -455,6 +455,93 @@
                         </div>
                     </div>
                 </div>
+
+
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                        <h4 class="mb-sm-0">Kelola OPD (Reorganisasi 2026)</h4>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header align-items-center d-flex">
+                                    <h4 class="card-title mb-0 flex-grow-1">Pengaturan OPD & Mapping E-SAKIP</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>OPD (Aplikasi KKE-SAKIP)</th>
+                                                    <th>esakip_opd_id</th>
+                                                    <th>Tahun Mulai Berlaku</th>
+                                                    <th>ID E-SAKIP Sebelumnya</th>
+                                                    <th class="text-center" style="width: 150px">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($this->opdManagementList as $opd)
+                                                    <tr>
+                                                        <td><strong>{{ $opd->nama }}</strong></td>
+                                                        <td>
+                                                            @if ($opd->esakip_opd_id)
+                                                                <code>{{ $opd->esakip_opd_id }}</code>
+                                                            @else
+                                                                <span class="text-muted small">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if ($opd->tahun_mulai_berlaku)
+                                                                <span
+                                                                    class="badge bg-info">{{ $opd->tahun_mulai_berlaku }}</span>
+                                                            @else
+                                                                <span class="text-muted small">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if ($opd->predecessor_opd_id)
+                                                                <code
+                                                                    class="badge bg-warning text-dark">{{ $opd->predecessor_opd_id }}</code>
+                                                            @else
+                                                                <span class="text-muted small">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <button type="button" class="btn btn-sm btn-primary"
+                                                                wire:click="editOpd({{ $opd->id }})"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#editOpdModal"><i
+                                                                    class="ri-edit-box-line"></i></button>
+                                                            @if ($opd->tahun_mulai_berlaku || $opd->predecessor_opd_id)
+                                                                <button type="button" class="btn btn-sm btn-danger"
+                                                                    wire:click="setOpdToDelete({{ $opd->id }})"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#deleteOpdModal"><i
+                                                                        class="ri-delete-bin-line"></i></button>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">Tidak
+                                                            ada data OPD</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Pagination -->
+                                    <div class="mt-3">
+                                        {{ $this->opdManagementList->links('pagination::bootstrap-5') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!--end col-->
         </div>
@@ -790,6 +877,84 @@
                     <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
                         <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
                         <button wire:click="deleteTingkatanNilai" type="button" class="btn w-sm btn-danger"
+                            data-bs-dismiss="modal">Hapus</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit OPD -->
+    <div wire:ignore.self class="modal fade" id="editOpdModal" tabindex="-1" aria-labelledby="editOpdModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editOpdModalLabel">Edit Pengaturan OPD</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form wire:submit="saveOpd">
+                        <div class="alert alert-info mb-3" role="alert">
+                            <small>Gunakan form ini untuk mengatur OPD yang baru atau yang mengalami
+                                reorganisasi.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="opdTahunMulaiBerlaku" class="form-label">Tahun Mulai Berlaku
+                                (Opsional)</label>
+                            <input wire:model="opd_tahun_mulai_berlaku" type="number" class="form-control"
+                                id="opdTahunMulaiBerlaku" placeholder="Contoh: 2026" min="2000" max="2099"
+                                step="1">
+                            <small class="form-text text-muted d-block">Tahun ketika OPD ini mulai berlaku. Kosongkan
+                                jika OPD sudah ada sebelumnya.</small>
+                            @error('opd_tahun_mulai_berlaku')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="opdPredecessor" class="form-label">ID E-SAKIP OPD Sebelumnya
+                                (Opsional)</label>
+                            <input wire:model="opd_predecessor_opd_id" type="number" class="form-control"
+                                id="opdPredecessor" placeholder="Contoh: 1, 5, 23" min="1" step="1">
+                            <small class="form-text text-muted d-block">Masukkan ID E-SAKIP OPD yang menjadi
+                                predecessor
+                                ketika ada reorganisasi (split/merger). Gunakan ID dari sistem E-SAKIP.</small>
+                            @error('opd_predecessor_opd_id')
+                                <span class="text-danger small">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="hstack gap-2 justify-content-end">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                                wire:click="resetOpdForm">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete OPD Mapping -->
+    <div wire:ignore.self class="modal fade zoomIn" id="deleteOpdModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mt-2 text-center">
+                        <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop"
+                            colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
+                        <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                            <h4>Hapus Pengaturan OPD</h4>
+                            <p class="text-muted mx-4 mb-0">Apakah anda yakin ingin menghapus pengaturan OPD ini?
+                                Data OPD tidak akan dihapus, hanya pengaturan tahun mulai berlaku dan predecessor saja.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                        <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button wire:click="deleteOpdMapping" type="button" class="btn w-sm btn-danger"
                             data-bs-dismiss="modal">Hapus</button>
                     </div>
                 </div>

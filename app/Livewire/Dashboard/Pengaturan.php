@@ -43,6 +43,10 @@ class Pengaturan extends Component
     public $tingkatan_nilai_id, $tingkatan_nilai_jenis_nilai_id, $tingkatan_nilai_kode_nilai, $tingkatan_nilai_bobot;
     public $tingkatan_nilai_id_to_delete;
 
+    // OPD properties
+    public $opd_id, $opd_tahun_mulai_berlaku, $opd_predecessor_opd_id;
+    public $opd_id_to_delete;
+
     public function mount()
     {
         // Ambil tahun_id dari session atau default ke tahun aktif
@@ -170,6 +174,84 @@ class Pengaturan extends Component
     public function buktiDukungList()
     {
         return \App\Models\BuktiDukung::with('kriteria_komponen', 'role')->paginate(10, ['*'], 'buktiDukungPage');
+    }
+
+    #[Computed]
+    public function opdManagementList()
+    {
+        return Opd::paginate(10, ['*'], 'opdPage');
+    }
+
+    // ========== OPD MANAGEMENT CRUD ==========
+    public function resetOpdForm()
+    {
+        $this->opd_id = null;
+        $this->opd_tahun_mulai_berlaku = null;
+        $this->opd_predecessor_opd_id = null;
+    }
+
+    public function editOpd($id)
+    {
+        $opd = Opd::find($id);
+        if ($opd) {
+            $this->opd_id = $opd->id;
+            $this->opd_tahun_mulai_berlaku = $opd->tahun_mulai_berlaku;
+            $this->opd_predecessor_opd_id = $opd->predecessor_opd_id;
+        }
+    }
+
+    public function saveOpd()
+    {
+        $this->validate([
+            'opd_tahun_mulai_berlaku' => 'nullable|integer|digits:4|min:2000|max:2099',
+            'opd_predecessor_opd_id' => 'nullable|integer|min:1',
+        ], [
+            'opd_tahun_mulai_berlaku.integer' => 'Tahun harus berupa angka',
+            'opd_tahun_mulai_berlaku.digits' => 'Tahun harus 4 digit',
+            'opd_tahun_mulai_berlaku.min' => 'Tahun minimal 2000',
+            'opd_tahun_mulai_berlaku.max' => 'Tahun maksimal 2099',
+            'opd_predecessor_opd_id.integer' => 'ID E-SAKIP harus berupa angka',
+            'opd_predecessor_opd_id.min' => 'ID E-SAKIP harus lebih dari 0',
+        ]);
+
+        if ($this->opd_id) {
+            $opd = Opd::find($this->opd_id);
+            if ($opd) {
+                $opd->update([
+                    'tahun_mulai_berlaku' => $this->opd_tahun_mulai_berlaku,
+                    'predecessor_opd_id' => $this->opd_predecessor_opd_id,
+                ]);
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Pengaturan OPD berhasil diupdate.');
+                $this->resetOpdForm();
+                $this->dispatch('close-modal', 'editOpdModal');
+                unset($this->opdManagementList);
+            }
+        }
+    }
+
+    public function setOpdToDelete($id)
+    {
+        $this->opd_id_to_delete = $id;
+    }
+
+    public function deleteOpdMapping()
+    {
+        if ($this->opd_id_to_delete) {
+            $opd = Opd::find($this->opd_id_to_delete);
+            if ($opd) {
+                // Kosongkan mapping, jangan delete OPD
+                $opd->update([
+                    'tahun_mulai_berlaku' => null,
+                    'predecessor_opd_id' => null,
+                ]);
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Pengaturan OPD berhasil dihapus.');
+                $this->resetOpdForm();
+                $this->dispatch('close-modal', 'deleteOpdModal');
+                unset($this->opdManagementList);
+            }
+        }
     }
 
     // ========== MAKS BOBOT KOMPONEN ==========

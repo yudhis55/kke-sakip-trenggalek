@@ -18,7 +18,7 @@ class Mapping extends Component
     public $kd_komponen, $nama_komponen, $bobot_komponen;
     public $kd_sub_komponen, $nama_sub_komponen, $bobot_sub_komponen, $komponen_id;
     public $kd_kriteria, $nama_kriteria, $sub_komponen_id, $jenis_nilai_id, $penilaian_di_kriteria;
-    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian, $role_id_bukti, $is_auto_verified, $esakip_document_type, $esakip_document_code;
+    public $kd_bukti, $nama_bukti, $bobot_bukti, $kriteria_komponen_id, $kriteria_penilaian, $role_id_bukti, $is_auto_verified, $esakip_document_type, $esakip_document_code, $is_n_minus_1 = false;
     public $original_is_auto_verified = null; // Track nilai awal untuk deteksi perubahan
     public $tahun_id;
 
@@ -211,6 +211,7 @@ class Mapping extends Component
             'nama_bukti' => 'required',
             'role_id_bukti' => 'nullable|exists:role,id',
             'is_auto_verified' => 'nullable|boolean',
+            'is_n_minus_1' => 'nullable|boolean',
             'esakip_document_type' => 'nullable|string',
             'esakip_document_code' => 'nullable|string',
         ]);
@@ -223,6 +224,7 @@ class Mapping extends Component
             'komponen_id' => KriteriaKomponen::find($this->kriteria_komponen_id)->komponen_id,
             'role_id' => $this->role_id_bukti,
             'is_auto_verified' => $this->is_auto_verified ?? false,
+            'is_n_minus_1' => $this->is_n_minus_1 ?? false,
             'esakip_document_type' => $this->esakip_document_type,
             'esakip_document_code' => $this->esakip_document_code,
             'tahun_id' => $this->tahun_id,
@@ -380,6 +382,7 @@ class Mapping extends Component
             $this->role_id_bukti = $bukti->role_id;
             $this->is_auto_verified = $bukti->is_auto_verified;
             $this->original_is_auto_verified = $bukti->is_auto_verified; // Simpan nilai awal
+            $this->is_n_minus_1 = $bukti->is_n_minus_1;
             $this->esakip_document_type = $bukti->esakip_document_type;
             $this->esakip_document_code = $bukti->esakip_document_code;
             $this->isEditMode = true;
@@ -393,6 +396,7 @@ class Mapping extends Component
             'kriteria_penilaian' => 'nullable|string',
             'role_id_bukti' => 'nullable|exists:role,id',
             'is_auto_verified' => 'nullable|boolean',
+            'is_n_minus_1' => 'nullable|boolean',
             'esakip_document_type' => 'nullable|string',
             'esakip_document_code' => 'nullable|string',
         ]);
@@ -410,6 +414,7 @@ class Mapping extends Component
                 'kriteria_penilaian' => $this->kriteria_penilaian,
                 'role_id' => $this->role_id_bukti,
                 'is_auto_verified' => $nowAutoVerified,
+                'is_n_minus_1' => $this->is_n_minus_1 ?? false,
                 'esakip_document_type' => $this->esakip_document_type,
                 'esakip_document_code' => $this->esakip_document_code,
             ]);
@@ -594,6 +599,7 @@ class Mapping extends Component
         $this->role_id_bukti = null;
         $this->is_auto_verified = false;
         $this->original_is_auto_verified = null; // Reset tracking
+        $this->is_n_minus_1 = false;
         $this->esakip_document_type = '';
         $this->esakip_document_code = '';
         $this->editBuktiDukungId = null;

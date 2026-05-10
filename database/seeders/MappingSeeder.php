@@ -87,7 +87,19 @@ class MappingSeeder extends Seeder
             'PK' => 'perjanjian-kinerja',
             'LKjIP' => 'lkjip',
             'Probis (Proses Bisnis)' => 'proses-bisnis',
-            'Renaksi' => 'rencana-aksi'
+            'Renaksi' => 'rencana-aksi',
+
+            // Update tambahan mapping
+            'Matrik RPJMD' => 'rpjmd',
+            'Pokin PD' => 'cascading',
+            'Renja Tahun n-1' => 'renja',
+            'Renja Tahun n' => 'renja',
+            'Perjanjian Kinerja JPT/Kepala Perangkat Daerah (Eselon II) Tahun n' => 'perjanjian-kinerja',
+            'Rencana Aksi tahun n' => 'rencana-aksi',
+            'Evaluasi rencana aksi secara berjenjang (secara periodik)' => 'rencana-aksi',
+            'Laporan Capaian Kinerja TW 1, TW 2, dan TW 3' => 'capaian',
+            'Capaian kinerja lebih baik dari tahun sebelumnya' => 'lkjip',
+            'LHE SAKIP Tahun n-1' => 'lhe-inspektorat',
         ];
 
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
@@ -878,6 +890,9 @@ class MappingSeeder extends Seeder
                                             // is_auto_verified true jika memiliki esakip_document_type
                                             $isAutoVerified = !is_null($esakipType);
 
+                                            // is_n_minus_1 true jika esakip_document_type tidak null dan nama mengandung 'n-1'
+                                            $isNMinus1 = (!is_null($esakipType) && stripos($buk, 'n-1') !== false) ? true : false;
+
                                             DB::table('bukti_dukung')->insert([
                                                 'nama' => $buk,
                                                 'kriteria_komponen_id' => $kriteriaId,
@@ -885,6 +900,7 @@ class MappingSeeder extends Seeder
                                                 'komponen_id' => $komponenId,
                                                 'role_id' => $komponenRoleId,
                                                 'is_auto_verified' => $isAutoVerified,
+                                                'is_n_minus_1' => $isNMinus1,
                                                 'esakip_document_type' => $esakipType,
                                                 'esakip_document_code' => $esakipCode,
                                                 'tahun_id' => $tahun_id,

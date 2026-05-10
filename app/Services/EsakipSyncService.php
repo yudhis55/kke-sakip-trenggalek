@@ -437,7 +437,7 @@ class EsakipSyncService
             // Loop per bukti dukung (bukan per dokumen) untuk smart merge
             foreach ($buktiDukungList as $buktiDukung) {
                 // Pass SEMUA dokumen sekaligus untuk smart merge
-                $result = $this->syncPenilaian($buktiDukung, $opd, $documents);
+                $result = $this->syncPenilaian($buktiDukung, $opd, $documents, $tahun);
 
                 if ($result['status'] === 'created' || $result['status'] === 'updated') {
                     $penilaianIds[] = $result['penilaian_id'];
@@ -502,13 +502,62 @@ class EsakipSyncService
      * @param array $documents - Array of documents from E-SAKIP API
      * @return array
      */
-    protected function syncPenilaian($buktiDukung, $opd, $documents)
+    protected function syncPenilaian($buktiDukung, $opd, $documents, $tahun = null)
     {
         // PENTING: Dokumen dari esakip SELALU untuk role OPD
         $opdRole = \App\Models\Role::where('jenis', 'opd')->first();
 
         if (!$opdRole) {
             throw new \Exception('Role OPD tidak ditemukan. Pastikan ada role dengan jenis "opd".');
+        }
+
+        // === BARU: Tentukan source esakip_opd_id berdasarkan is_n_minus_1 dan reorganisasi OPD ===
+        // predecessor_opd_id adalah ID E-SAKIP OPD lama (bukan foreign key ke aplikasi)
+        $sourceYear = $tahun?->tahun ?? now()->year;
+        $sourceEsakipOpdId = $opd->esakip_opd_id; // Default gunakan OPD sendiri
+
+        // Check apakah dokumen ini menggunakan tahun sebelumnya
+        if ($buktiDukung->is_n_minus_1) {
+            $sourceYear = $sourceYear - 1;
+
+            // Jika OPD memiliki predecessor dan tahun source < tahun_mulai_berlaku, gunakan predecessor esakip_opd_id
+            if (
+                $opd->tahun_mulai_berlaku &&
+                $sourceYear < $opd->tahun_mulai_berlaku &&
+                $opd->predecessor_opd_id
+            ) {
+                $sourceEsakipOpdId = $opd->predecessor_opd_id;
+
+                Log::info("N-1 Document: Using predecessor E-SAKIP OPD", [
+                    'current_opd_id' => $opd->id,
+                    'current_opd_nama' => $opd->nama,
+                    'current_esakip_opd_id' => $opd->esakip_opd_id,
+                    'predecessor_esakip_opd_id' => $sourceEsakipOpdId,
+                    'source_year' => $sourceYear,
+                    'tahun_mulai_berlaku' => $opd->tahun_mulai_berlaku,
+                ]);
+            }
+        } else {
+            // Regular document: gunakan tahun berjalan
+            $sourceYear = $tahun?->tahun ?? now()->year;
+
+            // PENTING: Jika OPD BARU belum berlaku pada tahun ini, gunakan predecessor esakip_opd_id
+            if (
+                $opd->tahun_mulai_berlaku &&                          // OPD punya tahun mulai (OPD baru)
+                $sourceYear < $opd->tahun_mulai_berlaku &&           // Tahun < tahun mulai berlaku
+                $opd->predecessor_opd_id                             // Ada esakip_opd_id predecessor
+            ) {
+                $sourceEsakipOpdId = $opd->predecessor_opd_id;
+
+                Log::info("Regular Document: Using predecessor E-SAKIP OPD (not yet effective)", [
+                    'current_opd_id' => $opd->id,
+                    'current_opd_nama' => $opd->nama,
+                    'current_esakip_opd_id' => $opd->esakip_opd_id,
+                    'predecessor_esakip_opd_id' => $sourceEsakipOpdId,
+                    'source_year' => $sourceYear,
+                    'opd_effective_year' => $opd->tahun_mulai_berlaku,
+                ]);
+            }
         }
 
         // Cek apakah penilaian OPD sudah ada
@@ -554,6 +603,8 @@ class EsakipSyncService
                 'penilaian_id' => $penilaian->id,
                 'bukti_dukung_id' => $buktiDukung->id,
                 'files_count' => count($allFiles),
+                'source_esakip_opd_id' => $sourceEsakipOpdId,
+                'source_year' => $sourceYear,
             ]);
 
             // Auto-verify jika perlu
@@ -604,6 +655,8 @@ class EsakipSyncService
                 'bukti_dukung_id' => $buktiDukung->id,
                 'files_added' => $filesAdded,
                 'total_files' => count($mergedFiles),
+                'source_esakip_opd_id' => $sourceEsakipOpdId,
+                'source_year' => $sourceYear,
             ]);
 
             return [
@@ -721,7 +774,7 @@ class EsakipSyncService
                 // Loop per bukti dukung (Smart Sync)
                 foreach ($buktiDukungList as $buktiDukung) {
                     // Pass SEMUA dokumen bersama sekaligus
-                    $result = $this->syncPenilaian($buktiDukung, $targetOpd, $sharedDocuments);
+                    $result = $this->syncPenilaian($buktiDukung, $targetOpd, $sharedDocuments, $tahun);
 
                     if ($result['status'] === 'created' || $result['status'] === 'updated') {
                         $totalPenilaianIds[] = $result['penilaian_id'];
