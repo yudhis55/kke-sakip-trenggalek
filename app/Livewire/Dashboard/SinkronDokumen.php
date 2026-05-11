@@ -93,7 +93,6 @@ class SinkronDokumen extends Component
                 $this->selected_tahun,
                 $this->selected_opd ?: null,
                 $this->selected_document_type ?: null,
-                $this->sync_mode,
                 function ($current, $total, $message) {
                     $this->syncProgress = round(($current / $total) * 100);
                     $this->syncMessage = $message;

@@ -249,9 +249,45 @@ class EsakipSyncService
             'details' => [],
         ];
 
-        $totalSteps = $opdList->count() * count($documentTypes);
+        $totalSteps = $opdList->count() * count($documentTypes) + count($documentTypes); // +1 untuk shared docs
         $currentStep = 0;
 
+        // === STEP 1: SYNC SHARED DOCUMENTS (dokumen Pemkab) ===
+        // Shared documents di-sync ke OPD yang di-filter (respect $opdId)
+        foreach ($documentTypes as $type => $label) {
+            $currentStep++;
+
+            if ($progressCallback) {
+                $progressCallback($currentStep, $totalSteps, "Sync dokumen bersama {$label}...");
+            }
+
+            try {
+                $result = $this->syncSharedDocument($type, $label, $tahun, $opdList);
+
+                if ($result['status'] === 'success') {
+                    $results['success_count']++;
+                } elseif ($result['status'] === 'no_document') {
+                    $results['no_document_count']++;
+                }
+
+                $results['skipped_count'] += $result['skipped_count'] ?? 0;
+                $results['total_penilaian'] += $result['affected_count'];
+                $results['auto_verified'] += $result['auto_verified_count'];
+                $results['details'][] = $result;
+            } catch (\Exception $e) {
+                Log::error("Sync shared document failed for {$type}: " . $e->getMessage());
+                $results['failed_count']++;
+                $results['details'][] = [
+                    'status' => 'failed',
+                    'document_type' => $type,
+                    'opd' => 'Dokumen Bersama (Pemkab)',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        // === STEP 2: SYNC OPD-SPECIFIC DOCUMENTS ===
+        // Dokumen khusus per OPD
         foreach ($opdList as $opd) {
             foreach ($documentTypes as $type => $label) {
                 $currentStep++;
@@ -292,22 +328,12 @@ class EsakipSyncService
         return $results;
     }
 
-    /**
-     * Sync satu jenis dokumen untuk satu OPD
-     *
-     * @param string $documentType
-     * @param string $documentLabel
-     * @param Tahun $tahun
-     * @param Opd $opd
-     * @return array
-     */
     protected function syncDocumentForOpd($documentType, $documentLabel, $tahun, $opd)
     {
         // 1. Get bukti dukung yang di-mapping ke dokumen ini
         $buktiDukungList = $this->getBuktiDukungForSync($tahun->id, $documentType);
 
         if ($buktiDukungList->isEmpty()) {
-            // Tidak ada mapping, skip
             return [
                 'status' => 'no_document',
                 'document_type' => $documentType,
@@ -318,130 +344,109 @@ class EsakipSyncService
             ];
         }
 
-        // 2. Fetch dokumen dari esakip
-        $documents = $this->fetchDocumentsFromEsakip($documentType, $tahun->tahun, $opd->id);
-
-        // 2.1. Fetch dokumen 'lainnya' yang keterangannya match dengan document_type
-        $lainnyaDocs = $this->fetchDocumentsFromEsakip('lainnya', $tahun->tahun, $opd->id);
-        $filteredLainnya = $this->filterLainnyaDocuments($lainnyaDocs, $documentType);
-
-        // Merge dokumen 'lainnya' yang cocok ke documents utama
-        if (!empty($filteredLainnya)) {
-            $documents = array_merge($documents, $filteredLainnya);
-
-            Log::info("Merged 'lainnya' documents", [
-                'document_type' => $documentType,
-                'opd' => $opd->nama,
-                'lainnya_count' => count($filteredLainnya),
-                'total_documents' => count($documents),
-            ]);
-        }
-
-        // 2.2. Fetch dokumen bersama dari Pemkab API (opd_id=1) tanpa perlu OPD di database
-        $sharedDocs = $this->fetchSharedDocumentsFromEsakip($documentType, $tahun->tahun);
-
-        Log::info("Sync: Fetched shared documents from Pemkab API", [
-            'document_type' => $documentType,
-            'fetched_count' => count($sharedDocs),
-        ]);
-
-        // Filter hanya dokumen dengan opd_id = 1 (dokumen bersama)
-        $sharedDocsFiltered = array_filter($sharedDocs, function ($doc) {
-            return isset($doc['opd_id']) && (int)$doc['opd_id'] === 1;
-        });
-
-        Log::info("Sync: After filtering shared docs", [
-            'shared_count' => count($sharedDocsFiltered),
-        ]);
-
-        if (!empty($sharedDocsFiltered)) {
-            // Hanya merge jika bukan dokumen milik OPD yang sama
-            $documentsToMerge = [];
-            foreach ($sharedDocsFiltered as $sharedDoc) {
-                // Cek apakah dokumen ini sudah ada di $documents
-                $isDuplicate = false;
-                foreach ($documents as $existingDoc) {
-                    if (
-                        isset($existingDoc['file']) && isset($sharedDoc['file']) &&
-                        $existingDoc['file'] === $sharedDoc['file']
-                    ) {
-                        $isDuplicate = true;
-                        break;
-                    }
-                }
-                if (!$isDuplicate) {
-                    $documentsToMerge[] = $sharedDoc;
-                }
-            }
-
-            if (!empty($documentsToMerge)) {
-                $documents = array_merge($documents, $documentsToMerge);
-
-                Log::info("Merged shared documents from Pemkab", [
-                    'document_type' => $documentType,
-                    'opd' => $opd->nama,
-                    'shared_count' => count($documentsToMerge),
-                    'total_documents' => count($documents),
-                ]);
-            }
-        }
-
-        // 2.3. Deteksi Dokumen Bersama (opd_id = 1)
-        // Jika ada dokumen bersama, sync ke SEMUA OPD
-        $isSharedDocument = false;
-        foreach ($documents as $document) {
-            if (isset($document['opd_id']) && $document['opd_id'] == 1) {
-                $isSharedDocument = true;
-                break;
-            }
-        }
-
-        if ($isSharedDocument) {
-            return $this->syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList);
-        }
-
-        if (empty($documents)) {
-            // Tidak ada dokumen di esakip untuk OPD ini
-            $this->logSync([
-                'opd_id' => $opd->id,
-                'tahun_id' => $tahun->id,
-                'document_type' => $documentType,
-                'document_name' => null,
-                'tahun_value' => $tahun->tahun,
-                'file_url' => null,
-                'penilaian_ids' => [],
-                'affected_count' => 0,
-                'auto_verified_count' => 0,
-                'status' => 'no_document',
-                'synced_at' => now(),
-            ]);
-
-            return [
-                'status' => 'no_document',
-                'document_type' => $documentType,
-                'opd' => $opd->nama,
-                'message' => 'Tidak ada dokumen di esakip',
-                'affected_count' => 0,
-                'auto_verified_count' => 0,
-            ];
-        }
-
-        // 3. Process setiap bukti dukung dengan semua dokumen (Smart Sync)
+        // === 2. PROSES PER BUKTI_DUKUNG UNTUK OPD INI SAJA ===
+        // (Shared documents di-handle terpisah di level processSync)
         $penilaianIds = [];
         $autoVerifiedCount = 0;
         $skippedCount = 0;
-        $totalFilesAdded = 0;
 
         DB::beginTransaction();
         try {
-            // Loop per bukti dukung (bukan per dokumen) untuk smart merge
             foreach ($buktiDukungList as $buktiDukung) {
-                // Pass SEMUA dokumen sekaligus untuk smart merge
+                // === Determine sourceYear dan sourceEsakipOpdId per bukti_dukung ===
+                $sourceYear = $tahun->tahun;
+                $sourceEsakipOpdId = $opd->esakip_opd_id;
+
+                if ($buktiDukung->is_n_minus_1) {
+                    $sourceYear = $sourceYear - 1;
+
+                    if (
+                        $opd->tahun_mulai_berlaku &&
+                        $sourceYear < $opd->tahun_mulai_berlaku &&
+                        $opd->predecessor_opd_id
+                    ) {
+                        $sourceEsakipOpdId = $opd->predecessor_opd_id;
+                    }
+
+                    Log::info("Determined source for N-1 document", [
+                        'bukti_dukung' => $buktiDukung->nama,
+                        'source_year' => $sourceYear,
+                        'source_esakip_opd_id' => $sourceEsakipOpdId,
+                        'opd_tahun_mulai_berlaku' => $opd->tahun_mulai_berlaku,
+                    ]);
+                } else {
+                    if (
+                        $opd->tahun_mulai_berlaku &&
+                        $sourceYear < $opd->tahun_mulai_berlaku &&
+                        $opd->predecessor_opd_id
+                    ) {
+                        $sourceEsakipOpdId = $opd->predecessor_opd_id;
+
+                        Log::info("Determined source for regular document (OPD not yet effective)", [
+                            'bukti_dukung' => $buktiDukung->nama,
+                            'source_year' => $sourceYear,
+                            'source_esakip_opd_id' => $sourceEsakipOpdId,
+                            'opd_effective_year' => $opd->tahun_mulai_berlaku,
+                        ]);
+                    }
+                }
+
+                // === Fetch dokumen dengan sourceYear dan sourceEsakipOpdId yang tepat ===
+                $documents = $this->fetchDocumentsFromEsakipByOpdId(
+                    $documentType,
+                    $sourceYear,
+                    $sourceEsakipOpdId
+                );
+
+                Log::info("Document fetch result", [
+                    'bukti_dukung' => $buktiDukung->nama,
+                    'is_n_minus_1' => $buktiDukung->is_n_minus_1,
+                    'document_type' => $documentType,
+                    'source_year' => $sourceYear,
+                    'source_esakip_opd_id' => $sourceEsakipOpdId,
+                    'opd_id' => $opd->id,
+                    'opd_nama' => $opd->nama,
+                    'documents_fetched' => count($documents),
+                ]);
+
+                // Merge dengan dokumen 'lainnya' yang cocok
+                $lainnyaDocs = $this->fetchDocumentsFromEsakipByOpdId('lainnya', $sourceYear, $sourceEsakipOpdId);
+                $filteredLainnya = $this->filterLainnyaDocuments($lainnyaDocs, $documentType);
+
+                if (!empty($filteredLainnya)) {
+                    $documents = array_merge($documents, $filteredLainnya);
+
+                    Log::info("Merged 'lainnya' documents for bukti dukung", [
+                        'bukti_dukung' => $buktiDukung->nama,
+                        'document_type' => $documentType,
+                        'source_year' => $sourceYear,
+                        'lainnya_count' => count($filteredLainnya),
+                        'total_documents' => count($documents),
+                    ]);
+                }
+
+                if (empty($documents)) {
+                    Log::info("No documents found for bukti dukung", [
+                        'bukti_dukung' => $buktiDukung->nama,
+                        'source_year' => $sourceYear,
+                        'source_esakip_opd_id' => $sourceEsakipOpdId,
+                    ]);
+
+                    $skippedCount++;
+
+                    $buktiDukung->update([
+                        'sync_status' => 'synced',
+                        'last_synced_at' => now(),
+                    ]);
+
+                    continue;
+                }
+
+                // === Sync dengan dokumen yang sudah di-fetch per bukti_dukung ===
                 $result = $this->syncPenilaian($buktiDukung, $opd, $documents, $tahun);
 
                 if ($result['status'] === 'created' || $result['status'] === 'updated') {
                     $penilaianIds[] = $result['penilaian_id'];
-                    $totalFilesAdded += $result['files_added'] ?? 0;
 
                     if ($result['auto_verified'] ?? false) {
                         $autoVerifiedCount++;
@@ -449,27 +454,24 @@ class EsakipSyncService
                 } elseif ($result['status'] === 'skipped') {
                     $skippedCount++;
                 } elseif ($result['status'] === 'no_change') {
-                    // Tidak ada perubahan, tapi tetap count sebagai processed
                     if (isset($result['penilaian_id'])) {
                         $penilaianIds[] = $result['penilaian_id'];
                     }
                 }
 
-                // Update bukti_dukung status
                 $buktiDukung->update([
                     'sync_status' => 'synced',
                     'last_synced_at' => now(),
                 ]);
             }
 
-            // 4. Log riwayat sinkronisasi
             $this->logSync([
                 'opd_id' => $opd->id,
                 'tahun_id' => $tahun->id,
                 'document_type' => $documentType,
                 'document_name' => $documentLabel,
                 'tahun_value' => $tahun->tahun,
-                'file_url' => null, // Multiple files, no single URL
+                'file_url' => null,
                 'penilaian_ids' => $penilaianIds,
                 'affected_count' => count($penilaianIds),
                 'auto_verified_count' => $autoVerifiedCount,
@@ -494,12 +496,128 @@ class EsakipSyncService
     }
 
     /**
+     * Sync dokumen bersama (dari Pemkab/opd_id=1) ke OPD yang di-filter
+     *
+     * @param string $documentType
+     * @param string $documentLabel
+     * @param Tahun $tahun
+     * @param \Illuminate\Database\Eloquent\Collection $opdList - List of OPD yang akan di-sync
+     * @return array
+     */
+    protected function syncSharedDocument($documentType, $documentLabel, $tahun, $opdList)
+    {
+        // Get bukti dukung yang akan terisi dengan dokumen bersama
+        $buktiDukungList = $this->getBuktiDukungForSync($tahun->id, $documentType);
+
+        if ($buktiDukungList->isEmpty()) {
+            return [
+                'status' => 'no_document',
+                'document_type' => $documentType,
+                'opd' => 'Dokumen Bersama (Pemkab)',
+                'message' => 'Tidak ada bukti dukung yang di-mapping',
+                'affected_count' => 0,
+                'auto_verified_count' => 0,
+            ];
+        }
+
+        $totalPenilaianIds = [];
+        $totalAutoVerified = 0;
+        $totalSkipped = 0;
+
+        DB::beginTransaction();
+        try {
+            // Loop HANYA ke OPD yang di-filter (respect $opdId filter dari processSync)
+            foreach ($opdList as $targetOpd) {
+                foreach ($buktiDukungList as $buktiDukung) {
+                    // === Determine sourceYear untuk shared document ===
+                    $sourceYear = $tahun->tahun;
+                    $sourceEsakipOpdId = 1; // Shared documents selalu dari Pemkab
+
+                    if ($buktiDukung->is_n_minus_1) {
+                        $sourceYear = $sourceYear - 1;
+
+                        Log::info("Determined source for N-1 shared document", [
+                            'bukti_dukung' => $buktiDukung->nama,
+                            'source_year' => $sourceYear,
+                            'source_esakip_opd_id' => $sourceEsakipOpdId, // Selalu 1 untuk Pemkab
+                            'target_opd' => $targetOpd->nama,
+                        ]);
+                    }
+
+                    // === Fetch dokumen shared dari Pemkab dengan sourceYear ===
+                    $documents = $this->fetchDocumentsFromEsakipByOpdId(
+                        $documentType,
+                        $sourceYear,
+                        $sourceEsakipOpdId
+                    );
+
+                    Log::info("Shared document fetch result", [
+                        'bukti_dukung' => $buktiDukung->nama,
+                        'is_n_minus_1' => $buktiDukung->is_n_minus_1,
+                        'document_type' => $documentType,
+                        'source_year' => $sourceYear,
+                        'source_esakip_opd_id' => $sourceEsakipOpdId,
+                        'target_opd' => $targetOpd->nama,
+                        'documents_fetched' => count($documents),
+                    ]);
+
+                    // Jika tidak ada dokumen shared, skip
+                    if (empty($documents)) {
+                        Log::info("No shared documents found for bukti dukung", [
+                            'bukti_dukung' => $buktiDukung->nama,
+                            'source_year' => $sourceYear,
+                            'target_opd' => $targetOpd->nama,
+                        ]);
+
+                        $totalSkipped++;
+                        continue;
+                    }
+
+                    // === Sync dengan dokumen shared ===
+                    $result = $this->syncPenilaian($buktiDukung, $targetOpd, $documents, $tahun);
+
+                    if ($result['status'] === 'created' || $result['status'] === 'updated') {
+                        $totalPenilaianIds[] = $result['penilaian_id'];
+
+                        if ($result['auto_verified'] ?? false) {
+                            $totalAutoVerified++;
+                        }
+                    } elseif ($result['status'] === 'skipped') {
+                        $totalSkipped++;
+                    } elseif ($result['status'] === 'no_change') {
+                        if (isset($result['penilaian_id'])) {
+                            $totalPenilaianIds[] = $result['penilaian_id'];
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return [
+                'status' => 'success',
+                'document_type' => $documentType,
+                'opd' => 'Dokumen Bersama (Pemkab)',
+                'affected_count' => count($totalPenilaianIds),
+                'auto_verified_count' => $totalAutoVerified,
+                'skipped_count' => $totalSkipped,
+                'shared_document' => true,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Sync shared document failed for {$documentType}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Smart Sync penilaian dengan array dokumen dari E-SAKIP
      * NO MODE - otomatis menentukan tindakan berdasarkan kondisi
      *
      * @param BuktiDukung $buktiDukung
      * @param Opd $opd
-     * @param array $documents - Array of documents from E-SAKIP API
+     * @param array $documents - Array of documents from E-SAKIP API (sudah sesuai sourceYear/sourceOpd)
+     * @param Tahun|null $tahun
      * @return array
      */
     protected function syncPenilaian($buktiDukung, $opd, $documents, $tahun = null)
@@ -509,55 +627,6 @@ class EsakipSyncService
 
         if (!$opdRole) {
             throw new \Exception('Role OPD tidak ditemukan. Pastikan ada role dengan jenis "opd".');
-        }
-
-        // === BARU: Tentukan source esakip_opd_id berdasarkan is_n_minus_1 dan reorganisasi OPD ===
-        // predecessor_opd_id adalah ID E-SAKIP OPD lama (bukan foreign key ke aplikasi)
-        $sourceYear = $tahun?->tahun ?? now()->year;
-        $sourceEsakipOpdId = $opd->esakip_opd_id; // Default gunakan OPD sendiri
-
-        // Check apakah dokumen ini menggunakan tahun sebelumnya
-        if ($buktiDukung->is_n_minus_1) {
-            $sourceYear = $sourceYear - 1;
-
-            // Jika OPD memiliki predecessor dan tahun source < tahun_mulai_berlaku, gunakan predecessor esakip_opd_id
-            if (
-                $opd->tahun_mulai_berlaku &&
-                $sourceYear < $opd->tahun_mulai_berlaku &&
-                $opd->predecessor_opd_id
-            ) {
-                $sourceEsakipOpdId = $opd->predecessor_opd_id;
-
-                Log::info("N-1 Document: Using predecessor E-SAKIP OPD", [
-                    'current_opd_id' => $opd->id,
-                    'current_opd_nama' => $opd->nama,
-                    'current_esakip_opd_id' => $opd->esakip_opd_id,
-                    'predecessor_esakip_opd_id' => $sourceEsakipOpdId,
-                    'source_year' => $sourceYear,
-                    'tahun_mulai_berlaku' => $opd->tahun_mulai_berlaku,
-                ]);
-            }
-        } else {
-            // Regular document: gunakan tahun berjalan
-            $sourceYear = $tahun?->tahun ?? now()->year;
-
-            // PENTING: Jika OPD BARU belum berlaku pada tahun ini, gunakan predecessor esakip_opd_id
-            if (
-                $opd->tahun_mulai_berlaku &&                          // OPD punya tahun mulai (OPD baru)
-                $sourceYear < $opd->tahun_mulai_berlaku &&           // Tahun < tahun mulai berlaku
-                $opd->predecessor_opd_id                             // Ada esakip_opd_id predecessor
-            ) {
-                $sourceEsakipOpdId = $opd->predecessor_opd_id;
-
-                Log::info("Regular Document: Using predecessor E-SAKIP OPD (not yet effective)", [
-                    'current_opd_id' => $opd->id,
-                    'current_opd_nama' => $opd->nama,
-                    'current_esakip_opd_id' => $opd->esakip_opd_id,
-                    'predecessor_esakip_opd_id' => $sourceEsakipOpdId,
-                    'source_year' => $sourceYear,
-                    'opd_effective_year' => $opd->tahun_mulai_berlaku,
-                ]);
-            }
         }
 
         // Cek apakah penilaian OPD sudah ada
@@ -587,7 +656,6 @@ class EsakipSyncService
             }
 
             // Create penilaian baru dengan semua dokumen
-            // Role OPD: Upload dokumen + Input nilai (self-assessment)
             $penilaian = Penilaian::create([
                 'opd_id' => $opd->id,
                 'bukti_dukung_id' => $buktiDukung->id,
@@ -596,15 +664,16 @@ class EsakipSyncService
                 'link_file' => $allFiles,
                 'source' => 'esakip',
                 'esakip_synced_at' => now(),
-                'tingkatan_nilai_id' => $tingkatanNilaiId, // OPD punya nilai (self-assessment)
+                'tingkatan_nilai_id' => $tingkatanNilaiId,
             ]);
 
             Log::info("Created new penilaian", [
                 'penilaian_id' => $penilaian->id,
                 'bukti_dukung_id' => $buktiDukung->id,
+                'bukti_dukung_nama' => $buktiDukung->nama,
+                'is_n_minus_1' => $buktiDukung->is_n_minus_1,
                 'files_count' => count($allFiles),
-                'source_esakip_opd_id' => $sourceEsakipOpdId,
-                'source_year' => $sourceYear,
+                'opd_id' => $opd->id,
             ]);
 
             // Auto-verify jika perlu
@@ -653,17 +722,17 @@ class EsakipSyncService
             Log::info("Updated penilaian with new documents", [
                 'penilaian_id' => $penilaian->id,
                 'bukti_dukung_id' => $buktiDukung->id,
+                'bukti_dukung_nama' => $buktiDukung->nama,
+                'is_n_minus_1' => $buktiDukung->is_n_minus_1,
                 'files_added' => $filesAdded,
                 'total_files' => count($mergedFiles),
-                'source_esakip_opd_id' => $sourceEsakipOpdId,
-                'source_year' => $sourceYear,
             ]);
 
             return [
                 'status' => 'updated',
                 'penilaian_id' => $penilaian->id,
                 'files_added' => $filesAdded,
-                'auto_verified' => false, // sudah ada sebelumnya
+                'auto_verified' => false,
             ];
         }
 
@@ -732,101 +801,6 @@ class EsakipSyncService
                 'role_id' => $verifikatorRoleId,
                 'tingkatan_nilai_id' => null, // Verifikator tidak punya nilai
             ]);
-        }
-    }
-
-    /**
-     * Sync dokumen bersama ke SEMUA OPD
-     *
-     * @param string $documentType
-     * @param string $documentLabel
-     * @param Tahun $tahun
-     * @param array $documents
-     * @param \Illuminate\Database\Eloquent\Collection $buktiDukungList
-     * @return array
-     */
-    protected function syncSharedDocument($documentType, $documentLabel, $tahun, $documents, $buktiDukungList)
-    {
-        $allOpds = Opd::all();
-        $totalPenilaianIds = [];
-        $totalAutoVerified = 0;
-        $totalSkipped = 0;
-        $totalFilesAdded = 0;
-
-        // Filter hanya dokumen bersama (opd_id = 1)
-        $sharedDocuments = array_filter($documents, function ($doc) {
-            return isset($doc['opd_id']) && $doc['opd_id'] == 1;
-        });
-
-        if (empty($sharedDocuments)) {
-            return [
-                'status' => 'no_document',
-                'document_type' => $documentType,
-                'opd' => 'SEMUA OPD (Dokumen Bersama)',
-                'message' => 'Tidak ada dokumen bersama',
-                'affected_count' => 0,
-            ];
-        }
-
-        DB::beginTransaction();
-        try {
-            foreach ($allOpds as $targetOpd) {
-                // Loop per bukti dukung (Smart Sync)
-                foreach ($buktiDukungList as $buktiDukung) {
-                    // Pass SEMUA dokumen bersama sekaligus
-                    $result = $this->syncPenilaian($buktiDukung, $targetOpd, $sharedDocuments, $tahun);
-
-                    if ($result['status'] === 'created' || $result['status'] === 'updated') {
-                        $totalPenilaianIds[] = $result['penilaian_id'];
-                        $totalFilesAdded += $result['files_added'] ?? 0;
-
-                        if ($result['auto_verified'] ?? false) {
-                            $totalAutoVerified++;
-                        }
-                    } elseif ($result['status'] === 'skipped') {
-                        $totalSkipped++;
-                    } elseif ($result['status'] === 'no_change') {
-                        if (isset($result['penilaian_id'])) {
-                            $totalPenilaianIds[] = $result['penilaian_id'];
-                        }
-                    }
-
-                    // Update bukti_dukung status
-                    $buktiDukung->update([
-                        'sync_status' => 'synced',
-                        'last_synced_at' => now(),
-                    ]);
-                }
-
-                // Log untuk setiap OPD
-                $this->logSync([
-                    'opd_id' => $targetOpd->id,
-                    'tahun_id' => $tahun->id,
-                    'document_type' => $documentType,
-                    'document_name' => $documentLabel,
-                    'tahun_value' => $tahun->tahun,
-                    'penilaian_ids' => $totalPenilaianIds,
-                    'affected_count' => count($totalPenilaianIds),
-                    'auto_verified_count' => $totalAutoVerified,
-                    'status' => 'success',
-                    'synced_at' => now(),
-                ]);
-            }
-
-            DB::commit();
-
-            return [
-                'status' => 'success',
-                'document_type' => $documentType,
-                'opd' => 'SEMUA OPD (Dokumen Bersama)',
-                'affected_count' => count($totalPenilaianIds),
-                'auto_verified_count' => $totalAutoVerified,
-                'skipped_count' => $totalSkipped,
-                'shared_document' => true,
-            ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
         }
     }
 
@@ -931,11 +905,93 @@ class EsakipSyncService
     }
 
     /**
-     * Fetch documents from E-SAKIP API (New Structure)
+     * Fetch documents from E-SAKIP API dengan esakip_opd_id langsung
+     * (tanpa perlu lookup Opd dari aplikasi)
      *
      * @param string $documentType
      * @param int $tahun
-     * @param int $opdId
+     * @param int $esakipOpdId - esakip_opd_id langsung, bukan opd_id aplikasi
+     * @return array
+     */
+    protected function fetchDocumentsFromEsakipByOpdId($documentType, $tahun, $esakipOpdId)
+    {
+        $endpoint = config('esakip.endpoints.document_base') . '/' . $documentType;
+        $url = $this->apiBaseUrl . $endpoint;
+
+        Log::info("Fetching from E-SAKIP by esakip_opd_id", [
+            'url' => $url,
+            'document_type' => $documentType,
+            'tahun' => $tahun,
+            'esakip_opd_id' => $esakipOpdId,
+        ]);
+
+        try {
+            $response = Http::connectTimeout(60)
+                ->timeout($this->timeout)
+                ->withoutVerifying()
+                ->retry(5, 200)
+                ->get($url, [
+                    'tahun' => $tahun,
+                    'opd' => $esakipOpdId,
+                ]);
+
+            Log::info("E-SAKIP Response", [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+
+                if (!isset($result['data']) || empty($result['data'])) {
+                    Log::warning("E-SAKIP returned empty data", [
+                        'esakip_opd_id' => $esakipOpdId,
+                    ]);
+                    return [];
+                }
+
+                $data = $result['data'];
+                $allDocuments = [];
+
+                if (is_array($data) || is_object($data)) {
+                    foreach ($data as $opdName => $documents) {
+                        if (is_array($documents)) {
+                            foreach ($documents as $doc) {
+                                if (isset($doc['jenis_periode']) && $doc['jenis_periode'] === 'periode') {
+                                    if (isset($doc['periode']) && $this->isPeriodeMatchYear($doc['periode'], $tahun)) {
+                                        $allDocuments[] = $this->normalizeDocument($doc);
+                                    }
+                                } else {
+                                    $allDocuments[] = $this->normalizeDocument($doc);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Log::info("E-SAKIP documents fetched by esakip_opd_id", [
+                    'total_documents' => count($allDocuments),
+                    'esakip_opd_id' => $esakipOpdId,
+                ]);
+
+                return $allDocuments;
+            }
+
+            Log::warning("API esakip failed: " . $response->status());
+            return [];
+        } catch (\Exception $e) {
+            Log::error("Failed to fetch from esakip by esakip_opd_id: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Fetch dokumen dari E-SAKIP dengan lookup OPD ID aplikasi
+     * (wrapper untuk fetchDocumentsFromEsakipByOpdId)
+     *
+     * @param string $documentType
+     * @param int $tahun
+     * @param int $opdId - OPD ID dari aplikasi (akan di-lookup untuk dapat esakip_opd_id)
      * @return array
      */
     protected function fetchDocumentsFromEsakip($documentType, $tahun, $opdId)
