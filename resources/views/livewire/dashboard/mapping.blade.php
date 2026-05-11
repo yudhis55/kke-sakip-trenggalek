@@ -767,9 +767,10 @@
                             <small class="form-text text-muted">Pilih jenis dokumen E-SAKIP yang sesuai untuk
                                 sinkronisasi otomatis</small>
                         </div>
+                        {{-- @dump($is_n_minus_1) --}}
                         <div class="mb-4 form-check">
-                            <input type="checkbox" wire:model="is_n_minus_1" class="form-check-input"
-                                id="editBuktiIsNMinus1">
+                            <input type="checkbox" wire:model="is_n_minus_1" x-bind:checked="$wire.is_n_minus_1"
+                                class="form-check-input" id="editBuktiIsNMinus1">
                             <label class="form-check-label" for="editBuktiIsNMinus1">
                                 Dokumen Tahun Sebelumnya (N-1)
                             </label>
