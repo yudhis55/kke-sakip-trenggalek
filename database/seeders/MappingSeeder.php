@@ -100,6 +100,13 @@ class MappingSeeder extends Seeder
             'Laporan Capaian Kinerja TW 1, TW 2, dan TW 3' => 'capaian',
             'Capaian kinerja lebih baik dari tahun sebelumnya' => 'lkjip',
             'LHE SAKIP Tahun n-1' => 'lhe-inspektorat',
+            'LKjIP Tahun n-1' => 'lkjip',
+            'IKU Tahun n' => 'iku',
+            'IKU Tahun n-1' => 'iku',
+            'PK Tahun n' => 'perjanjian-kinerja',
+            'PK Tahun n-1' => 'perjanjian-kinerja',
+            'Renaksi Tahun n' => 'rencana-aksi',
+            'Renaksi Tahun n-1' => 'rencana-aksi',
         ];
 
         // Nested array (dibuat dari data Anda). children = sub_komponen -> children = kriteria (with bukti array)
