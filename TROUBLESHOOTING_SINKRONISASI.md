@@ -76,35 +76,57 @@ ORDER BY bd.id;
 
 ---
 
-#### 4. Cek OPD Mapping
+#### 4. Cek OPD Mapping & Reorganisasi
 
 ```sql
 SELECT
     id,
     nama,
-    esakip_opd_id
+    esakip_opd_id,
+    tahun_mulai_berlaku,
+    predecessor_opd_id
 FROM opd
-WHERE nama LIKE '%Komunikasi%Informatika%';
+WHERE nama LIKE '%Pendidikan%'
+OR tahun_mulai_berlaku IS NOT NULL;
 ```
 
 **Expected:**
 
--   `esakip_opd_id` harus terisi dengan ID OPD di E-SAKIP
--   Jika NULL, system akan fallback ke ID lokal
+-   `esakip_opd_id` harus terisi dengan ID OPD di E-SAKIP.
+-   Untuk OPD hasil reorganisasi (misal: Dinas Pendidikan baru di 2026), `tahun_mulai_berlaku` harus berisi 2026.
+-   `predecessor_opd_id` harus berisi ID OPD lama (misal: Disdikpora) agar sistem bisa mengambil dokumen tahun sebelumnya dari OPD lama tersebut.
 
 **ACTION REQUIRED:**
-Update esakip_opd_id untuk setiap OPD:
+Update mapping reorganisasi jika dokumen tahun sebelumnya tidak masuk:
 
 ```sql
--- Contoh:
+-- Contoh: Dinas Pendidikan (ID 43) adalah pecahan dari Disdikpora (ID 5)
 UPDATE opd
-SET esakip_opd_id = '12345'
-WHERE nama = 'Dinas Komunikasi dan Informatika';
+SET tahun_mulai_berlaku = 2026,
+    predecessor_opd_id = 5
+WHERE id = 43;
 ```
 
 ---
 
-#### 5. Cek Riwayat Sinkronisasi
+#### 5. Cek Bukti Dukung N-1
+
+```sql
+SELECT
+    id,
+    nama,
+    esakip_document_type,
+    is_n_minus_1
+FROM bukti_dukung
+WHERE is_n_minus_1 = 1;
+```
+
+**Expected:**
+Dokumen yang sifatnya evaluasi tahun lalu (seperti Capaian IKU N-1) harus memiliki `is_n_minus_1 = 1`. Jika 1, sistem akan mencari dokumen di E-SAKIP dengan parameter `tahun - 1`.
+
+---
+
+#### 6. Cek Riwayat Sinkronisasi
 
 ```sql
 SELECT
@@ -329,6 +351,80 @@ message: 'Tidak ada bukti dukung yang di-mapping'
 4. Check `kriteria_komponen_id` match
 5. Clear browser cache / hard refresh
 
+#### Error 4: Dokumen OPD Reorganisasi Kosong (N atau N-1)
+
+**Cause:** OPD baru (misal: hasil pemecahan/penggabungan di 2026) tidak memiliki dokumen historis di E-SAKIP dengan `esakip_opd_id` yang baru.
+
+**Fix:**
+- Pastikan `tahun_mulai_berlaku` di tabel `opd` sudah di-set ke tahun saat OPD tersebut mulai aktif.
+- Pastikan `predecessor_opd_id` menunjuk ke ID OPD lama yang menyimpan dokumen historis tersebut.
+- Jika dokumen tetap tidak muncul, verifikasi apakah `predecessor_opd_id` tersebut valid dan memiliki dokumen di portal E-SAKIP.
+
+#### Error 5: Dokumen N-1 Selalu Kosong
+
+**Cause:**
+- Kolom `is_n_minus_1` pada `bukti_dukung` belum di-set ke `1`.
+- Dokumen tahun sebelumnya (X-1) memang belum di-upload di portal E-SAKIP.
+- Constraint `tahun_mulai_berlaku` menghalangi pencarian (misal: mencari N-1 tahun 2025 untuk OPD yang baru mulai berlaku 2026, tapi `predecessor_opd_id` kosong).
+
+**Fix:**
+- Jalankan query diagnosis nomor 5 untuk mengecek status `is_n_minus_1`.
+- Update `is_n_minus_1` melalui menu Mapping di aplikasi.
+- Cek portal E-SAKIP untuk ketersediaan dokumen tahun X-1.
+
+#### Error 6: Dokumen Pemkab (Shared) Tidak Masuk ke OPD
+
+**Cause:**
+- `esakip_opd_id` untuk Pemerintah Kabupaten tidak bernilai `1`.
+- API endpoint untuk dokumen shared tidak mengembalikan data untuk tahun yang diminta.
+
+**Fix:**
+- Pastikan ada satu entitas OPD (biasanya Sekretariat Daerah atau entitas induk) yang memiliki `esakip_opd_id = 1`.
+- Cek log sinkronisasi (`storage/logs/laravel.log`) dan cari entri "Shared document fetch result". Jika `documents_fetched` = 0, berarti API memang tidak memberikan data.
+
+---
+
+### 📋 SQL Script untuk Reorganisasi & N-1 Audit
+
+```sql
+-- 1. Cek OPD yang memiliki konfigurasi reorganisasi
+SELECT 
+    id, 
+    nama, 
+    esakip_opd_id, 
+    tahun_mulai_berlaku, 
+    predecessor_opd_id 
+FROM opd 
+WHERE tahun_mulai_berlaku IS NOT NULL 
+OR predecessor_opd_id IS NOT NULL
+ORDER BY tahun_mulai_berlaku DESC;
+
+-- 2. Cek semua bukti dukung yang menggunakan logic N-1
+SELECT 
+    id, 
+    nama, 
+    esakip_document_type, 
+    is_n_minus_1, 
+    kriteria_komponen_id
+FROM bukti_dukung 
+WHERE is_n_minus_1 = 1;
+
+-- 3. Cari penilaian N-1 yang masuk dari predecessor (Audit Trail)
+-- Ganti '43' dengan ID OPD target
+SELECT 
+    p.id, 
+    o.nama as opd_target,
+    bd.nama as dokumen,
+    p.link_file,
+    p.created_at
+FROM penilaian p
+JOIN opd o ON p.opd_id = o.id
+JOIN bukti_dukung bd ON p.bukti_dukung_id = bd.id
+WHERE p.opd_id = 43 
+AND bd.is_n_minus_1 = 1
+ORDER BY p.created_at DESC;
+```
+
 ---
 
 ### 📞 Support
@@ -372,5 +468,5 @@ dd(\DB::getQueryLog());
 
 ---
 
-**Last Updated:** 2026-01-14
-**Version:** 1.0
+**Last Updated:** 2026-05-24
+**Version:** 1.1

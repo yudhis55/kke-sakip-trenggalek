@@ -10,6 +10,7 @@
 | ---------------------- | --------- | -------- | ------------ | ------------------------------------------------ |
 | `esakip_document_type` | string    | YES      | NULL         | Jenis dokumen di esakip (renja, iku, lkjip, dll) |
 | `esakip_document_code` | string    | YES      | NULL         | Kode/ID dokumen di esakip (opsional)             |
+| `is_n_minus_1`         | boolean   | NO       | false        | Apakah bukti dukung mengambil dokumen tahun n-1 |
 | `sync_status`          | enum      | NO       | 'not_synced' | Status sinkronisasi: not_synced, synced, failed  |
 | `last_synced_at`       | timestamp | YES      | NULL         | Waktu terakhir disinkronkan                      |
 
@@ -37,6 +38,7 @@
 | `source`             | enum      | NO       | 'upload' | Sumber file: upload (manual), esakip (dari sync) |
 | `esakip_document_id` | string    | YES      | NULL     | ID dokumen di esakip untuk reference             |
 | `esakip_synced_at`   | timestamp | YES      | NULL     | Waktu sinkronisasi dari esakip                   |
+| `page_number`        | int       | YES      | NULL     | Nomor halaman awal dokumen yang ditandai         |
 
 **Struktur `link_file` (JSON):**
 
@@ -78,7 +80,34 @@
 
 **Struktur Lengkap:**
 
-| Kolom                 | Type      | Nullable | Default   | Keterangan                           |
+| Kolom                 | Type               | Nullable | Default   | Keterangan                                          |
+| --------------------- | ------------------ | -------- | --------- | --------------------------------------------------- |
+| `id`                  | bigInt             | NO       |           | PK                                                  |
+| `opd_id`              | unsignedBigInteger | NO       |           | FK ke tabel opd                                     |
+| `tahun_id`            | unsignedBigInteger | NO       |           | FK ke tabel tahun                                   |
+| `document_type`       | string             | NO       |           | Jenis dokumen (renja, iku, lkjip, dll)              |
+| `document_name`       | string             | YES      | NULL      | Nama dokumen spesifik                               |
+| `file_url`            | text               | YES      | NULL      | URL dokumen dari esakip                             |
+| `tahun_value`         | int                | NO       |           | Value tahun (2024, 2025, dll)                       |
+| `penilaian_ids`       | json               | YES      | NULL      | List ID penilaian yang terpengaruh                  |
+| `affected_count`      | int                | NO       | 0         | Jumlah record yang terpengaruh                      |
+| `auto_verified_count` | int                | NO       | 0         | Jumlah record yang otomatis terverifikasi           |
+| `status`              | enum               | NO       | 'success' | success, failed, partial, no_document               |
+| `synced_at`           | timestamp          | YES      | NULL      | Waktu sinkronisasi selesai                          |
+| `created_at`          | timestamp          | YES      | NULL      |                                                     |
+| `updated_at`          | timestamp          | YES      | NULL      |                                                     |
+
+---
+
+### 4. Tabel `opd`
+
+**Kolom untuk Mapping dan Reorganisasi:**
+
+| Kolom                 | Type               | Nullable | Default | Keterangan                                                    |
+| --------------------- | ------------------ | -------- | ------- | ------------------------------------------------------------- |
+| `esakip_opd_id`       | string             | YES      | NULL    | ID OPD di eSAKIP                                              |
+| `tahun_mulai_berlaku` | int                | YES      | NULL    | Tahun mulai berlaku OPD ini (untuk OPD baru/reorganisasi)     |
+| `predecessor_opd_id`  | unsignedBigInteger | YES      | NULL    | esakip_opd_id OPD lama yang menjadi predecessor (BUKAN FK)    |                         |
 | --------------------- | --------- | -------- | --------- | ------------------------------------ |
 | `id`                  | bigint    | NO       | -         | Primary key                          |
 | `opd_id`              | bigint    | NO       | -         | Foreign key ke tabel opd             |
@@ -268,7 +297,7 @@ $isSynced = BuktiDukung::where('id', $buktiDukungId)
 2. ✅ **Models updated** - Cast dan relationships sudah ada
 3. ✅ **Config ready** - File config/esakip.php sudah dibuat
 4. ⏳ **Service Class** - Perlu dibuat `EsakipSyncService`
-5. ⏳ **Livewire Component** - Perlu dibuat `SinkronDokumen.php`
+5. ✅ **Livewire Component** - SinkronData.php (di app/Livewire/Dashboard/SinkronData.php)
 6. ⏳ **UI Form** - Update Mapping.php untuk input esakip_document_type
 
 ---
