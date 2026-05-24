@@ -1,0 +1,6 @@
+Verification that sinkron-dokumen view is not found:
+
+Test-Path -LiteralPath "resources/views/livewire/dashboard/sinkron-dokumen.blade.php"
+Result: False
+
+The file has been successfully deleted and no longer exists.

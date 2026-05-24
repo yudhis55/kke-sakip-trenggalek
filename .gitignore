@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local scratch directory (excluded from git)
+/tmp/*
+!/tmp/.gitkeep

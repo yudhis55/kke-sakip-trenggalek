@@ -1,0 +1,6 @@
+Timestamp: 2026-05-24 21:19:32
+
+Route List (sinkron filter):
+  GET|HEAD   sinkron-data .......................................... sinkron-data GǦ App\Livewire\Dashboard\SinkronData
+
+Verified: SinkronDokumen.php is deleted and not in autoload.

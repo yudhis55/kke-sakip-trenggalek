@@ -1,0 +1,19 @@
+=== TASK 1: TMP SETUP VERIFICATION ===
+Generated: 2026-05-24 21:17:02
+
+DIRECTORY STRUCTURE:
+  .gitkeep (C:\laragon\www\kke-sakip\tmp\.gitkeep)
+
+GITIGNORE RULES:
+# Local scratch directory (excluded from git) /tmp/* !/tmp/.gitkeep
+
+VERIFICATION COMMANDS:
+1. git check-ignore tmp/dummy.php (should be ignored)
+   Exit Code: 0 ? PASS
+   Output: tmp/dummy.php
+
+2. git check-ignore tmp/.gitkeep (should NOT be ignored)
+   Exit Code: 1 ? PASS
+   Output: (empty)
+
+STATUS: All checks passed ?

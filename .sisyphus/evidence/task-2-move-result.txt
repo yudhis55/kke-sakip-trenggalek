@@ -1,0 +1,47 @@
+TASK 2: Move 14 Scratch PHP Scripts to tmp/
+==============================================
+
+COMPLETION STATUS: VERIFIED ✓
+
+FILES MOVED (14 total):
+1. check-kriteria.php
+2. check-linkfile-structure.php
+3. check_schema.php
+4. debug_rpjmd.php
+5. syncPenilaian_NEW_TEMPLATE.php
+6. test-is-perubahan.php
+7. test-preview-shared.php
+8. test-skip-upload.php
+9. test-sync-shared.php
+10. test-sync.php
+11. test-validate-rpjmd.php
+12. validate-is-perubahan.php
+13. validate-multiple-files.php
+14. validate-sync.php
+
+VERIFICATION RESULTS:
+- PHP file count in project root: 0 ✓
+- All 14 files exist in tmp/ directory ✓
+- tmp/test-sync.php is gitignored ✓
+- git status shows files as deleted (M → D transition) ✓
+
+GIT STATUS (relevant lines):
+ D check-kriteria.php
+ D check-linkfile-structure.php
+ D check_schema.php
+ D debug_rpjmd.php
+ D syncPenilaian_NEW_TEMPLATE.php
+ D test-is-perubahan.php
+ D test-preview-shared.php
+ D test-skip-upload.php
+ D test-sync-shared.php
+ D test-sync.php
+ D test-validate-rpjmd.php
+ D validate-is-perubahan.php
+ D validate-multiple-files.php
+ D validate-sync.php
+
+VERIFIED:
+- artisan script remains at project root (not moved) ✓
+- tmp/.gitkeep preserved ✓
+- Files in tmp/ are untracked (gitignored) ✓

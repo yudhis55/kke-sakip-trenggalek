@@ -1,0 +1,23 @@
+{
+  "active_plan": "C:\\laragon\\www\\kke-sakip\\.sisyphus\\plans\\cleanup-batch-1-and-sync-docs.md",
+  "started_at": "2026-05-24T14:14:05.151Z",
+  "session_ids": [
+    "ses_1a81f08dfffen4IU7Plb4WFsRF"
+  ],
+  "session_origins": {
+    "ses_1a81f08dfffen4IU7Plb4WFsRF": "direct"
+  },
+  "plan_name": "cleanup-batch-1-and-sync-docs",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Setup `tmp/` directory + update `.gitignore`",
+      "session_id": "ses_1a5a383e9ffeehjxjdJnHSW1Qm",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-24T14:22:05.787Z"
+    }
+  }
+}

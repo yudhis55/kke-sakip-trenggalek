@@ -1,0 +1,13 @@
+ARTISAN PRESERVATION CHECK
+===========================
+
+Status: ✓ PRESERVED
+
+Verification: Test-Path -LiteralPath "artisan"
+Result: True
+
+The artisan file (Laravel's command runner) remains at the project root
+and was NOT moved to tmp/. This is correct behavior as:
+1. artisan does not have .php file extension
+2. artisan is a critical executable for the application
+3. Only scratch test/debug .php files should be moved to tmp/
