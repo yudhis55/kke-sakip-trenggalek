@@ -596,7 +596,7 @@ class BuktiDukung extends Component
 
         // Validation rules berbeda untuk mode kriteria vs mode bukti
         $rules = [
-            'file_bukti_dukung.*' => 'file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240', // Max 10MB per file
+            'file_bukti_dukung.*' => 'file|mimes:pdf,jpg,jpeg,png|max:81920', // Max 80MB per file
             'opd_id' => 'required|exists:opd,id',
             'keterangan_upload' => 'nullable|string|max:1000',
         ];

@@ -2558,6 +2558,10 @@
                                                                     <x-filepond::upload wire:model="file_bukti_dukung"
                                                                         wire:key="filepond-bukti-{{ $bukti_dukung_id ?? 'none' }}"
                                                                         multiple />
+                                                                    <div class="form-text text-muted mt-1 ms-1">
+                                                                        <i class="ri-information-line me-1"></i>
+                                                                        Format: PDF, JPG, PNG &bull; Maks. 80MB per file
+                                                                    </div>
                                                                 </div>
 
                                                                 {{-- Tombol: mentok kanan, lebar sesuai konten --}}
