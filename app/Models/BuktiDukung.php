@@ -48,12 +48,6 @@ class BuktiDukung extends Model
         return $this->hasMany(Penilaian::class, 'bukti_dukung_id');
     }
 
-    // Deprecated: File storage now in penilaian table
-    // public function file_bukti_dukung(): HasMany
-    // {
-    //     return $this->hasMany(FileBuktiDukung::class, 'bukti_dukung_id');
-    // }
-
     protected function bobot(): Attribute
     {
         return Attribute::make(

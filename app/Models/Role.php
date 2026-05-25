@@ -19,9 +19,4 @@ class Role extends Model
     {
         return $this->hasMany(Komponen::class, 'role_id');
     }
-
-    public function penilaian_verifikator()
-    {
-        return $this->hasMany(PenilaianVerifikator::class, 'role_id');
-    }
 }

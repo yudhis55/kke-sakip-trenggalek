@@ -22,12 +22,6 @@ class Penilaian extends Model
         return $this->belongsTo(TingkatanNilai::class, 'tingkatan_nilai_id');
     }
 
-    // Relasi ke FileBuktiDukung sudah tidak digunakan
-    // public function file_bukti_dukung()
-    // {
-    //     return $this->belongsTo(FileBuktiDukung::class, 'file_bukti_dukung_id');
-    // }
-
     public function bukti_dukung()
     {
         return $this->belongsTo(BuktiDukung::class, 'bukti_dukung_id');

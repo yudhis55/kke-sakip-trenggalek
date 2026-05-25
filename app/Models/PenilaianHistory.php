@@ -52,11 +52,6 @@ class PenilaianHistory extends Model
         return $this->belongsTo(TingkatanNilai::class, 'tingkatan_nilai_id');
     }
 
-    public function file_perbaikan(): BelongsTo
-    {
-        return $this->belongsTo(FileBuktiDukung::class, 'file_perbaikan_id');
-    }
-
     /**
      * Helper untuk mendapatkan deskripsi aksi
      *

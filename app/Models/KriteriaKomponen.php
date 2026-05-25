@@ -146,11 +146,6 @@ class KriteriaKomponen extends Model
         ];
     }
 
-    public function penilaian_mandiri(): HasMany
-    {
-        return $this->hasMany(PenilaianMandiri::class, 'kriteria_komponen_id');
-    }
-
     protected function bobot(): Attribute
     {
         return Attribute::make(

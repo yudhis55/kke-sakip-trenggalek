@@ -13,9 +13,4 @@ class TingkatanNilai extends Model
     {
         return $this->belongsTo(JenisNilai::class, 'jenis_nilai_id');
     }
-
-    public function penilaian_mandiri()
-    {
-        return $this->hasMany(PenilaianMandiri::class, 'tingkatan_nilai_id');
-    }
 }
