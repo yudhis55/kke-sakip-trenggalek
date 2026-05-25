@@ -1,0 +1,24 @@
+﻿BUG-C Fix Evidence — FilePond state persists across bukti_dukung navigation
+=============================================================================
+Date: 2026-05-25 10:58:38
+Plan: plan-d-task-1-bugc-fix
+
+CHANGES APPLIED:
+================
+
+1. app/Livewire/Dashboard/LembarKerja.php
+   - Added resetAllFormStatesForNavigation() private method (after resetPenilaianForm)
+   - Resets penilaian fields + upload form fields (file_bukti_dukung, keterangan_upload,
+     page_number, is_perubahan, ganti_semua_dokumen, is_final, file_count,
+     temporary_file_names, file_page_numbers, is_setting_upload_page)
+   - previousBuktiDukung() now calls resetAllFormStatesForNavigation() (was resetPenilaianForm)
+   - nextBuktiDukung() now calls resetAllFormStatesForNavigation() (was resetPenilaianForm)
+   - resetPenilaianForm() preserved (still used elsewhere)
+
+2. resources/views/livewire/dashboard/lembar-kerja.blade.php
+   - FilePond component now has wire:key="filepond-bukti-{{ \ ?? 'none' }}"
+   - Forces Livewire to recreate component on bukti_dukung_id change
+
+VERIFICATION:
+=============
+No syntax errors detected in app/Livewire/Dashboard/LembarKerja.php

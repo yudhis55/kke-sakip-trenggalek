@@ -1,0 +1,10 @@
+Verification Results:
+1. php -l app/Livewire/Dashboard/LembarKerja.php passed.
+2. 3 wrapper methods added to LembarKerja.php:
+   - openSetPageNumberModalForBukti
+   - deleteFileByIndexForBukti
+   - deleteAllFilesForBukti
+3. Buttons added to resources/views/livewire/dashboard/lembar-kerja.blade.php:
+   - Set Halaman button (per file)
+   - Delete button (per file)
+   - Hapus Semua button (per buktiItem)

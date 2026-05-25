@@ -1,0 +1,26 @@
+﻿=== BUG-E FIX EVIDENCE ===
+Date: 2026-05-25 11:00:18
+Plan: D, Task 2
+
+=== Files Modified ===
+1. app/Livewire/Dashboard/LembarKerja.php (added deleteFileByIndex method)
+2. resources/views/livewire/dashboard/lembar-kerja.blade.php (added 2 per-file delete buttons)
+
+=== PHP Syntax Check ===No syntax errors detected in app\Livewire\Dashboard\LembarKerja.php
+
+=== Method exists check ===
+1486: public function deleteFileByIndex($fileIndex)
+1743: public function deleteFileByIndexForBukti($buktiDukungId, $fileIndex)
+
+=== keterangan match ===
+1464: keterangan: 'Menghapus file dokumen',
+1557: keterangan: 'Menghapus file dokumen',
+
+=== Existing deleteFileBuktiDukung preserved ===
+1396: public function deleteFileBuktiDukung()
+
+=== Blade per-file delete buttons ===
+2121: wire:click="deleteFileByIndexForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
+2144: wire:click="deleteFileByIndexForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
+2402: wire:click="deleteFileByIndex({{ $index }})"
+2510: wire:click="deleteFileByIndex(0)"
