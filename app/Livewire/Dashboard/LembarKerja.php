@@ -998,7 +998,7 @@ class LembarKerja extends Component
 
         $this->validate([
             'file_bukti_dukung' => 'required|array',
-            'file_bukti_dukung.*' => 'file|mimes:pdf,jpg,jpeg,png|max:81920', // Max 80MB per file
+            'file_bukti_dukung.*' => 'file|mimes:pdf,jpg,jpeg,png|max:102400', // Max 100MB per file
             'keterangan_upload' => 'nullable|string',
             'page_number' => 'nullable|integer|min:1',
         ]);
