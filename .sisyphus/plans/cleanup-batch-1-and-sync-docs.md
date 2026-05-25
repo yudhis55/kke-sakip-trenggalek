@@ -217,7 +217,7 @@ Max Concurrent: 6 (Wave 2)
 
 ## TODOs
 
-- [ ] 1. Setup `tmp/` directory + update `.gitignore`
+- [x] 1. Setup `tmp/` directory + update `.gitignore`
 
   **What to do**:
   - Create new directory: `tmp/` di project root.
@@ -295,7 +295,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (groups with Commit 1 setelah Wave 1 selesai)
 
-- [ ] 2. Move 14 scratch PHP scripts from project root to `tmp/`
+- [x] 2. Move 14 scratch PHP scripts from project root to `tmp/`
 
   **What to do**:
   - Pindahkan 14 file PHP berikut dari project root (`C:\laragon\www\kke-sakip\`) ke `tmp/`:
@@ -379,7 +379,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (bagian Commit 1)
 
-- [ ] 3. Delete `database/seeders/JenisNilai.php` (orphan, BUKAN `JenisNilaiSeeder.php`)
+- [x] 3. Delete `database/seeders/JenisNilai.php` (orphan, BUKAN `JenisNilaiSeeder.php`)
 
   **What to do**:
   - Hapus file `database/seeders/JenisNilai.php`. File ini adalah seeder kosong dengan class `JenisNilai extends Seeder`, body method `run()` cuma `//`. Tidak dipanggil dari `DatabaseSeeder`.
@@ -455,7 +455,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (bagian Commit 1)
 
-- [ ] 4. Delete `app/Livewire/Dashboard/SinkronDokumen.php`
+- [x] 4. Delete `app/Livewire/Dashboard/SinkronDokumen.php`
 
   **What to do**:
   - Hapus file `app/Livewire/Dashboard/SinkronDokumen.php`. Komponen ini tidak terdaftar di route dan tidak punya call site dari kode lain.
@@ -535,7 +535,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (bagian Commit 1)
 
-- [ ] 5. Delete view `resources/views/livewire/dashboard/sinkron-dokumen.blade.php`
+- [x] 5. Delete view `resources/views/livewire/dashboard/sinkron-dokumen.blade.php`
 
   **What to do**:
   - Hapus file `resources/views/livewire/dashboard/sinkron-dokumen.blade.php`.
@@ -607,7 +607,7 @@ Max Concurrent: 6 (Wave 2)
   - Files staged: `tmp/.gitkeep`, `.gitignore` (modified), 14 moved files (`tmp/test-*.php`, etc.), 3 deletions (`database/seeders/JenisNilai.php`, `app/Livewire/Dashboard/SinkronDokumen.php`, `resources/views/livewire/dashboard/sinkron-dokumen.blade.php`)
   - Pre-commit: `php artisan migrate:fresh --seed` exit 0 AND `php artisan route:list | Select-String "sinkron-data"` returns ≥1 match.
 
-- [ ] 6. Rewrite `PANDUAN_SINKRONISASI_ESAKIP.md`
+- [x] 6. Rewrite `PANDUAN_SINKRONISASI_ESAKIP.md`
 
   **What to do**:
   - REWRITE LENGKAP file `PANDUAN_SINKRONISASI_ESAKIP.md` (yang saat ini 261 baris). Buang semua reference ke:
@@ -724,7 +724,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (bagian Commit 2 setelah Wave 2)
 
-- [ ] 7. Update `DATABASE_SINKRONISASI.md`
+- [x] 7. Update `DATABASE_SINKRONISASI.md`
 
   **What to do**:
   - File saat ini 231 baris. Update untuk MEN-CAKUP 3 kolom baru yang belum ter-dokumentasi.
@@ -813,7 +813,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (Commit 2 batch)
 
-- [ ] 8. Update `SMART_SYNC_STRATEGY.md`
+- [x] 8. Update `SMART_SYNC_STRATEGY.md`
 
   **What to do**:
   - File saat ini ~340 baris (perlu verify length). Update untuk ALIGN dengan implementasi aktual.
@@ -889,7 +889,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (Commit 2 batch)
 
-- [ ] 9. Update `STRUKTUR_LINK_FILE.md`
+- [x] 9. Update `STRUKTUR_LINK_FILE.md`
 
   **What to do**:
   - File saat ini ~140 baris. Verifikasi struktur JSON `link_file` yang didokumentasikan match dengan implementasi `EsakipSyncService::buildFileObject()` dan `LembarKerja::uploadBuktiDukung()`.
@@ -966,7 +966,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (Commit 2 batch)
 
-- [ ] 10. Update `TROUBLESHOOTING_SINKRONISASI.md`
+- [x] 10. Update `TROUBLESHOOTING_SINKRONISASI.md`
 
   **What to do**:
   - File saat ini 284 baris. Tambah scenarios troubleshooting baru:
@@ -1040,7 +1040,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (Commit 2 batch)
 
-- [ ] 11. Write `.sisyphus/docs/SYNC_FLOW_ANALYSIS.md` (analisis flow + issues + rekomendasi)
+- [x] 11. Write `.sisyphus/docs/SYNC_FLOW_ANALYSIS.md` (analisis flow + issues + rekomendasi)
 
   **What to do**:
   - Buat file baru `.sisyphus/docs/SYNC_FLOW_ANALYSIS.md` (mirip format `.sisyphus/docs/KNOWN_BUGS.md`).
@@ -1157,7 +1157,7 @@ Max Concurrent: 6 (Wave 2)
 
   **Commit**: NO (Commit 2 batch)
 
-- [ ] 12. Cross-validate 5 sync docs konsisten
+- [x] 12. Cross-validate 5 sync docs konsisten
 
   **What to do**:
   - Setelah T6-T11 selesai, cross-check 5 dokumen + 1 analysis untuk konsistensi internal:
@@ -1247,19 +1247,19 @@ Max Concurrent: 6 (Wave 2)
 > **Do NOT auto-proceed after verification. Wait for user's explicit approval before marking work complete.**
 > **Never mark F1-F4 as checked before getting user's okay.** Rejection or user feedback -> fix -> re-run -> present again -> wait for okay.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read this plan end-to-end. For each "Must Have": verify implementation exists. For each "Must NOT Have": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in `.sisyphus/evidence/`. Compare deliverables against plan's "Concrete Deliverables" section.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality + Integrity Review** — `unspecified-high`
+- [x] F2. **Code Quality + Integrity Review** — `unspecified-high`
   Run `composer dev` (background-start, then kill after smoke). Verify `php artisan migrate:fresh --seed` exit 0. Run `php artisan route:list` and grep — sinkron-data PRESENT, sinkron-dokumen ABSENT. Grep entire `app/` + `resources/views/` for `SinkronDokumen` (string), `sync_mode` (string), `JenisNilai\b` (only seeder file ref allowed). Inspect `.gitignore` — `/tmp/*` entry present.
   Output: `Migrate [PASS/FAIL] | Routes [PASS/FAIL] | Refs [N clean/N issues] | Gitignore [PASS/FAIL] | VERDICT`
 
-- [ ] F3. **Real Manual QA via Playwright + curl** — `unspecified-high` (+ `playwright` skill)
+- [x] F3. **Real Manual QA via Playwright + curl** — `unspecified-high` (+ `playwright` skill)
   Start fresh `php artisan serve`. Login as admin (admin@sakip.com / password). Navigate to `/sinkron-data` — verify page renders, no JS console error, dropdown OPD populated, dropdown tahun populated. Try GET `/sinkron-dokumen` directly — expect 404 (route not registered). Verify by curl: `curl -I http://localhost:8000/sinkron-dokumen` should return 4xx or redirect (NOT 200). Run sync preview against a real OPD/tahun (mock or real). Save screenshot.
   Output: `SinkronData renders [PASS/FAIL] | SinkronDokumen 404 [PASS/FAIL] | Sync preview works [PASS/FAIL] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task in this plan: read "What to do", read actual diff (git diff --stat for moved/deleted files, git diff for edited docs). Verify 1:1 — everything in spec was built, nothing beyond spec was built. Check "Must NOT do" compliance: NO migration changes, NO PHP source edits in `app/Services/` or `app/Livewire/`, NO AGENTS.md edits, NO new dependencies, NO routes/web.php edits. Detect cross-task contamination (e.g. T6 also editing `DATABASE_SINKRONISASI.md` which is T7's territory).
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | Forbidden changes [CLEAN/N issues] | VERDICT`
 

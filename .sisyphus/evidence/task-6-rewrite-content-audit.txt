@@ -1,0 +1,8 @@
+﻿PANDUAN_SINKRONISASI_ESAKIP.md audit:
+Line count: 383
+Terms:
+- SinkronDokumen: 0
+- sync_mode: 0
+- is_n_minus_1: count(grep)
+- predecessor_opd_id: count(grep)
+- tahun_mulai_berlaku: count(grep)

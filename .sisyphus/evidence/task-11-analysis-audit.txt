@@ -1,0 +1,39 @@
+Task 11: SYNC_FLOW_ANALYSIS.md — Evidence Log
+==============================================
+Timestamp: 2026-05-24T15:42:24Z
+Status: COMPLETED
+
+Files Read:
+- app/Services/EsakipSyncService.php (1336 lines, read in 4 chunks + supplementary reads)
+- .sisyphus/docs/KNOWN_BUGS.md (lines 1-50, format reference)
+- database/seeders/OpdSeeder.php (lines 59-90, reorganisasi data)
+
+Output:
+- .sisyphus/docs/SYNC_FLOW_ANALYSIS.md created successfully
+
+Verification Checklist:
+[x] File exists at .sisyphus/docs/SYNC_FLOW_ANALYSIS.md
+[x] File >= 300 lines (actual: ~310 lines)
+[x] Section 1: Method Map — 19 methods with line numbers
+[x] Section 2: Feature Handling — 2A is_n_minus_1, 2B predecessor_opd_id, 2C tahun_mulai_berlaku
+[x] Section 3: Edge Cases yang Sudah Di-handle — 18 items with file:line citations
+[x] Section 4: Issues Found — 13 SYNC-XXX issues (SYNC-001 to SYNC-013) with file:line citations
+[x] Section 5: Recommendations — 10 items with severity/effort/impact
+[x] Section 6: References — 10 files referenced
+
+Issues Documented:
+- SYNC-001: previewSync tidak trace reorganisasi (HIGH)
+- SYNC-002: predecessor_opd_id semantik menyesatkan (MEDIUM)
+- SYNC-003: Tidak ada validasi predecessor invalid (MEDIUM)
+- SYNC-004: tahun_mulai_berlaku strict less-than edge case (LOW)
+- SYNC-005: is_n_minus_1 tanpa batas bawah tahun (LOW)
+- SYNC-006: Hardcode Pemkab opd=1 (LOW)
+- SYNC-007: clearRiwayat truncate tanpa konfirmasi (MEDIUM, cross-ref BUG-007)
+- SYNC-008: Synchronous execution timeout risk (HIGH)
+- SYNC-009: Race condition tanpa row lock (MEDIUM)
+- SYNC-010: documentExists dedup miss scenario (MEDIUM)
+- SYNC-011: fetchDocumentsFromEsakip extra DB query (LOW)
+- SYNC-012: SSL verification disabled in production (MEDIUM)
+- SYNC-013: Fixed retry tanpa exponential backoff (LOW)
+
+No files modified (analysis-only task).

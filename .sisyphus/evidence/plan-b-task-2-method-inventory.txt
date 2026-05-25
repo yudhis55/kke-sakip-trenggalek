@@ -1,0 +1,57 @@
+Method Inventory — app/Livewire/Dashboard/Monitoring/KriteriaKomponen/BuktiDukung.php
+Total lines: 950 (originally documented as 812; current is 950)
+recordHistory calls BEFORE edit: 0
+
+Methods that mutate Penilaian (update / create / updateOrCreate):
+
+1) uploadBuktiDukung()
+   - Defined: line 588
+   - Mutations:
+     * line 653: $existingPenilaian->update([...])  (mode REPLACE)
+     * line 664: $existingPenilaian->update([...])  (mode APPEND)
+     * line 672: Penilaian::create([...])           (new record)
+   - Post-mutation tail: line 683 onward "Simpan message sebelum reset"
+   - recordHistory? NO  -> needs adding (Upload dokumen)
+
+2) deleteFileBuktiDukung()
+   - Defined: line 703
+   - Mutations:
+     * line 736: $penilaian->update(['link_file' => null, 'is_perubahan' => false])
+   - recordHistory? NO  -> needs adding (Menghapus file dokumen)
+
+3) simpanVerifikasi()
+   - Defined: line 749
+   - Mutations:
+     * line 803: $existingPenilaian->update(['is_verified' => ..., 'keterangan' => ...])
+     * line 809: Penilaian::create([...])
+   - Post-mutation tail: line 820 "Reset form"
+   - recordHistory? NO  -> needs adding (Verifikasi)
+
+4) simpanPenilaian()  EXISTS
+   - Defined: line 857
+   - Mutations:
+     * line 923: Penilaian::updateOrCreate($uniqueKeys, $updateData)
+   - Note: assigns nothing to a variable; needs capturing the return
+   - recordHistory? NO  -> needs adding (Update penilaian / Penilaian awal)
+
+5) hapusNilai()  DOES NOT EXIST in this file (no `public function hapusNilai`)
+   - Skipped per spec ("if exists")
+
+LembarKerja.php pattern references (verified):
+  - line 1051-1061  uploadBuktiDukung recordHistory
+  - line 1191-1201  simpanPenilaian   recordHistory
+  - line 1252-1262  hapusNilai        recordHistory  (keterangan: 'Menghapus penilaian')
+  - line 1318-1328  simpanVerifikasi  recordHistory
+  - line 1431-1441  deleteFileBuktiDukung recordHistory  (keterangan: 'Menghapus file dokumen')
+
+Penilaian::recordHistory signature (app/Models/Penilaian.php:59-82):
+  recordHistory(userId, roleId, opdId, kriteriaKomponenId,
+                buktiDukungId = null,
+                tingkatanNilaiId = null,
+                isVerified = null,
+                keterangan = null,
+                isPerubahan = false)
+
+Plan after edits:
+  Total recordHistory calls AFTER edit: 4 (Upload, Hapus File, Verifikasi, Simpan Penilaian)
+  hapusNilai not implemented in this file -> not added (consistent with spec)

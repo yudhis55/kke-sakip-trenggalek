@@ -1,0 +1,92 @@
+Plan B Task 1 — PenilaianHistory::getActionDescription() Fix
+============================================================
+Date: 2026-05-25
+File: app/Models/PenilaianHistory.php
+Method: getActionDescription()
+
+ROOT CAUSE
+----------
+Old code (lines 67-72):
+    if ($roleJenis == 'opd') {
+        if ($this->is_perubahan) {
+            return 'melakukan revisi/perbaikan';
+        }
+        return 'melakukan penilaian mandiri';
+    }
+
+Bug: `is_perubahan` flag means "Penilaian row already existed before this action",
+NOT "this is a revision action". So:
+  - Upload pertama  → is_perubahan=false → returns 'melakukan penilaian mandiri' (WRONG, should be upload)
+  - Scoring pertama → is_perubahan=true (row exists from upload step) → returns 'melakukan revisi/perbaikan' (WRONG)
+
+FIX STRATEGY
+------------
+Distinguish action type via `tingkatan_nilai_id`:
+  - tingkatan_nilai_id !== null → SCORING action
+  - tingkatan_nilai_id === null → UPLOAD action
+
+Delete actions detected via EXACT MATCH ("===") against string constants set by
+LembarKerja.php (NOT stripos/str_contains, to avoid false positives from
+user-supplied keterangan).
+
+KETERANGAN STRING REFERENCE (LembarKerja.php)
+---------------------------------------------
+Line 1059  : keterangan: $this->keterangan_upload ?: 'Upload N file bukti dukung'
+             → Upload, tingkatanNilaiId = $penilaian->tingkatan_nilai_id (may be null first time)
+Line 1199  : keterangan: $isPerubahan ? 'Update penilaian' : 'Penilaian awal'
+             → Scoring, tingkatanNilaiId = $this->tingkatan_nilai_id (set)
+Line 1260  : keterangan: 'Menghapus penilaian'   ← EXACT MATCH TARGET
+             → Delete scoring, tingkatanNilaiId = null, isPerubahan = true
+Line 1439  : keterangan: 'Menghapus file dokumen' ← EXACT MATCH TARGET
+             → Delete file, tingkatanNilaiId = $penilaian->tingkatan_nilai_id, isPerubahan = true
+
+NEW CODE (PenilaianHistory.php lines 87-112)
+--------------------------------------------
+        if ($roleJenis == 'opd') {
+            $hasTingkatanNilai = $this->tingkatan_nilai_id !== null;
+            $keterangan = $this->keterangan ?? '';
+
+            if ($keterangan === 'Menghapus penilaian') {
+                return 'menghapus penilaian';
+            }
+            if ($keterangan === 'Menghapus file dokumen') {
+                return 'menghapus dokumen';
+            }
+
+            if ($hasTingkatanNilai) {
+                return $this->is_perubahan
+                    ? 'memberikan penilaian mandiri (revisi)'
+                    : 'memberikan penilaian mandiri';
+            }
+
+            return $this->is_perubahan
+                ? 'mengupload dokumen (revisi)'
+                : 'mengupload dokumen';
+        }
+
+VERIFICATION
+------------
+Command: php -l app/Models/PenilaianHistory.php
+Result : No syntax errors detected in app/Models/PenilaianHistory.php
+
+LSP (intelephense): not installed in this environment; skipped.
+
+UNCHANGED BLOCKS
+----------------
+- verifikator block (untouched)
+- penjamin block (untouched)
+- penilai block (untouched)
+- default fallthrough 'melakukan aksi' (untouched)
+- relations, casts, $table, $guarded (untouched)
+- recordHistory() in Penilaian model (untouched per scope)
+
+EXPECTED OUTCOMES — STATUS
+--------------------------
+[X] Block role 'opd' rewritten dengan check `tingkatan_nilai_id`
+[X] Block role verifikator/penjamin/penilai UNCHANGED
+[X] String "memberikan penilaian mandiri" muncul (scoring)
+[X] String "mengupload dokumen" muncul (upload)
+[X] EXACT match strings: `=== 'Menghapus penilaian'` dan `=== 'Menghapus file dokumen'`
+[X] TIDAK ada `stripos` atau `str_contains`
+[X] `php -l app/Models/PenilaianHistory.php` passes
+[X] Evidence saved (this file)

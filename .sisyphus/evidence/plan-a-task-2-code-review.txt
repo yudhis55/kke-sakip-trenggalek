@@ -1,0 +1,27 @@
+﻿=== TASK 2: RekapPerbaikan OPD Filter Implementation ===
+
+CHANGES APPLIED:
+✓ Added use App\Models\Opd; import
+✓ Added properties: public  = null; and public  = '';
+✓ Added computed method opdList() returning Opd::orderBy('nama')->get()
+✓ Added updater updatedSelectedOpd() with pagination reset comment
+✓ Added ->when(->selected_opd, ...) filter to ekapPerbaikan() query
+✓ Added same ->when(->selected_opd, ...) filter to adgeCount() query
+✓ Existing llowedRoles array unchanged
+✓ Existing where('role_id', Auth::user()->role_id) filter preserved
+✓ All session keys unchanged
+
+FILE: C:\laragon\www\kke-sakip\app\Livewire\Dashboard\RekapPerbaikan.php
+
+VERIFICATION:
+✓ PHP Lint: No syntax errors detected
+✓ Line count: 135 lines (was 113, +22 for new code)
+
+KEY LINES:
+- Line 5: Added import
+- Lines 19-21: Added filter properties
+- Lines 45-54: Added opdList() computed + updatedSelectedOpd() updater
+- Lines 68-70: OPD filter in rekapPerbaikan()
+- Lines 99-101: OPD filter in badgeCount()
+
+STATUS: Complete and verified

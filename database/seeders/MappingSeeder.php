@@ -101,6 +101,7 @@ class MappingSeeder extends Seeder
             'Capaian kinerja lebih baik dari tahun sebelumnya' => 'lkjip',
             'LHE SAKIP Tahun n-1' => 'lhe-inspektorat',
             'LKjIP Tahun n-1' => 'lkjip',
+            'LKJiP Tahun n-1' => 'lkjip',
             'IKU Tahun n' => 'iku',
             'IKU Tahun n-1' => 'iku',
             'PK Tahun n' => 'perjanjian-kinerja',

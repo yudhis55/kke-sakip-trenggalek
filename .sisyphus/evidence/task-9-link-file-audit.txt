@@ -1,0 +1,64 @@
+\=== LINK_FILE STRUCTURE AUDIT EVIDENCE ===
+Date: 2026-05-24
+
+1. app/Livewire/Dashboard/LembarKerja.php (Lines 982-997):
+- path: store('bukti_dukung', 'public')
+- original_name: getClientOriginalName()
+- is_perubahan: \->is_perubahan ?? false
+- kategori: \->is_perubahan ? 'perubahan' : 'induk'
+- keterangan: \->keterangan_upload ?? null
+- periode: null
+- tanggal_publish: now()->toDateString()
+- from_esakip: false
+- uploaded_at: now()->toDateTimeString()
+- page_number: \->file_page_numbers[\] ?? 1
+
+2. app/Livewire/Dashboard/Monitoring/KriteriaKomponen/BuktiDukung.php (Lines 611-628):
+- path: store('bukti_dukung', 'public')
+- original_name: getClientOriginalName()
+- is_perubahan: \->is_perubahan ?? false
+- kategori: \->is_perubahan ? 'perubahan' : 'induk'
+- keterangan: \->keterangan_upload ?? null
+- periode: null
+- tanggal_publish: now()->toDateString()
+- from_esakip: false
+- uploaded_at: now()->toDateTimeString()
+- page_number: null (Note: different from LembarKerja)
+
+3. app/Services/EsakipSyncService.php (Lines 1240-1261):
+- url: \['file_url'] ?? \['file'] ?? null
+- original_name: basename(\ ?? '')
+- timestamp: \->extractTimestamp(\)
+- kategori: \['kategori'] ?? 'induk'
+- tanggal_publish: \['tanggal_publish'] ?? null
+- periode: \['periode'] ?? null
+- keterangan: \['keterangan'] ?? null
+- is_perubahan: isset(\['kategori']) && \['kategori'] === 'perubahan'
+- from_esakip: true
+- from_lainnya: \['from_lainnya'] ?? false
+- matched_type: \['matched_type'] ?? null
+- synced_at: now()->toDateTimeString()
+- page_number: null
+
+4. app/Models/Penilaian.php (Casts):
+- link_file: array
+- is_perubahan: boolean
+- esakip_synced_at: datetime
+- page_number: integer
+
+5. Migration 2026_01_14_161938:
+- Added 'page_number' column to 'penilaian' table.
+
+Summary JSON Fields Found:
+- url (esakip)
+- path (manual)
+- original_name
+- is_perubahan
+- kategori (induk|perubahan)
+- keterangan
+- periode
+- tanggal_publish
+- from_esakip
+- uploaded_at (manual)
+- synced_at (esakip)
+- page_number
