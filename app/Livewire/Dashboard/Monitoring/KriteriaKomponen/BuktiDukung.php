@@ -680,6 +680,27 @@ class BuktiDukung extends Component
             ]);
         }
 
+        // Record history - Upload dokumen
+        $penilaianForHistory = $existingPenilaian ?? Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_id)
+            ->where('role_id', Auth::user()->role_id)
+            ->first();
+
+        if ($penilaianForHistory) {
+            $penilaianForHistory->recordHistory(
+                userId: Auth::id(),
+                roleId: $penilaianForHistory->role_id,
+                opdId: $this->opd_id,
+                kriteriaKomponenId: $this->kriteria_komponen_id,
+                buktiDukungId: $this->bukti_dukung_id,
+                tingkatanNilaiId: $penilaianForHistory->tingkatan_nilai_id,
+                isVerified: null,
+                keterangan: $this->keterangan_upload ?: 'Upload ' . count($uploadedFiles) . ' file bukti dukung',
+                isPerubahan: $existingPenilaian !== null
+            );
+        }
+
         // Simpan message sebelum reset
         $message = $this->ganti_semua_dokumen
             ? 'Berhasil mengganti semua dokumen.'
@@ -738,6 +759,19 @@ class BuktiDukung extends Component
                 'is_perubahan' => false,
                 // Keterangan tetap dipertahankan jika ada keterangan penilaian mandiri
             ]);
+
+            // Record history - Hapus file dokumen
+            $penilaian->recordHistory(
+                userId: Auth::id(),
+                roleId: $penilaian->role_id,
+                opdId: $this->opd_id,
+                kriteriaKomponenId: $this->kriteria_komponen_id,
+                buktiDukungId: $this->bukti_dukung_id,
+                tingkatanNilaiId: $penilaian->tingkatan_nilai_id,
+                isVerified: $penilaian->is_verified,
+                keterangan: 'Menghapus file dokumen',
+                isPerubahan: true
+            );
 
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('File berhasil dihapus.');
             $this->js('window.location.reload()');
@@ -815,6 +849,27 @@ class BuktiDukung extends Component
                 'keterangan' => $this->keterangan_verifikasi,
                 'tingkatan_nilai_id' => null, // Verifikasi tidak pakai tingkatan_nilai_id
             ]);
+        }
+
+        // Record history - Verifikasi
+        $penilaianForHistory = $existingPenilaian ?? Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_id)
+            ->where('bukti_dukung_id', $buktiDukungId)
+            ->where('opd_id', $this->opd_id)
+            ->where('role_id', Auth::user()->role_id)
+            ->first();
+
+        if ($penilaianForHistory) {
+            $penilaianForHistory->recordHistory(
+                userId: Auth::id(),
+                roleId: Auth::user()->role_id,
+                opdId: $this->opd_id,
+                kriteriaKomponenId: $this->kriteria_komponen_id,
+                buktiDukungId: $buktiDukungId,
+                tingkatanNilaiId: null,
+                isVerified: $this->is_verified,
+                keterangan: $this->keterangan_verifikasi,
+                isPerubahan: $existingPenilaian !== null
+            );
         }
 
         // Reset form
@@ -919,8 +974,25 @@ class BuktiDukung extends Component
                 'file_bukti_dukung_id' => null,
             ];
 
+            // Cek apakah ini update atau create
+            $existingPenilaian = Penilaian::where($uniqueKeys)->first();
+            $isPerubahan = $existingPenilaian !== null;
+
             // Simpan ke unified penilaian table
-            Penilaian::updateOrCreate($uniqueKeys, $updateData);
+            $penilaian = Penilaian::updateOrCreate($uniqueKeys, $updateData);
+
+            // Record history - Simpan penilaian
+            $penilaian->recordHistory(
+                userId: Auth::id(),
+                roleId: $roleId,
+                opdId: $this->opd_id,
+                kriteriaKomponenId: $this->kriteria_komponen_id,
+                buktiDukungId: $uniqueKeys['bukti_dukung_id'],
+                tingkatanNilaiId: $this->tingkatan_nilai_id,
+                isVerified: null,
+                keterangan: $isPerubahan ? 'Update penilaian' : 'Penilaian awal',
+                isPerubahan: $isPerubahan
+            );
 
             flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Penilaian berhasil disimpan.');
 

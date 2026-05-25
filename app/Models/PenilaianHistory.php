@@ -59,16 +59,56 @@ class PenilaianHistory extends Model
 
     /**
      * Helper untuk mendapatkan deskripsi aksi
+     *
+     * Untuk role OPD, tipe aksi DITENTUKAN OLEH KOMBINASI FIELD, bukan flag is_perubahan.
+     *
+     * BUG SEBELUMNYA: kode lama membaca `is_perubahan` (yang artinya "row Penilaian sudah
+     * pernah ada sebelum aksi ini") sebagai sinyal "revisi". Padahal flow OPD adalah:
+     *   1. Upload pertama        → is_perubahan = false, tingkatan_nilai_id = null
+     *   2. Skoring pertama       → is_perubahan = true (row sudah ada dari upload),
+     *                              tingkatan_nilai_id = set
+     *   3. Re-upload / re-score  → is_perubahan = true
+     *
+     * Jadi `is_perubahan=true` BUKAN berarti revisi — bisa jadi skoring pertama kali.
+     *
+     * FIX: bedakan UPLOAD vs SCORING dengan `tingkatan_nilai_id`:
+     *   - tingkatan_nilai_id !== null → aksi skoring (memberikan penilaian)
+     *   - tingkatan_nilai_id === null → aksi upload dokumen
+     *
+     * Aksi DELETE dideteksi via EXACT MATCH terhadap string konstanta yang di-set oleh
+     * LembarKerja.php (`'Menghapus penilaian'`, `'Menghapus file dokumen'`). EXACT MATCH
+     * dipakai (bukan str_contains/stripos) supaya keterangan bebas dari user tidak memicu
+     * false-positive — string ini hanya bisa muncul kalau di-set oleh kode aplikasi.
      */
     public function getActionDescription(): string
     {
         $roleJenis = $this->role->jenis;
 
         if ($roleJenis == 'opd') {
-            if ($this->is_perubahan) {
-                return 'melakukan revisi/perbaikan';
+            // Tentukan tipe aksi berdasarkan kombinasi field di history record
+            $hasTingkatanNilai = $this->tingkatan_nilai_id !== null;
+            $keterangan = $this->keterangan ?? '';
+
+            // EXACT MATCH terhadap string yang di-SET oleh code (LembarKerja.php)
+            // BUKAN substring match — untuk hindari false positive dari user keterangan input
+            if ($keterangan === 'Menghapus penilaian') {
+                return 'menghapus penilaian';
             }
-            return 'melakukan penilaian mandiri';
+            if ($keterangan === 'Menghapus file dokumen') {
+                return 'menghapus dokumen';
+            }
+
+            if ($hasTingkatanNilai) {
+                // Scoring action — Penilaian punya tingkatan_nilai_id
+                return $this->is_perubahan
+                    ? 'memberikan penilaian mandiri (revisi)'
+                    : 'memberikan penilaian mandiri';
+            }
+
+            // Upload action — tingkatan_nilai null AND bukan delete keterangan
+            return $this->is_perubahan
+                ? 'mengupload dokumen (revisi)'
+                : 'mengupload dokumen';
         }
 
         if ($roleJenis == 'verifikator') {
