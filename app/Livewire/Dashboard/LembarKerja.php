@@ -258,7 +258,7 @@ class LembarKerja extends Component
 
         if ($currentIndex !== false && $currentIndex > 0) {
             $this->bukti_dukung_id = $buktiDukungList[$currentIndex - 1];
-            $this->resetPenilaianForm();
+            $this->resetAllFormStatesForNavigation();
         }
     }
 
@@ -278,7 +278,7 @@ class LembarKerja extends Component
 
         if ($currentIndex !== false && $currentIndex < count($buktiDukungList) - 1) {
             $this->bukti_dukung_id = $buktiDukungList[$currentIndex + 1];
-            $this->resetPenilaianForm();
+            $this->resetAllFormStatesForNavigation();
         }
     }
 
@@ -290,6 +290,32 @@ class LembarKerja extends Component
         $this->is_editing_penilaian = false;
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
+    }
+
+    /**
+     * Reset semua form states saat navigasi antar bukti dukung (prev/next).
+     * Mencakup FilePond upload state + penilaian state agar tidak persist.
+     */
+    private function resetAllFormStatesForNavigation()
+    {
+        // Reset penilaian fields
+        $this->tingkatan_nilai_id = null;
+        $this->catatan_penilaian = '';
+        $this->is_editing_penilaian = false;
+        $this->is_verified = null;
+        $this->keterangan_verifikasi = '';
+
+        // Reset upload form fields (BUG-C fix — these were NOT reset before)
+        $this->file_bukti_dukung = [];
+        $this->keterangan_upload = '';
+        $this->page_number = null;
+        $this->is_perubahan = false;
+        $this->ganti_semua_dokumen = false;
+        $this->is_final = false;
+        $this->file_count = 0;
+        $this->temporary_file_names = [];
+        $this->file_page_numbers = [];
+        $this->is_setting_upload_page = false;
     }
 
     // Total bukti dukung dalam kriteria komponen
@@ -1454,6 +1480,97 @@ class LembarKerja extends Component
     }
 
     /**
+     * Hapus 1 file dari link_file array by index.
+     * Tidak hapus file yang from_esakip=true dari Storage.
+     */
+    public function deleteFileByIndex($fileIndex)
+    {
+        // Cek akses waktu
+        $aksesCheck = $this->cekAksesWaktu();
+        if (!$aksesCheck['allowed']) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error($aksesCheck['message']);
+            return;
+        }
+
+        // Authorization — hanya admin dan opd
+        if (!in_array(Auth::user()->role->jenis, ['admin', 'opd'])) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Anda tidak memiliki akses untuk menghapus dokumen.');
+            return;
+        }
+
+        if (!$this->bukti_dukung_id || !$this->opd_session) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Bukti dukung tidak ditemukan.');
+            return;
+        }
+
+        $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
+        if (!$opdRoleId) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Role OPD tidak ditemukan.');
+            return;
+        }
+
+        $penilaian = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+            ->where('bukti_dukung_id', $this->bukti_dukung_id)
+            ->where('opd_id', $this->opd_session)
+            ->where('role_id', $opdRoleId)
+            ->first();
+
+        if (!$penilaian || !$penilaian->link_file || !is_array($penilaian->link_file)) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan.');
+            return;
+        }
+
+        $files = $penilaian->link_file;
+
+        if (!isset($files[$fileIndex])) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('File tidak ditemukan pada index tersebut.');
+            return;
+        }
+
+        $fileToDelete = $files[$fileIndex];
+        $fileName = $fileToDelete['original_name'] ?? 'Dokumen ' . ($fileIndex + 1);
+
+        try {
+            // Hapus file dari Storage (kecuali dari eSAKIP)
+            if (isset($fileToDelete['path']) && empty($fileToDelete['from_esakip'])) {
+                Storage::disk('public')->delete($fileToDelete['path']);
+            }
+
+            // Remove file dari array, re-index
+            unset($files[$fileIndex]);
+            $files = array_values($files);
+
+            // Update record
+            $penilaian->update([
+                'link_file' => count($files) > 0 ? $files : null,
+            ]);
+
+            // Record history — EXACT keterangan match getActionDescription
+            $penilaian->recordHistory(
+                userId: Auth::id(),
+                roleId: $opdRoleId,
+                opdId: $this->opd_session,
+                kriteriaKomponenId: $this->kriteria_komponen_session,
+                buktiDukungId: $this->bukti_dukung_id,
+                tingkatanNilaiId: $penilaian->tingkatan_nilai_id,
+                isVerified: $penilaian->is_verified,
+                keterangan: 'Menghapus file dokumen',
+                isPerubahan: true
+            );
+
+            flash()->use('theme.ruby')->option('position', 'bottom-right')
+                ->success("File '{$fileName}' berhasil dihapus.");
+        } catch (\Exception $e) {
+            \Log::error('Error deleting file by index: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'bukti_dukung_id' => $this->bukti_dukung_id,
+                'file_index' => $fileIndex,
+            ]);
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal menghapus file: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Open modal set page number dengan pre-fill data
      */
     /**
@@ -1608,6 +1725,34 @@ class LembarKerja extends Component
         } else {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Penilaian tidak ditemukan.');
         }
+    }
+
+    /**
+     * Wrapper: open page modal untuk bukti spesifik di mode kriteria.
+     * Mode kriteria iterates foreach buktiItem — perlu set bukti_dukung_id dulu.
+     */
+    public function openSetPageNumberModalForBukti($buktiDukungId, $fileIndex)
+    {
+        $this->bukti_dukung_id = $buktiDukungId;
+        $this->openSetPageNumberModal($fileIndex);
+    }
+
+    /**
+     * Wrapper: delete file by index untuk bukti spesifik di mode kriteria.
+     */
+    public function deleteFileByIndexForBukti($buktiDukungId, $fileIndex)
+    {
+        $this->bukti_dukung_id = $buktiDukungId;
+        $this->deleteFileByIndex($fileIndex);
+    }
+
+    /**
+     * Wrapper: hapus semua files untuk bukti spesifik di mode kriteria.
+     */
+    public function deleteAllFilesForBukti($buktiDukungId)
+    {
+        $this->bukti_dukung_id = $buktiDukungId;
+        $this->deleteFileBuktiDukung();
     }
 
     /**
