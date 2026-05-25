@@ -197,8 +197,9 @@ class LembarKerja extends Component
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
 
-        // Force reset FilePond JS instance
-        $this->dispatch('reset-filepond');
+        // Force reset FilePond JS instance via built-in spatie/livewire-filepond event
+        // Library listens for 'filepond-reset-{wireModelAttribute}' and calls pond.removeFiles()
+        $this->dispatch('filepond-reset-file_bukti_dukung');
     }
 
     public function resetBuktiDukungId()
@@ -320,8 +321,9 @@ class LembarKerja extends Component
         $this->file_page_numbers = [];
         $this->is_setting_upload_page = false;
 
-        // Force reset FilePond JS instance (Livewire property reset alone is not enough)
-        $this->dispatch('reset-filepond');
+        // Force reset FilePond JS instance via built-in spatie/livewire-filepond event
+        // Library listens for 'filepond-reset-{wireModelAttribute}' and calls pond.removeFiles()
+        $this->dispatch('filepond-reset-file_bukti_dukung');
     }
 
     // Total bukti dukung dalam kriteria komponen
