@@ -2549,7 +2549,19 @@
                                                     <div class="mb-2" x-data="{ isUploading: false, hasFiles: false }"
                                                         @filepond-upload-started.window="isUploading = true; hasFiles = true"
                                                         @filepond-upload-completed.window="isUploading = false"
-                                                        @filepond-upload-file-removed.window="if ($event.detail.isEmpty) { hasFiles = false; isUploading = false }">
+                                                        @filepond-upload-file-removed.window="if ($event.detail.isEmpty) { hasFiles = false; isUploading = false }"
+                                                        @reset-filepond.window="
+                                                            hasFiles = false;
+                                                            isUploading = false;
+                                                            $nextTick(() => {
+                                                                document.querySelectorAll('.filepond--root').forEach(fp => {
+                                                                    if (window.FilePond) {
+                                                                        const instance = window.FilePond.find(fp);
+                                                                        if (instance) instance.removeFiles();
+                                                                    }
+                                                                });
+                                                            })
+                                                        ">
                                                         <div class="mx-3">
                                                             <div class="d-flex align-items-start gap-3">
 
@@ -2560,7 +2572,7 @@
                                                                         multiple />
                                                                     <div class="form-text text-muted mt-1 ms-1">
                                                                         <i class="ri-information-line me-1"></i>
-                                                                        Format: PDF, JPG, PNG &bull; Maks. 80MB per file
+                                                                        Format: PDF, JPG, PNG
                                                                     </div>
                                                                 </div>
 

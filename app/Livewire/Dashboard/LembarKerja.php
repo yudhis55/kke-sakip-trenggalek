@@ -196,6 +196,9 @@ class LembarKerja extends Component
         // Reset verifikasi states
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
+
+        // Force reset FilePond JS instance
+        $this->dispatch('reset-filepond');
     }
 
     public function resetBuktiDukungId()
@@ -316,6 +319,9 @@ class LembarKerja extends Component
         $this->temporary_file_names = [];
         $this->file_page_numbers = [];
         $this->is_setting_upload_page = false;
+
+        // Force reset FilePond JS instance (Livewire property reset alone is not enough)
+        $this->dispatch('reset-filepond');
     }
 
     // Total bukti dukung dalam kriteria komponen
