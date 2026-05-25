@@ -302,10 +302,9 @@
                             </a>
                         </li>
 
-                        @if (Auth::user()->role->jenis == 'opd')
+                        @if (in_array(Auth::user()->role->jenis, ['opd', 'penjamin', 'penilai']))
                             <li class="nav-item">
                                 @php
-                                    $opdId = Auth::user()->opd_id;
                                     $tahunSession = session('tahun_session');
                                     $verifikatorRoleIds = \App\Models\Role::where('jenis', 'verifikator')
                                         ->pluck('id')
@@ -313,8 +312,7 @@
                                     $penjaminRoleId = \App\Models\Role::where('jenis', 'penjamin')->first()?->id;
                                     $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
 
-                                    $badgeCountPenolakan = \App\Models\PenilaianHistory::whereIn('role_id', $roleIds)
-                                        ->where('opd_id', $opdId)
+                                    $penolakanQuery = \App\Models\PenilaianHistory::whereIn('role_id', $roleIds)
                                         ->where('is_verified', 0)
                                         ->whereNotNull('keterangan')
                                         ->where('status_perbaikan', 'belum_diperbaiki')
@@ -322,8 +320,13 @@
                                             $query->whereHas('kriteria_komponen', function ($q) use ($tahunSession) {
                                                 $q->where('tahun_id', $tahunSession);
                                             });
-                                        })
-                                        ->count();
+                                        });
+
+                                    if (Auth::user()->role->jenis === 'opd') {
+                                        $penolakanQuery->where('opd_id', Auth::user()->opd_id);
+                                    }
+
+                                    $badgeCountPenolakan = $penolakanQuery->count();
                                 @endphp
                                 <a wire:current="active" class="nav-link menu-link" href="/rekap-penolakan"
                                     role="button" aria-expanded="false" aria-controls="sidebarLayouts">
@@ -359,6 +362,43 @@
                                         Perbaikan</span>
                                     @if ($badgeCountPerbaikan > 0)
                                         <span class="badge-pulsate-app"></span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endif
+
+                        @if (Auth::user()->role->jenis === 'verifikator')
+                            <li class="nav-item">
+                                @php
+                                    $tahunSession = session('tahun_session');
+                                    $verifikatorRoleId = Auth::user()->role_id;
+                                    $opdRoleId = \App\Models\Role::where('jenis', 'opd')->first()?->id;
+                                    $belumDiverifikasi = 0;
+                                    if ($verifikatorRoleId && $opdRoleId && $tahunSession) {
+                                        $belumDiverifikasi = \Illuminate\Support\Facades\DB::table('penilaian as p_opd')
+                                            ->join('bukti_dukung as bd', 'bd.id', '=', 'p_opd.bukti_dukung_id')
+                                            ->where('p_opd.role_id', $opdRoleId)
+                                            ->whereNotNull('p_opd.link_file')
+                                            ->where('bd.role_id', $verifikatorRoleId)
+                                            ->where('bd.tahun_id', $tahunSession)
+                                            ->whereNotExists(function ($q) use ($verifikatorRoleId) {
+                                                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                                                    ->from('penilaian as p_verif')
+                                                    ->whereColumn('p_verif.kriteria_komponen_id', 'p_opd.kriteria_komponen_id')
+                                                    ->whereColumn('p_verif.opd_id', 'p_opd.opd_id')
+                                                    ->whereColumn('p_verif.bukti_dukung_id', 'p_opd.bukti_dukung_id')
+                                                    ->where('p_verif.role_id', $verifikatorRoleId)
+                                                    ->whereNotNull('p_verif.is_verified');
+                                            })
+                                            ->count();
+                                    }
+                                @endphp
+                                <a wire:current="active" class="nav-link menu-link" href="/rekap-verifikasi"
+                                    role="button" aria-expanded="false" aria-controls="sidebarLayouts">
+                                    <i class="mdi mdi-checkbox-multiple-marked-circle-outline"></i>
+                                    <span data-key="t-layouts">Rekap Verifikasi</span>
+                                    @if ($belumDiverifikasi > 0)
+                                        <span class="badge bg-warning rounded-pill ms-1">{{ $belumDiverifikasi }}</span>
                                     @endif
                                 </a>
                             </li>

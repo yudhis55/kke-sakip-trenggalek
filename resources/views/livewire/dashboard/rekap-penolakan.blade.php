@@ -22,11 +22,26 @@
                         <p class="mb-0 text-dark fw-semibold flex-grow-1">Rekap Penolakan Dokumen</p>
                     </div>
                     <div class="card-body">
+                        @if (Auth::user()->role->jenis !== 'opd')
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <select wire:model.live="selected_opd" class="form-select form-select-sm">
+                                        <option value="">-- Semua OPD --</option>
+                                        @foreach ($this->opdList as $opd)
+                                            <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
                         <div class="table-responsive table-card">
                             <table class="table mb-0 align-middle">
                                 <thead class="table-light">
                                     <tr>
                                         <th scope="col" style="width: 4%;">No</th>
+                                        @if (Auth::user()->role->jenis !== 'opd')
+                                            <th scope="col" style="width: 12%;">OPD</th>
+                                        @endif
                                         <th scope="col" style="width: 12%;">Komponen</th>
                                         <th scope="col" style="width: 12%;">Sub Komponen</th>
                                         <th scope="col" style="width: 16%;">Kriteria Komponen</th>
@@ -41,6 +56,9 @@
                                     @forelse ($this->rekapPenolakan as $index => $penolakan)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
+                                            @if (Auth::user()->role->jenis !== 'opd')
+                                                <td>{{ $penolakan->opd?->nama ?? '-' }}</td>
+                                            @endif
                                             <td>
                                                 @if (
                                                     $penolakan->kriteria_komponen &&

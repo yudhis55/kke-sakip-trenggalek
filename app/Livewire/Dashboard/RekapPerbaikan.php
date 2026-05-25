@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\Opd;
 use App\Models\PenilaianHistory;
 use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,10 @@ class RekapPerbaikan extends Component
     // Modal keterangan
     public $selectedKeterangan = null;
     public $selectedPenolakan = null;
+
+    // Filter OPD
+    public $selected_opd = null;
+    public $searchOpd = '';
 
     // Session untuk redirect ke lembar kerja
     #[Session(key: 'tahun_session')]
@@ -38,6 +43,17 @@ class RekapPerbaikan extends Component
     }
 
     #[Computed]
+    public function opdList()
+    {
+        return Opd::orderBy('nama')->get();
+    }
+
+    public function updatedSelectedOpd()
+    {
+        // Reset pagination if needed
+    }
+
+    #[Computed]
     public function rekapPerbaikan()
     {
         // Hanya untuk Verifikator, Penjamin, Penilai
@@ -49,6 +65,9 @@ class RekapPerbaikan extends Component
 
         // Setiap user hanya melihat perbaikan dari dokumen yang mereka sendiri tolak
         return PenilaianHistory::where('role_id', Auth::user()->role_id)
+            ->when($this->selected_opd, function ($query) {
+                $query->where('opd_id', $this->selected_opd);
+            })
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
             ->where('status_perbaikan', 'sudah_diperbaiki')
@@ -77,6 +96,9 @@ class RekapPerbaikan extends Component
 
         // Setiap user hanya hitung perbaikan dari dokumen yang mereka sendiri tolak
         return PenilaianHistory::where('role_id', Auth::user()->role_id)
+            ->when($this->selected_opd, function ($query) {
+                $query->where('opd_id', $this->selected_opd);
+            })
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
             ->where('status_perbaikan', 'sudah_diperbaiki')

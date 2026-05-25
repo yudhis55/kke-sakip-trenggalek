@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\BuktiDukung;
+use App\Models\Opd;
 use App\Models\Penilaian;
 use App\Models\PenilaianHistory;
 use App\Models\Role;
@@ -15,6 +16,10 @@ class RekapPenolakan extends Component
 {
     // Modal keterangan
     public $selectedKeterangan = null;
+
+    // Filter OPD (untuk role penjamin/penilai)
+    public $selected_opd = null;
+    public $searchOpd = '';
 
     // Session untuk redirect ke lembar kerja
     #[Session(key: 'tahun_session')]
@@ -35,14 +40,25 @@ class RekapPenolakan extends Component
     }
 
     #[Computed]
+    public function opdList()
+    {
+        return Opd::orderBy('nama')->get();
+    }
+
+    public function updatedSelectedOpd()
+    {
+        // Reset pagination if needed
+    }
+
+    #[Computed]
     public function rekapPenolakan()
     {
-        // Hanya untuk OPD
-        if (Auth::user()->role->jenis !== 'opd') {
+        $jenis = Auth::user()->role->jenis;
+
+        // Hanya OPD, penjamin, dan penilai yang dapat mengakses
+        if (!in_array($jenis, ['opd', 'penjamin', 'penilai'])) {
             return collect();
         }
-
-        $opdId = Auth::user()->opd_id;
 
         // Ambil semua penilaian yang ditolak (is_verified = 0 atau false)
         // Dari role verifikator atau penjamin
@@ -50,47 +66,64 @@ class RekapPenolakan extends Component
         $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
         $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
 
-        return PenilaianHistory::whereIn('role_id', $roleIds)
-            ->where('opd_id', $opdId)
+        $query = PenilaianHistory::whereIn('role_id', $roleIds)
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
             ->whereIn('status_perbaikan', ['belum_diperbaiki', 'sudah_diperbaiki']) // Exclude yang sudah diterima
-            ->whereHas('kriteria_komponen', function ($query) {
-                $query->where('tahun_id', $this->tahun_session);
+            ->whereHas('kriteria_komponen', function ($q) {
+                $q->where('tahun_id', $this->tahun_session);
             })
             ->with([
                 'kriteria_komponen.sub_komponen.komponen',
                 'bukti_dukung',
-                'role'
+                'role',
+                'opd',
             ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
+
+        // OPD: forced filter ke opd_id sendiri (preserve existing behavior)
+        if ($jenis === 'opd') {
+            $query->where('opd_id', Auth::user()->opd_id);
+        } elseif ($this->selected_opd) {
+            // penjamin/penilai: optional filter berdasarkan selected_opd
+            $query->where('opd_id', $this->selected_opd);
+        }
+
+        return $query->get();
     }
 
     #[Computed]
     public function badgeCount()
     {
-        // Hanya untuk OPD
-        if (Auth::user()->role->jenis !== 'opd') {
+        $jenis = Auth::user()->role->jenis;
+
+        // Hanya OPD, penjamin, dan penilai yang dapat mengakses
+        if (!in_array($jenis, ['opd', 'penjamin', 'penilai'])) {
             return 0;
         }
-
-        $opdId = Auth::user()->opd_id;
 
         // Hitung dokumen yang ditolak dan belum diperbaiki
         $verifikatorRoleIds = Role::where('jenis', 'verifikator')->pluck('id')->toArray();
         $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
         $roleIds = array_merge($verifikatorRoleIds, [$penjaminRoleId]);
 
-        return PenilaianHistory::whereIn('role_id', $roleIds)
-            ->where('opd_id', $opdId)
+        $query = PenilaianHistory::whereIn('role_id', $roleIds)
             ->where('is_verified', 0)
             ->whereNotNull('keterangan')
             ->where('status_perbaikan', 'belum_diperbaiki')
-            ->whereHas('kriteria_komponen', function ($query) {
-                $query->where('tahun_id', $this->tahun_session);
-            })
-            ->count();
+            ->whereHas('kriteria_komponen', function ($q) {
+                $q->where('tahun_id', $this->tahun_session);
+            });
+
+        // OPD: forced filter ke opd_id sendiri (preserve existing behavior)
+        if ($jenis === 'opd') {
+            $query->where('opd_id', Auth::user()->opd_id);
+        } elseif ($this->selected_opd) {
+            // penjamin/penilai: optional filter berdasarkan selected_opd
+            $query->where('opd_id', $this->selected_opd);
+        }
+
+        return $query->count();
     }
 
     public function redirectToBuktiDukung($penilaianHistoryId)

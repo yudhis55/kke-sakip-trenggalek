@@ -11,6 +11,7 @@ use App\Livewire\Dashboard\Pengaturan;
 use App\Livewire\Dashboard\LembarKerja;
 use App\Livewire\Dashboard\RekapPenolakan;
 use App\Livewire\Dashboard\RekapPerbaikan;
+use App\Livewire\Dashboard\RekapVerifikasi;
 use App\Livewire\Dashboard\EksporLaporan;
 use App\Livewire\Dashboard\SinkronData;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,7 @@ Route::middleware([EnsureUserHasRole::class . ':admin,verifikator_bappeda,verifi
     Route::get('/lembar-kerja', LembarKerja::class)->name('lembar-kerja');
     Route::get('/rekap-penolakan', RekapPenolakan::class)->name('rekap-penolakan');
     Route::get('/rekap-perbaikan', RekapPerbaikan::class)->name('rekap-perbaikan');
+    Route::get('/rekap-verifikasi', RekapVerifikasi::class)->name('rekap-verifikasi');
     Route::get('/ekspor-laporan', EksporLaporan::class)->name('ekspor-laporan');
     Route::get('/sinkron-data', SinkronData::class)->name('sinkron-data');
     Route::get('/pengaturan', Pengaturan::class)->name('pengaturan');

@@ -25,6 +25,16 @@
                         @endif
                     </div>
                     <div class="card-body">
+                        <div class="row mb-3 mt-2">
+                            <div class="col-md-4">
+                                <select wire:model.live="selected_opd" class="form-select form-select-sm">
+                                    <option value="">-- Semua OPD --</option>
+                                    @foreach ($this->opdList as $opd)
+                                        <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                         <div class="table-responsive table-card">
                             <table class="table mb-0 align-middle">
                                 <thead class="table-light">
