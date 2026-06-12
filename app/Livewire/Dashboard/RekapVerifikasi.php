@@ -185,6 +185,38 @@ class RekapVerifikasi extends Component
         ];
     }
 
+    // Session properties untuk redirect ke lembar kerja
+    #[Session(key: 'opd_session')]
+    public $opd_session;
+    #[Session(key: 'komponen_session')]
+    public $komponen_session;
+    #[Session(key: 'sub_komponen_session')]
+    public $sub_komponen_session;
+    #[Session(key: 'kriteria_komponen_session')]
+    public $kriteria_komponen_session;
+
+    /**
+     * Redirect ke lembar kerja dengan set session yang tepat.
+     * Set OPD, komponen, sub_komponen, kriteria_komponen agar LembarKerja langsung tampil di lokasi yang benar.
+     */
+    public function redirectToKriteria($opdId, $kriteriaKomponenId)
+    {
+        $kriteria = KriteriaKomponen::with('sub_komponen.komponen')->find($kriteriaKomponenId);
+
+        if (!$kriteria) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Data kriteria tidak ditemukan.');
+            return;
+        }
+
+        // Set semua session yang diperlukan untuk lembar kerja
+        $this->opd_session = $opdId;
+        $this->komponen_session = $kriteria->sub_komponen->komponen_id;
+        $this->sub_komponen_session = $kriteria->sub_komponen_id;
+        $this->kriteria_komponen_session = $kriteriaKomponenId;
+
+        return $this->redirectRoute('lembar-kerja');
+    }
+
     public function render()
     {
         return view('livewire.dashboard.rekap-verifikasi');

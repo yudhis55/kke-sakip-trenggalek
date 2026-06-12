@@ -163,9 +163,9 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <a href="/lembar-kerja" class="btn btn-sm btn-outline-primary" title="Lihat Dokumen">
+                                                <button wire:click="redirectToKriteria({{ $item->opd_id }}, {{ $item->kriteria_komponen?->id }})" class="btn btn-sm btn-outline-primary" title="Lihat di Lembar Kerja">
                                                     <i class="ri-external-link-line"></i>
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
                                     @empty
