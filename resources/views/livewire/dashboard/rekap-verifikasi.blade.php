@@ -111,6 +111,7 @@
                                         <th scope="col" style="width: 11%;">Status</th>
                                         <th scope="col" style="width: 10%;">Tgl Verifikasi</th>
                                         <th scope="col" style="width: 15%;">Keterangan</th>
+                                        <th scope="col" style="width: 5%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -161,10 +162,15 @@
                                                     <span class="text-muted">-</span>
                                                 @endif
                                             </td>
+                                            <td>
+                                                <a href="/lembar-kerja" class="btn btn-sm btn-outline-primary" title="Lihat Dokumen">
+                                                    <i class="ri-external-link-line"></i>
+                                                </a>
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="text-center text-muted py-4">
+                                            <td colspan="10" class="text-center text-muted py-4">
                                                 Tidak ada data
                                             </td>
                                         </tr>

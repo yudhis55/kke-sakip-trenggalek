@@ -309,7 +309,7 @@ class LembarKerja extends Component
         $this->is_verified = null;
         $this->keterangan_verifikasi = '';
 
-        // Reset upload form fields (BUG-C fix — these were NOT reset before)
+        // Reset upload form fields (BUG-C fix â€” these were NOT reset before)
         $this->file_bukti_dukung = [];
         $this->keterangan_upload = '';
         $this->page_number = null;
@@ -1526,7 +1526,7 @@ class LembarKerja extends Component
             return;
         }
 
-        // Authorization — hanya admin dan opd
+        // Authorization â€” hanya admin dan opd
         if (!in_array(Auth::user()->role->jenis, ['admin', 'opd'])) {
             flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Anda tidak memiliki akses untuk menghapus dokumen.');
             return;
@@ -1579,7 +1579,7 @@ class LembarKerja extends Component
                 'link_file' => count($files) > 0 ? $files : null,
             ]);
 
-            // Record history — EXACT keterangan match getActionDescription
+            // Record history â€” EXACT keterangan match getActionDescription
             $penilaian->recordHistory(
                 userId: Auth::id(),
                 roleId: $opdRoleId,
@@ -1763,7 +1763,7 @@ class LembarKerja extends Component
 
     /**
      * Wrapper: open page modal untuk bukti spesifik di mode kriteria.
-     * Mode kriteria iterates foreach buktiItem — perlu set bukti_dukung_id dulu.
+     * Mode kriteria iterates foreach buktiItem â€” perlu set bukti_dukung_id dulu.
      */
     public function openSetPageNumberModalForBukti($buktiDukungId, $fileIndex)
     {
@@ -1927,7 +1927,10 @@ class LembarKerja extends Component
 
         // Filter berdasarkan mode penilaian
         if ($this->penilaianDiKriteria) {
-            $query->whereNull('bukti_dukung_id');
+            // Mode kriteria: tampilkan SEMUA history untuk kriteria ini
+            // Termasuk: scoring/verifikasi (bukti_dukung_id=NULL) DAN upload per-bukti (bukti_dukung_id=non-null)
+            // Karena di mode kriteria, upload tetap per bukti tapi verifikasi di level kriteria
+            // User perlu lihat keduanya untuk tracking lengkap
         } else {
             if ($buktiDukungId) {
                 $query->where('bukti_dukung_id', $buktiDukungId);
