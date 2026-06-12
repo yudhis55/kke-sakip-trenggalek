@@ -117,47 +117,25 @@
                                     @forelse ($this->rekapVerifikasi as $index => $item)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
+                                            <td>{{ $item->opd?->nama ?? '-' }}</td>
+                                            <td>{{ $item->kriteria_komponen?->sub_komponen?->komponen?->nama ?? '-' }}</td>
+                                            <td>{{ $item->kriteria_komponen?->sub_komponen?->nama ?? '-' }}</td>
                                             <td>
-                                                @if ($item->opd)
-                                                    {{ $item->opd->nama }}
-                                                @else
-                                                    <span class="text-muted">-</span>
+                                                {{ $item->kriteria_komponen?->kode ?? '' }} -
+                                                {{ $item->kriteria_komponen?->nama ?? '-' }}
+                                                @if ($item->type === 'kriteria')
+                                                    <span class="badge bg-secondary ms-1">Kriteria</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                @if (
-                                                    $item->bukti_dukung &&
-                                                        $item->bukti_dukung->kriteria_komponen &&
-                                                        $item->bukti_dukung->kriteria_komponen->sub_komponen &&
-                                                        $item->bukti_dukung->kriteria_komponen->sub_komponen->komponen)
-                                                    {{ $item->bukti_dukung->kriteria_komponen->sub_komponen->komponen->nama }}
+                                                @if ($item->type === 'bukti')
+                                                    {{ $item->bukti_dukung?->nama ?? '-' }}
+                                                    <small class="text-muted d-block">{{ $item->file_count }} file</small>
                                                 @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if (
-                                                    $item->bukti_dukung &&
-                                                        $item->bukti_dukung->kriteria_komponen &&
-                                                        $item->bukti_dukung->kriteria_komponen->sub_komponen)
-                                                    {{ $item->bukti_dukung->kriteria_komponen->sub_komponen->nama }}
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if ($item->bukti_dukung && $item->bukti_dukung->kriteria_komponen)
-                                                    {{ $item->bukti_dukung->kriteria_komponen->kode }} -
-                                                    {{ $item->bukti_dukung->kriteria_komponen->nama }}
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if ($item->bukti_dukung)
-                                                    {{ $item->bukti_dukung->nama }}
-                                                @else
-                                                    <span class="text-muted fst-italic">Penilaian di kriteria</span>
+                                                    <small class="text-muted">
+                                                        {{ $item->bukti_dukung_list->count() }} bukti dukung
+                                                        ({{ $item->file_count }} file)
+                                                    </small>
                                                 @endif
                                             </td>
                                             <td>

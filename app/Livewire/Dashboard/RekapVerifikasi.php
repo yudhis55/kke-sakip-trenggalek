@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\BuktiDukung;
+use App\Models\KriteriaKomponen;
 use App\Models\Opd;
 use App\Models\Penilaian;
 use App\Models\Role;
@@ -38,7 +39,6 @@ class RekapVerifikasi extends Component
     #[Computed]
     public function rekapVerifikasi()
     {
-        // Hanya verifikator
         if (Auth::user()->role->jenis !== 'verifikator') {
             return collect();
         }
@@ -50,55 +50,124 @@ class RekapVerifikasi extends Component
             return collect();
         }
 
-        // Bukti dukung yang assigned ke verifikator ini (role_id match) untuk tahun ini
-        $buktiDukungIds = BuktiDukung::where('role_id', $verifikatorRoleId)
-            ->when($this->tahun_session, function ($q) {
-                $q->where('tahun_id', $this->tahun_session);
-            })
-            ->pluck('id');
+        // Get all bukti_dukung assigned to this verifikator
+        $buktiDukungList = BuktiDukung::where('role_id', $verifikatorRoleId)
+            ->when($this->tahun_session, fn($q) => $q->where('tahun_id', $this->tahun_session))
+            ->with('kriteria_komponen')
+            ->get();
 
-        if ($buktiDukungIds->isEmpty()) {
+        if ($buktiDukungList->isEmpty()) {
             return collect();
         }
 
-        // Penilaian OPD yang punya file di bukti dukung tersebut
-        $query = Penilaian::with([
-            'opd',
-            'bukti_dukung.kriteria_komponen.sub_komponen.komponen',
-        ])
-            ->whereIn('bukti_dukung_id', $buktiDukungIds)
-            ->where('role_id', $opdRoleId)
-            ->whereNotNull('link_file');
+        $result = collect();
 
-        if ($this->selected_opd) {
-            $query->where('opd_id', $this->selected_opd);
+        // Split by penilaian_di mode
+        $buktiModeBukti = $buktiDukungList->filter(
+            fn($bd) => $bd->kriteria_komponen && $bd->kriteria_komponen->penilaian_di === 'bukti'
+        );
+        $buktiModeKriteria = $buktiDukungList->filter(
+            fn($bd) => $bd->kriteria_komponen && $bd->kriteria_komponen->penilaian_di === 'kriteria'
+        );
+
+        // === MODE BUKTI: per bukti_dukung ===
+        if ($buktiModeBukti->isNotEmpty()) {
+            $buktiIds = $buktiModeBukti->pluck('id');
+
+            $query = Penilaian::with(['opd', 'bukti_dukung.kriteria_komponen.sub_komponen.komponen'])
+                ->whereIn('bukti_dukung_id', $buktiIds)
+                ->where('role_id', $opdRoleId)
+                ->whereNotNull('link_file');
+
+            if ($this->selected_opd) {
+                $query->where('opd_id', $this->selected_opd);
+            }
+
+            foreach ($query->get() as $p) {
+                $verifPenilaian = Penilaian::where('kriteria_komponen_id', $p->kriteria_komponen_id)
+                    ->where('opd_id', $p->opd_id)
+                    ->where('bukti_dukung_id', $p->bukti_dukung_id)
+                    ->where('role_id', $verifikatorRoleId)
+                    ->whereNotNull('is_verified')
+                    ->first();
+
+                $item = new \stdClass();
+                $item->type = 'bukti';
+                $item->opd = $p->opd;
+                $item->opd_id = $p->opd_id;
+                $item->kriteria_komponen = $p->bukti_dukung?->kriteria_komponen;
+                $item->bukti_dukung = $p->bukti_dukung;
+                $item->bukti_dukung_list = collect([$p]);
+                $item->file_count = is_array($p->link_file) ? count($p->link_file) : 0;
+                $item->verifikasi_status = $verifPenilaian
+                    ? ($verifPenilaian->is_verified ? 'disetujui' : 'ditolak')
+                    : 'belum_diverifikasi';
+                $item->verifikasi_keterangan = $verifPenilaian?->keterangan;
+                $item->verifikasi_tanggal = $verifPenilaian?->updated_at;
+
+                $result->push($item);
+            }
         }
 
-        $opdPenilaianList = $query->get();
+        // === MODE KRITERIA: per kriteria_komponen per OPD (grouped) ===
+        if ($buktiModeKriteria->isNotEmpty()) {
+            $kriteriaIds = $buktiModeKriteria->pluck('kriteria_komponen_id')->unique();
 
-        // Map status verifikasi untuk setiap penilaian OPD
-        $result = $opdPenilaianList->map(function ($p) use ($verifikatorRoleId) {
-            $verifPenilaian = Penilaian::where('kriteria_komponen_id', $p->kriteria_komponen_id)
-                ->where('opd_id', $p->opd_id)
-                ->where('bukti_dukung_id', $p->bukti_dukung_id)
-                ->where('role_id', $verifikatorRoleId)
-                ->whereNotNull('is_verified')
-                ->first();
+            foreach ($kriteriaIds as $kriteriaId) {
+                $kriteria = KriteriaKomponen::with('sub_komponen.komponen')->find($kriteriaId);
+                if (!$kriteria) {
+                    continue;
+                }
 
-            $p->verifikasi_status = $verifPenilaian
-                ? ($verifPenilaian->is_verified ? 'disetujui' : 'ditolak')
-                : 'belum_diverifikasi';
-            $p->verifikasi_keterangan = $verifPenilaian?->keterangan;
-            $p->verifikasi_tanggal = $verifPenilaian?->updated_at;
+                $buktiIdsForKriteria = $buktiModeKriteria
+                    ->where('kriteria_komponen_id', $kriteriaId)
+                    ->pluck('id');
 
-            return $p;
-        });
+                // Find OPDs that uploaded files for any bukti in this kriteria
+                $opdPenilaians = Penilaian::where('kriteria_komponen_id', $kriteriaId)
+                    ->whereIn('bukti_dukung_id', $buktiIdsForKriteria)
+                    ->where('role_id', $opdRoleId)
+                    ->whereNotNull('link_file')
+                    ->when($this->selected_opd, fn($q) => $q->where('opd_id', $this->selected_opd))
+                    ->with(['opd', 'bukti_dukung'])
+                    ->get()
+                    ->groupBy('opd_id');
+
+                foreach ($opdPenilaians as $opdId => $penilaians) {
+                    // Check verifikasi at KRITERIA level (bukti_dukung_id = NULL)
+                    $verifPenilaian = Penilaian::where('kriteria_komponen_id', $kriteriaId)
+                        ->where('opd_id', $opdId)
+                        ->where('role_id', $verifikatorRoleId)
+                        ->whereNull('bukti_dukung_id')
+                        ->whereNotNull('is_verified')
+                        ->first();
+
+                    $item = new \stdClass();
+                    $item->type = 'kriteria';
+                    $item->opd = $penilaians->first()->opd;
+                    $item->opd_id = $opdId;
+                    $item->kriteria_komponen = $kriteria;
+                    $item->bukti_dukung = null;
+                    $item->bukti_dukung_list = $penilaians;
+                    $item->file_count = $penilaians->sum(
+                        fn($p) => is_array($p->link_file) ? count($p->link_file) : 0
+                    );
+                    $item->verifikasi_status = $verifPenilaian
+                        ? ($verifPenilaian->is_verified ? 'disetujui' : 'ditolak')
+                        : 'belum_diverifikasi';
+                    $item->verifikasi_keterangan = $verifPenilaian?->keterangan;
+                    $item->verifikasi_tanggal = $verifPenilaian?->updated_at;
+
+                    $result->push($item);
+                }
+            }
+        }
 
         // Apply filter status
         if ($this->filter_status === 'sudah') {
-            $result = $result->filter(fn ($p) => in_array($p->verifikasi_status, ['disetujui', 'ditolak']));
+            $result = $result->filter(fn($item) => in_array($item->verifikasi_status, ['disetujui', 'ditolak']));
         } elseif ($this->filter_status === 'belum') {
-            $result = $result->filter(fn ($p) => $p->verifikasi_status === 'belum_diverifikasi');
+            $result = $result->filter(fn($item) => $item->verifikasi_status === 'belum_diverifikasi');
         }
 
         return $result->values();
@@ -111,8 +180,8 @@ class RekapVerifikasi extends Component
 
         return [
             'total' => count($all),
-            'sudah' => $all->filter(fn ($p) => $p->verifikasi_status !== 'belum_diverifikasi')->count(),
-            'belum' => $all->filter(fn ($p) => $p->verifikasi_status === 'belum_diverifikasi')->count(),
+            'sudah' => $all->filter(fn($item) => $item->verifikasi_status !== 'belum_diverifikasi')->count(),
+            'belum' => $all->filter(fn($item) => $item->verifikasi_status === 'belum_diverifikasi')->count(),
         ];
     }
 
