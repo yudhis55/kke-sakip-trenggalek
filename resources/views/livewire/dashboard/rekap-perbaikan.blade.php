@@ -34,6 +34,15 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="col-md-3">
+                                <select wire:model.live="filter_role" class="form-select form-select-sm">
+                                    <option value="sendiri">Penolakan Saya</option>
+                                    <option value="semua">Semua Penolakan</option>
+                                    <option value="verifikator">Dari Verifikator</option>
+                                    <option value="penjamin">Dari Evaluator</option>
+                                    <option value="penilai">Dari Penjamin Kualitas</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="table-responsive table-card">
                             <table class="table mb-0 align-middle">

@@ -20,6 +20,9 @@ class RekapPerbaikan extends Component
     public $selected_opd = null;
     public $searchOpd = '';
 
+    // Filter role penolak (untuk lihat perbaikan dari role lain)
+    public $filter_role = 'sendiri'; // 'sendiri' | 'semua' | 'verifikator' | 'penjamin' | 'penilai'
+
     // Session untuk redirect ke lembar kerja
     #[Session(key: 'tahun_session')]
     public $tahun_session;
@@ -53,6 +56,11 @@ class RekapPerbaikan extends Component
         // Reset pagination if needed
     }
 
+    public function updatedFilterRole()
+    {
+        // trigger re-render
+    }
+
     #[Computed]
     public function rekapPerbaikan()
     {
@@ -63,8 +71,26 @@ class RekapPerbaikan extends Component
             return collect();
         }
 
-        // Setiap user hanya melihat perbaikan dari dokumen yang mereka sendiri tolak
-        return PenilaianHistory::where('role_id', Auth::user()->role_id)
+        // Filter berdasarkan role penolak
+        $query = PenilaianHistory::query();
+
+        if ($this->filter_role === 'sendiri' || $this->filter_role === null) {
+            // Default: hanya penolakan dari diri sendiri
+            $query->where('role_id', Auth::user()->role_id);
+        } elseif ($this->filter_role === 'semua') {
+            // Lihat perbaikan dari semua role yang menolak
+            $verifikatorRoleIds = Role::where('jenis', 'verifikator')->pluck('id')->toArray();
+            $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
+            $penilaiRoleId = Role::where('jenis', 'penilai')->first()?->id;
+            $allRoleIds = array_merge($verifikatorRoleIds, array_filter([$penjaminRoleId, $penilaiRoleId]));
+            $query->whereIn('role_id', $allRoleIds);
+        } else {
+            // Filter spesifik per jenis role
+            $roleIds = Role::where('jenis', $this->filter_role)->pluck('id')->toArray();
+            $query->whereIn('role_id', $roleIds);
+        }
+
+        return $query
             ->when($this->selected_opd, function ($query) {
                 $query->where('opd_id', $this->selected_opd);
             })
@@ -95,7 +121,22 @@ class RekapPerbaikan extends Component
         }
 
         // Setiap user hanya hitung perbaikan dari dokumen yang mereka sendiri tolak
-        return PenilaianHistory::where('role_id', Auth::user()->role_id)
+        $query = PenilaianHistory::query();
+
+        if ($this->filter_role === 'sendiri' || $this->filter_role === null) {
+            $query->where('role_id', Auth::user()->role_id);
+        } elseif ($this->filter_role === 'semua') {
+            $verifikatorRoleIds = Role::where('jenis', 'verifikator')->pluck('id')->toArray();
+            $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
+            $penilaiRoleId = Role::where('jenis', 'penilai')->first()?->id;
+            $allRoleIds = array_merge($verifikatorRoleIds, array_filter([$penjaminRoleId, $penilaiRoleId]));
+            $query->whereIn('role_id', $allRoleIds);
+        } else {
+            $roleIds = Role::where('jenis', $this->filter_role)->pluck('id')->toArray();
+            $query->whereIn('role_id', $roleIds);
+        }
+
+        return $query
             ->when($this->selected_opd, function ($query) {
                 $query->where('opd_id', $this->selected_opd);
             })
