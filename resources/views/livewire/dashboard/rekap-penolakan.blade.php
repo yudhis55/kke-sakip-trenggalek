@@ -23,9 +23,9 @@
                     </div>
                     <div class="card-body">
                         @if (Auth::user()->role->jenis !== 'opd')
-                            <div class="row mb-3">
+                            <div class="row mb-4">
                                 <div class="col-md-4">
-                                    <select wire:model.live="selected_opd" class="form-select form-select-sm">
+                                    <select wire:model.live="selected_opd" class="form-select">
                                         <option value="">-- Semua OPD --</option>
                                         @foreach ($this->opdList as $opd)
                                             <option value="{{ $opd->id }}">{{ $opd->nama }}</option>

@@ -25,9 +25,9 @@
                         @endif
                     </div>
                     <div class="card-body">
-                        <div class="row mb-3 mt-2">
+                        <div class="row mb-4 mt-2">
                             <div class="col-md-4">
-                                <select wire:model.live="selected_opd" class="form-select form-select-sm">
+                                <select wire:model.live="selected_opd" class="form-select">
                                     <option value="">-- Semua OPD --</option>
                                     @foreach ($this->opdList as $opd)
                                         <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
@@ -35,7 +35,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <select wire:model.live="filter_role" class="form-select form-select-sm">
+                                <select wire:model.live="filter_role" class="form-select">
                                     @if (in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin']))
                                         <option value="sendiri">Penolakan Saya</option>
                                     @endif
