@@ -24,8 +24,8 @@ class RekapVerifikasi extends Component
     public function mount()
     {
         // Penilai default ke 'verifikator' (monitoring bawahan, bukan verifikasi sendiri)
-        if (Auth::user()->role->jenis === 'penilai') {
-            $this->filter_verifikasi_role = 'verifikator';
+        if (in_array(Auth::user()->role->jenis, ['penjamin', 'penilai'])) {
+            $this->filter_verifikasi_role = 'semua';
         }
     }
 
@@ -59,7 +59,9 @@ class RekapVerifikasi extends Component
 
         // Determine which role's verifikasi to check based on filter
         $targetRoleId = Auth::user()->role_id; // default: sendiri
-        if ($this->filter_verifikasi_role === 'verifikator') {
+        if ($this->filter_verifikasi_role === 'semua') {
+            $targetRoleId = null; // will be handled specially below
+        } elseif ($this->filter_verifikasi_role === 'verifikator') {
             $targetRoleId = Role::where('jenis', 'verifikator')->first()?->id;
         } elseif ($this->filter_verifikasi_role === 'penjamin') {
             $targetRoleId = Role::where('jenis', 'penjamin')->first()?->id;
@@ -74,7 +76,7 @@ class RekapVerifikasi extends Component
         }
 
         // Get all bukti_dukung assigned to this verifikator
-        $buktiDukungList = BuktiDukung::where('role_id', $verifikatorRoleId)
+        $buktiDukungList = BuktiDukung::when($verifikatorRoleId, fn($q) => $q->where('role_id', $verifikatorRoleId))
             ->when($this->tahun_session, fn($q) => $q->where('tahun_id', $this->tahun_session))
             ->with('kriteria_komponen')
             ->get();
@@ -110,7 +112,8 @@ class RekapVerifikasi extends Component
                 $verifPenilaian = Penilaian::where('kriteria_komponen_id', $p->kriteria_komponen_id)
                     ->where('opd_id', $p->opd_id)
                     ->where('bukti_dukung_id', $p->bukti_dukung_id)
-                    ->where('role_id', $verifikatorRoleId)
+                    ->when($verifikatorRoleId, fn($q) => $q->where('role_id', $verifikatorRoleId))
+                    ->when(!$verifikatorRoleId, fn($q) => $q->whereIn('role_id', Role::whereIn('jenis', ['verifikator', 'penjamin', 'penilai'])->pluck('id')))
                     ->whereNotNull('is_verified')
                     ->first();
 
