@@ -88,7 +88,19 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
+                                <label class="form-label">Verifikasi Dari</label>
+                                <select wire:model.live="filter_verifikasi_role" class="form-select">
+                                    <option value="sendiri">Verifikasi Saya</option>
+                                    @if (in_array(Auth::user()->role->jenis, ['penjamin', 'penilai']))
+                                        <option value="verifikator">Verifikasi Verifikator</option>
+                                    @endif
+                                    @if (Auth::user()->role->jenis === 'penilai')
+                                        <option value="penjamin">Verifikasi Evaluator</option>
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label for="filter-status" class="form-label">Filter Status</label>
                                 <select id="filter-status" class="form-select" wire:model.live="filter_status">
                                     <option value="semua">Semua</option>

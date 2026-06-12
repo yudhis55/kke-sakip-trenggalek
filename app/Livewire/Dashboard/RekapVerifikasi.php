@@ -19,6 +19,7 @@ class RekapVerifikasi extends Component
 
     public $selected_opd = null;
     public $filter_status = 'semua'; // 'semua' | 'sudah' | 'belum'
+    public $filter_verifikasi_role = 'sendiri'; // 'sendiri' | 'semua' | 'verifikator' | 'penjamin' | 'penilai'
 
     public function updatedSelectedOpd()
     {
@@ -26,6 +27,11 @@ class RekapVerifikasi extends Component
     }
 
     public function updatedFilterStatus()
+    {
+        // trigger re-render
+    }
+
+    public function updatedFilterVerifikasiRole()
     {
         // trigger re-render
     }
@@ -39,11 +45,20 @@ class RekapVerifikasi extends Component
     #[Computed]
     public function rekapVerifikasi()
     {
-        if (Auth::user()->role->jenis !== 'verifikator') {
+        if (!in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin', 'penilai'])) {
             return collect();
         }
 
-        $verifikatorRoleId = Auth::user()->role_id;
+        // Determine which role's verifikasi to check based on filter
+        $targetRoleId = Auth::user()->role_id; // default: sendiri
+        if ($this->filter_verifikasi_role === 'verifikator') {
+            $targetRoleId = Role::where('jenis', 'verifikator')->first()?->id;
+        } elseif ($this->filter_verifikasi_role === 'penjamin') {
+            $targetRoleId = Role::where('jenis', 'penjamin')->first()?->id;
+        } elseif ($this->filter_verifikasi_role === 'penilai') {
+            $targetRoleId = Role::where('jenis', 'penilai')->first()?->id;
+        }
+        $verifikatorRoleId = $targetRoleId;
         $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
 
         if (!$opdRoleId) {

@@ -367,7 +367,7 @@
                             </li>
                         @endif
 
-                        @if (Auth::user()->role->jenis === 'verifikator')
+                        @if (in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin', 'penilai']))
                             <li class="nav-item">
                                 @php
                                     $tahunSession = session('tahun_session');

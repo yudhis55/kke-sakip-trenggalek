@@ -39,8 +39,9 @@
                                     <option value="sendiri">Penolakan Saya</option>
                                     <option value="semua">Semua Penolakan</option>
                                     <option value="verifikator">Dari Verifikator</option>
-                                    <option value="penjamin">Dari Evaluator</option>
-                                    <option value="penilai">Dari Penjamin Kualitas</option>
+                                    @if (in_array(Auth::user()->role->jenis, ['penilai']))
+                                        <option value="penjamin">Dari Evaluator</option>
+                                    @endif
                                 </select>
                             </div>
                         </div>
