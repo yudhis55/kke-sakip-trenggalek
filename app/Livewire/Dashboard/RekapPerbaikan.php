@@ -35,6 +35,14 @@ class RekapPerbaikan extends Component
     #[Session(key: 'kriteria_komponen_session')]
     public $kriteria_komponen_session;
 
+    public function mount()
+    {
+        // Penilai default ke 'semua' karena tidak punya penolakan sendiri
+        if (Auth::user()->role->jenis === 'penilai') {
+            $this->filter_role = 'semua';
+        }
+    }
+
     public function showKeterangan($penilaianHistoryId)
     {
         $penilaianHistory = PenilaianHistory::with(['opd'])->find($penilaianHistoryId);

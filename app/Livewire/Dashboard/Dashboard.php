@@ -19,6 +19,16 @@ class Dashboard extends Component
 {
     #[Session(key: 'tahun_session')]
     public $tahun_session;
+
+    public function mount()
+    {
+        // Ensure tahun_session is set on first load (fixes 0 values after login)
+        if (!$this->tahun_session) {
+            $activeTahun = Tahun::where('is_active', true)->first();
+            $this->tahun_session = $activeTahun ? $activeTahun->id : Tahun::first()?->id;
+        }
+    }
+
     public function render()
     {
         return view('livewire.dashboard.dashboard');

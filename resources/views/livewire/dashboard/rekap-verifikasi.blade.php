@@ -81,7 +81,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="filter-opd" class="form-label">Filter OPD</label>
-                                <select id="filter-opd" class="form-select" wire:model.live="selected_opd">
+                                <select id="filter-opd" class="form-select form-select-sm" wire:model.live="selected_opd">
                                     <option value="">-- Semua OPD --</option>
                                     @foreach ($this->opdList as $opd)
                                         <option value="{{ $opd->id }}">{{ $opd->nama }}</option>
@@ -90,8 +90,10 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Verifikasi Dari</label>
-                                <select wire:model.live="filter_verifikasi_role" class="form-select">
-                                    <option value="sendiri">Verifikasi Saya</option>
+                                <select wire:model.live="filter_verifikasi_role" class="form-select form-select-sm">
+                                    @if (in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin']))
+                                        <option value="sendiri">Verifikasi Saya</option>
+                                    @endif
                                     @if (in_array(Auth::user()->role->jenis, ['penjamin', 'penilai']))
                                         <option value="verifikator">Verifikasi Verifikator</option>
                                     @endif
@@ -102,7 +104,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="filter-status" class="form-label">Filter Status</label>
-                                <select id="filter-status" class="form-select" wire:model.live="filter_status">
+                                <select id="filter-status" class="form-select form-select-sm" wire:model.live="filter_status">
                                     <option value="semua">Semua</option>
                                     <option value="sudah">Sudah Diverifikasi</option>
                                     <option value="belum">Belum Diverifikasi</option>

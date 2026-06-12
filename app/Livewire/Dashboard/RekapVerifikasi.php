@@ -21,6 +21,14 @@ class RekapVerifikasi extends Component
     public $filter_status = 'semua'; // 'semua' | 'sudah' | 'belum'
     public $filter_verifikasi_role = 'sendiri'; // 'sendiri' | 'semua' | 'verifikator' | 'penjamin' | 'penilai'
 
+    public function mount()
+    {
+        // Penilai default ke 'verifikator' (monitoring bawahan, bukan verifikasi sendiri)
+        if (Auth::user()->role->jenis === 'penilai') {
+            $this->filter_verifikasi_role = 'verifikator';
+        }
+    }
+
     public function updatedSelectedOpd()
     {
         // trigger re-render

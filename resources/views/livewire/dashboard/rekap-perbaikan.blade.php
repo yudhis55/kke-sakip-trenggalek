@@ -36,10 +36,12 @@
                             </div>
                             <div class="col-md-3">
                                 <select wire:model.live="filter_role" class="form-select form-select-sm">
-                                    <option value="sendiri">Penolakan Saya</option>
+                                    @if (in_array(Auth::user()->role->jenis, ['verifikator', 'penjamin']))
+                                        <option value="sendiri">Penolakan Saya</option>
+                                    @endif
                                     <option value="semua">Semua Penolakan</option>
                                     <option value="verifikator">Dari Verifikator</option>
-                                    @if (in_array(Auth::user()->role->jenis, ['penilai']))
+                                    @if (in_array(Auth::user()->role->jenis, ['penjamin', 'penilai']))
                                         <option value="penjamin">Dari Evaluator</option>
                                     @endif
                                 </select>
