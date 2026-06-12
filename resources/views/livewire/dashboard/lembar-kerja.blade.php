@@ -2404,6 +2404,12 @@
                                                                                             <i class="ri-delete-bin-line"></i>
                                                                                         </button>
                                                                                     @endif
+                                                                                @if (isset($file['page_number']) && $file['page_number'])
+                                                                                    <span class="badge bg-info ms-2">
+                                                                                        <i class="ri-bookmark-line me-1"></i>
+                                                                                        Hal. {{ $file['page_number'] }}
+                                                                                    </span>
+                                                                                @endif
                                                                                 </div>
                                                                             @endif
                                                                         </div>
@@ -2511,6 +2517,12 @@
                                                                                 title="Hapus file ini saja">
                                                                                 <i class="ri-delete-bin-line"></i>
                                                                             </button>
+                                                                        @endif
+                                                                        @if (isset($file['page_number']) && $file['page_number'])
+                                                                            <span class="badge bg-info ms-2">
+                                                                                <i class="ri-bookmark-line me-1"></i>
+                                                                                Hal. {{ $file['page_number'] }}
+                                                                            </span>
                                                                         @endif
                                                                     </div>
                                                                 @endif

@@ -1167,6 +1167,32 @@ class LembarKerja extends Component
             );
         }
 
+        // Also check kriteria-level rejections (bukti_dukung_id = NULL)
+        // Mode kriteria: verifikator rejects at kriteria level, but OPD uploads per bukti.
+        // When ANY bukti in this kriteria is re-uploaded, mark kriteria-level rejections as fixed.
+        if ($this->penilaianDiKriteria) {
+            $penolakanKriteria = PenilaianHistory::where('kriteria_komponen_id', $this->kriteria_komponen_session)
+                ->whereNull('bukti_dukung_id')
+                ->where('opd_id', $this->opd_session)
+                ->where('is_verified', 0)
+                ->whereNotNull('keterangan')
+                ->where('status_perbaikan', 'belum_diperbaiki')
+                ->get();
+
+            if ($penolakanKriteria->count() > 0) {
+                foreach ($penolakanKriteria as $penolakan) {
+                    $penolakan->update([
+                        'status_perbaikan' => 'sudah_diperbaiki',
+                        'tanggal_perbaikan' => now(),
+                    ]);
+                }
+
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->info(
+                    'Status ' . $penolakanKriteria->count() . ' penolakan kriteria diupdate menjadi "Sudah Diperbaiki".'
+                );
+            }
+        }
+
         flash()->use('theme.ruby')->option('position', 'bottom-right')->success('Bukti dukung berhasil diupload.');
 
         // Reset all form states after successful upload
