@@ -17,11 +17,48 @@ class EsakipSyncService
     protected $timeout;
     protected $retryCount;
 
+    /**
+     * Delay antar API request dalam milidetik.
+     * Default 0 (disabled) — aktifkan via setDelayEnabled(true) dari queue job.
+     */
+    protected int $delayBetweenRequests = 0;
+
     public function __construct()
     {
         $this->apiBaseUrl = config('esakip.api_base_url');
         $this->timeout = config('esakip.sync.timeout', 30);
         $this->retryCount = config('esakip.sync.retry_count', 3);
+    }
+
+    /**
+     * Aktifkan/nonaktifkan delay antar API request untuk rate limiting.
+     * Dipanggil oleh queue job sebelum processSync().
+     * Default disabled agar previewSync() tetap cepat.
+     */
+    public function setDelayEnabled(bool $enabled): void
+    {
+        $this->delayBetweenRequests = $enabled
+            ? config('esakip.sync.delay_between_requests', 500)
+            : 0;
+    }
+
+    /**
+     * Cek apakah delay sedang aktif.
+     */
+    public function isDelayEnabled(): bool
+    {
+        return $this->delayBetweenRequests > 0;
+    }
+
+    /**
+     * Terapkan rate limit delay sebelum API request.
+     * Hanya berlaku jika delay diaktifkan via setDelayEnabled(true).
+     */
+    protected function rateLimitDelay(): void
+    {
+        if ($this->delayBetweenRequests > 0) {
+            usleep($this->delayBetweenRequests * 1000);
+        }
     }
 
     /**
@@ -822,6 +859,8 @@ class EsakipSyncService
      */
     protected function fetchSharedDocumentsFromEsakip($documentType, $tahun)
     {
+        $this->rateLimitDelay();
+
         $endpoint = config('esakip.endpoints.document_base') . '/' . $documentType;
         $url = $this->apiBaseUrl . $endpoint;
 
@@ -915,6 +954,8 @@ class EsakipSyncService
      */
     protected function fetchDocumentsFromEsakipByOpdId($documentType, $tahun, $esakipOpdId)
     {
+        $this->rateLimitDelay();
+
         $endpoint = config('esakip.endpoints.document_base') . '/' . $documentType;
         $url = $this->apiBaseUrl . $endpoint;
 

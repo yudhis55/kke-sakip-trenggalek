@@ -206,8 +206,9 @@
                                     <i class="mdi mdi-close-circle me-2"></i>
                                     Batal
                                 </button>
-                                <button wire:click="processSync" class="btn btn-success" wire:loading.attr="disabled"
-                                    wire:loading.class="disabled">
+                                <button wire:click="processSync" class="btn btn-success"
+                                    wire:loading.attr="disabled" wire:loading.class="disabled"
+                                    @if ($syncing) disabled @endif>
                                     <span wire:loading.remove wire:target="processSync">
                                         <i class="mdi mdi-cloud-download me-2"></i>
                                         Proses Sinkronisasi
@@ -215,7 +216,7 @@
                                     <span wire:loading wire:target="processSync">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"
                                             aria-hidden="true"></span>
-                                        Memproses...
+                                        Menjadwalkan...
                                     </span>
                                 </button>
                             </div>
@@ -223,22 +224,44 @@
                     </div>
                 @endif
 
-                {{-- Progress Bar --}}
+                {{-- Progress Bar (Queue-based, real-time polling) --}}
                 @if ($syncing)
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="mb-3">
-                                <i class="mdi mdi-timer-sand me-2"></i>
-                                Sedang Sinkronisasi...
+                    <div class="card" wire:poll.3s="pollSyncProgress">
+                        <div class="card-header bg-warning bg-opacity-25">
+                            <h5 class="card-title mb-0">
+                                <span class="spinner-border spinner-border-sm me-2 text-warning" role="status"></span>
+                                Sinkronisasi Berjalan di Background
                             </h5>
-                            <div class="progress mb-2" style="height: 30px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                    role="progressbar" style="width: {{ $syncProgress }}%"
-                                    aria-valuenow="{{ $syncProgress }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                        <div class="card-body">
+                            <div class="progress mb-2" style="height: 28px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                    role="progressbar"
+                                    style="width: {{ $syncProgress }}%"
+                                    aria-valuenow="{{ $syncProgress }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100">
                                     {{ $syncProgress }}%
                                 </div>
                             </div>
-                            <div class="text-muted">{{ $syncMessage }}</div>
+                            <div class="text-muted small mb-3">{{ $syncMessage ?: 'Menunggu worker...' }}</div>
+
+                            <div class="alert alert-info py-2 mb-3">
+                                <i class="mdi mdi-information-outline me-1"></i>
+                                Sinkronisasi berjalan di background. Anda bisa meninggalkan halaman ini dan kembali nanti — progress akan tetap tersimpan.
+                            </div>
+
+                            <button wire:click="cancelSync" class="btn btn-danger btn-sm"
+                                wire:loading.attr="disabled" wire:target="cancelSync">
+                                <span wire:loading.remove wire:target="cancelSync">
+                                    <i class="mdi mdi-stop-circle me-1"></i>
+                                    Batalkan Sinkronisasi
+                                </span>
+                                <span wire:loading wire:target="cancelSync">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    Membatalkan...
+                                </span>
+                            </button>
                         </div>
                     </div>
                 @endif

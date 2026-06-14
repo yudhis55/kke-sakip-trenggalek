@@ -5,15 +5,18 @@ namespace App\Livewire\Dashboard;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Services\EsakipSyncService;
+use App\Jobs\ProcessEsakipSync;
 use App\Models\Tahun;
 use App\Models\Opd;
 use App\Models\RiwayatSinkron;
+use App\Models\SyncProgress;
 use Livewire\WithoutUrlPagination;
 
 class SinkronData extends Component
 {
     use WithPagination, WithoutUrlPagination;
     protected $paginationTheme = 'bootstrap';
+
     // Filter properties
     public $selected_tahun;
     public $selected_opd;
@@ -27,6 +30,10 @@ class SinkronData extends Component
     public $syncProgress = 0;
     public $syncMessage = '';
     public $syncResults = null;
+
+    // Queue-based sync tracking
+    public $activeSyncId = null;
+    public $pollProgress = null;
 
     // Lists
     public $tahunList = [];
@@ -45,6 +52,15 @@ class SinkronData extends Component
         $this->tahunList = Tahun::orderBy('tahun', 'desc')->get();
         $this->opdList = Opd::orderBy('nama')->get();
         $this->documentTypes = config('esakip.document_types');
+
+        // Cek apakah ada sync aktif saat halaman dimuat (misal setelah page refresh)
+        $activeSync = SyncProgress::active()->latest()->first();
+        if ($activeSync) {
+            $this->activeSyncId = $activeSync->id;
+            $this->syncing = true;
+            $this->syncProgress = $activeSync->getProgressPercentage();
+            $this->syncMessage = $activeSync->current_message ?? 'Sinkronisasi sedang berjalan...';
+        }
     }
 
     /**
@@ -76,7 +92,7 @@ class SinkronData extends Component
     }
 
     /**
-     * Proses sinkronisasi
+     * Dispatch sinkronisasi ke background queue job.
      */
     public function processSync()
     {
@@ -84,52 +100,115 @@ class SinkronData extends Component
             'selected_tahun' => 'required|exists:tahun,id',
         ]);
 
+        // Tolak jika sudah ada sync aktif secara global
+        if (SyncProgress::active()->exists()) {
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Sudah ada sinkronisasi yang sedang berjalan. Tunggu hingga selesai atau batalkan terlebih dahulu.');
+            return;
+        }
+
+        // Buat record progress
+        $syncProgress = SyncProgress::create([
+            'tahun_id' => $this->selected_tahun,
+            'opd_id' => $this->selected_opd ?: null,
+            'document_type' => $this->selected_document_type ?: null,
+            'status' => 'pending',
+            'dispatched_by' => auth()->id(),
+        ]);
+
+        // Dispatch ke queue
+        ProcessEsakipSync::dispatch(
+            $syncProgress->id,
+            (int) $this->selected_tahun,
+            $this->selected_opd ? (int) $this->selected_opd : null,
+            $this->selected_document_type ?: null,
+        );
+
+        $this->activeSyncId = $syncProgress->id;
         $this->syncing = true;
         $this->syncProgress = 0;
-        $this->syncMessage = 'Memulai sinkronisasi...';
+        $this->syncMessage = 'Sinkronisasi dijadwalkan, menunggu worker...';
         $this->syncResults = null;
         $this->previewData = null;
 
-        try {
-            $results = $this->esakipService->processSync(
-                $this->selected_tahun,
-                $this->selected_opd ?: null,
-                $this->selected_document_type ?: null,
-                function ($current, $total, $message) {
-                    $this->syncProgress = round(($current / $total) * 100);
-                    $this->syncMessage = $message;
-                    $this->dispatch('sync-progress', [
-                        'progress' => $this->syncProgress,
-                        'message' => $this->syncMessage,
-                    ]);
-                }
-            );
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->info('Sinkronisasi dimulai di background. Progress akan diperbarui otomatis.');
+    }
 
-            $this->syncResults = $results;
-            $this->syncProgress = 100;
-            $this->syncMessage = 'Sinkronisasi selesai!';
+    /**
+     * Poll progress dari database (dipanggil via wire:poll setiap 3 detik).
+     */
+    public function pollSyncProgress()
+    {
+        if (! $this->activeSyncId) {
+            // Cek apakah ada sync aktif yang mungkin dimulai dari tab lain
+            $activeSync = SyncProgress::active()->latest()->first();
+            if ($activeSync) {
+                $this->activeSyncId = $activeSync->id;
+                $this->syncing = true;
+            } else {
+                return;
+            }
+        }
 
-            // Flash message
-            if ($results['success_count'] > 0) {
+        $syncProgress = SyncProgress::find($this->activeSyncId);
+
+        if (! $syncProgress) {
+            $this->syncing = false;
+            $this->activeSyncId = null;
+            return;
+        }
+
+        $this->syncProgress = $syncProgress->getProgressPercentage();
+        $this->syncMessage = $syncProgress->current_message ?? '';
+
+        if ($syncProgress->status === 'completed') {
+            $this->syncing = false;
+            $this->syncResults = $syncProgress->results ?? [];
+            $this->activeSyncId = null;
+
+            $results = $this->syncResults;
+            if (! empty($results['success_count'])) {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->success("Berhasil sinkronisasi {$results['success_count']} dokumen");
             }
-            if ($results['no_document_count'] > 0) {
+            if (! empty($results['no_document_count'])) {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->warning("{$results['no_document_count']} dokumen tidak ditemukan di esakip");
             }
-            if ($results['failed_count'] > 0) {
+            if (! empty($results['failed_count'])) {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->error("{$results['failed_count']} dokumen gagal disinkronkan");
             }
-            if ($results['skipped_count'] > 0) {
+            if (! empty($results['skipped_count'])) {
                 flash()->use('theme.ruby')->option('position', 'bottom-right')->info("{$results['skipped_count']} dokumen dilewati (sudah ada upload manual)");
             }
-        } catch (\Exception $e) {
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal sinkronisasi: ' . $e->getMessage());
-            $this->syncResults = [
-                'error' => $e->getMessage(),
-            ];
-        } finally {
+        } elseif ($syncProgress->status === 'failed') {
             $this->syncing = false;
+            $this->activeSyncId = null;
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Sinkronisasi gagal: ' . ($syncProgress->error_message ?? 'Unknown error'));
+        } elseif ($syncProgress->status === 'cancelled') {
+            $this->syncing = false;
+            $this->activeSyncId = null;
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->info('Sinkronisasi dibatalkan.');
         }
+    }
+
+    /**
+     * Batalkan sync yang sedang berjalan.
+     */
+    public function cancelSync()
+    {
+        if (! $this->activeSyncId) {
+            return;
+        }
+
+        $syncProgress = SyncProgress::find($this->activeSyncId);
+
+        if ($syncProgress && $syncProgress->isRunning()) {
+            $syncProgress->markAsCancelled();
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->info('Sinkronisasi dibatalkan. Proses akan berhenti pada langkah berikutnya.');
+        }
+
+        $this->syncing = false;
+        $this->activeSyncId = null;
+        $this->syncMessage = '';
+        $this->syncProgress = 0;
     }
 
     /**
@@ -141,12 +220,14 @@ class SinkronData extends Component
             'selected_tahun',
             'selected_opd',
             'selected_document_type',
-            // 'sync_mode',
             'previewData',
             'syncResults',
             'syncProgress',
             'syncMessage',
+            'activeSyncId',
+            'pollProgress',
         ]);
+        $this->syncing = false;
     }
 
     /**
