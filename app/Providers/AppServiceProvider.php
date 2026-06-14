@@ -23,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production' || true) {
             URL::forceScheme('https');
         }
+
+        if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'sie-akip.trenggalekkab.go.id') {
+            config(['app.url' => 'https://sie-akip.trenggalekkab.go.id']);
+        }
     }
 }
