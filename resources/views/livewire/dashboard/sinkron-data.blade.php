@@ -109,6 +109,22 @@
                     </div>
                 </div>
 
+                {{-- Preview Loading (Queue-based) --}}
+                @if ($previewing)
+                    <div class="card" wire:poll.2s="pollPreviewProgress">
+                        <div class="card-body text-center py-5">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5 class="text-muted">Memuat Preview Sinkronisasi...</h5>
+                            <p class="text-muted small mb-3">Preview sedang diproses di background. Mohon tunggu sebentar.</p>
+                            <button wire:click="cancelPreview" class="btn btn-outline-danger btn-sm">
+                                <i class="mdi mdi-close-circle me-1"></i> Batalkan
+                            </button>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Preview Results --}}
                 @if ($previewData && !$syncing)
                     <div class="card">

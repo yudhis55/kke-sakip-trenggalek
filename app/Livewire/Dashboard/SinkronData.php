@@ -34,6 +34,8 @@ class SinkronData extends Component
     // Queue-based sync tracking
     public $activeSyncId = null;
     public $pollProgress = null;
+    public $previewing = false;
+    public $activePreviewId = null;
 
     // Preview pagination
     public $previewPage = 1;
@@ -68,7 +70,7 @@ class SinkronData extends Component
     }
 
     /**
-     * Preview dokumen yang akan di-sync
+     * Dispatch preview ke background queue job.
      */
     public function previewSync()
     {
@@ -78,22 +80,77 @@ class SinkronData extends Component
             'selected_tahun.required' => 'Tahun harus dipilih',
         ]);
 
-        try {
-            $this->previewPage = 1;
-            $this->previewData = $this->esakipService->previewSync(
-                $this->selected_tahun,
-                $this->selected_opd ?: null,
-                $this->selected_document_type ?: null
-            );
+        // Buat record progress untuk preview
+        $syncProgress = SyncProgress::create([
+            'tahun_id' => $this->selected_tahun,
+            'opd_id' => $this->selected_opd ?: null,
+            'document_type' => '__preview__',
+            'status' => 'pending',
+            'dispatched_by' => auth()->id(),
+        ]);
 
-            if ($this->previewData['document_count'] === 0) {
-                flash()->use('theme.ruby')->option('position', 'bottom-right')->warning('Tidak ada dokumen yang ditemukan untuk filter yang dipilih. Coba filter lain atau periksa data di E-SAKIP.');
-                // Tetap tampilkan preview dengan info kosong, jangan set null
-            }
-        } catch (\Exception $e) {
-            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal preview: ' . $e->getMessage());
-            $this->previewData = null;
+        PreviewEsakipSync::dispatch(
+            $syncProgress->id,
+            (int) $this->selected_tahun,
+            $this->selected_opd ? (int) $this->selected_opd : null,
+            $this->selected_document_type ?: null,
+        );
+
+        $this->activePreviewId = $syncProgress->id;
+        $this->previewing = true;
+        $this->previewData = null;
+        $this->previewPage = 1;
+
+        flash()->use('theme.ruby')->option('position', 'bottom-right')->info('Preview sedang diproses di background...');
+    }
+
+    /**
+     * Poll preview progress (dipanggil via wire:poll saat previewing).
+     */
+    public function pollPreviewProgress()
+    {
+        if (! $this->activePreviewId) {
+            $this->previewing = false;
+            return;
         }
+
+        $syncProgress = SyncProgress::find($this->activePreviewId);
+
+        if (! $syncProgress) {
+            $this->previewing = false;
+            $this->activePreviewId = null;
+            return;
+        }
+
+        if ($syncProgress->status === 'completed') {
+            $this->previewing = false;
+            $this->activePreviewId = null;
+            $this->previewData = $syncProgress->results;
+
+            if (empty($this->previewData['document_count'])) {
+                flash()->use('theme.ruby')->option('position', 'bottom-right')->warning('Tidak ada dokumen yang ditemukan untuk filter yang dipilih.');
+            }
+        } elseif ($syncProgress->status === 'failed') {
+            $this->previewing = false;
+            $this->activePreviewId = null;
+            flash()->use('theme.ruby')->option('position', 'bottom-right')->error('Gagal preview: ' . ($syncProgress->error_message ?? 'Unknown error'));
+        }
+    }
+
+    /**
+     * Batalkan preview yang sedang berjalan.
+     */
+    public function cancelPreview()
+    {
+        if ($this->activePreviewId) {
+            $syncProgress = SyncProgress::find($this->activePreviewId);
+            if ($syncProgress && $syncProgress->isRunning()) {
+                $syncProgress->markAsCancelled();
+            }
+        }
+
+        $this->previewing = false;
+        $this->activePreviewId = null;
     }
 
     /**
@@ -277,6 +334,8 @@ class SinkronData extends Component
             'activeSyncId',
             'pollProgress',
             'previewPage',
+            'previewing',
+            'activePreviewId',
         ]);
         $this->syncing = false;
     }
