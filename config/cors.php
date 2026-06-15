@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://sie-akip.trenggalekkab.go.id', 'https://app.repomedia.me'],
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
