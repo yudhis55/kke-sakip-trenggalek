@@ -35,6 +35,10 @@ class SinkronData extends Component
     public $activeSyncId = null;
     public $pollProgress = null;
 
+    // Preview pagination
+    public $previewPage = 1;
+    public $previewPerPage = 20;
+
     // Lists
     public $tahunList = [];
     public $opdList = [];
@@ -75,6 +79,7 @@ class SinkronData extends Component
         ]);
 
         try {
+            $this->previewPage = 1;
             $this->previewData = $this->esakipService->previewSync(
                 $this->selected_tahun,
                 $this->selected_opd ?: null,
@@ -212,6 +217,51 @@ class SinkronData extends Component
     }
 
     /**
+     * Get paginated preview documents.
+     */
+    public function getPreviewDocumentsProperty()
+    {
+        if (!$this->previewData || empty($this->previewData['documents'])) {
+            return collect([]);
+        }
+
+        return collect($this->previewData['documents'])
+            ->slice(($this->previewPage - 1) * $this->previewPerPage, $this->previewPerPage)
+            ->values();
+    }
+
+    /**
+     * Get total pages for preview pagination.
+     */
+    public function getPreviewTotalPagesProperty(): int
+    {
+        if (!$this->previewData || empty($this->previewData['documents'])) {
+            return 1;
+        }
+
+        return (int) ceil(count($this->previewData['documents']) / $this->previewPerPage);
+    }
+
+    public function previousPreviewPage()
+    {
+        if ($this->previewPage > 1) {
+            $this->previewPage--;
+        }
+    }
+
+    public function nextPreviewPage()
+    {
+        if ($this->previewPage < $this->previewTotalPages) {
+            $this->previewPage++;
+        }
+    }
+
+    public function goToPreviewPage($page)
+    {
+        $this->previewPage = max(1, min($page, $this->previewTotalPages));
+    }
+
+        /**
      * Reset form
      */
     public function resetForm()
@@ -226,6 +276,7 @@ class SinkronData extends Component
             'syncMessage',
             'activeSyncId',
             'pollProgress',
+            'previewPage',
         ]);
         $this->syncing = false;
     }

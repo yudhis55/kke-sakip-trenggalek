@@ -171,7 +171,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($previewData['documents'] as $doc)
+                                        @forelse($this->previewDocuments as $doc)
                                             <tr>
                                                 <td>
                                                     <span class="badge bg-primary">{{ $doc['type'] }}</span>
@@ -199,6 +199,39 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            {{-- Preview Pagination --}}
+                            @if(count($previewData['documents']) > $previewPerPage)
+                                <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+                                    <div class="text-muted small">
+                                        Menampilkan {{ ($previewPage - 1) * $previewPerPage + 1 }}-{{ min($previewPage * $previewPerPage, count($previewData['documents'])) }}
+                                        dari {{ count($previewData['documents']) }} dokumen
+                                    </div>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item {{ $previewPage <= 1 ? 'disabled' : '' }}">
+                                                <a class="page-link" href="#" wire:click.prevent="previousPreviewPage">
+                                                    <i class="mdi mdi-chevron-left"></i>
+                                                </a>
+                                            </li>
+                                            @for($i = 1; $i <= $this->previewTotalPages; $i++)
+                                                @if($this->previewTotalPages <= 7 || abs($i - $previewPage) <= 2 || $i == 1 || $i == $this->previewTotalPages)
+                                                    <li class="page-item {{ $i == $previewPage ? 'active' : '' }}">
+                                                        <a class="page-link" href="#" wire:click.prevent="goToPreviewPage({{ $i }})">{{ $i }}</a>
+                                                    </li>
+                                                @elseif(abs($i - $previewPage) == 3)
+                                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                                @endif
+                                            @endfor
+                                            <li class="page-item {{ $previewPage >= $this->previewTotalPages ? 'disabled' : '' }}">
+                                                <a class="page-link" href="#" wire:click.prevent="nextPreviewPage">
+                                                    <i class="mdi mdi-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            @endif
 
                             <div class="d-flex gap-2 mt-3">
                                 <button wire:click="$set('previewData', null)" class="btn btn-secondary"
