@@ -84,8 +84,8 @@ return [
         'retry_delay' => env('ESAKIP_SYNC_RETRY_DELAY', 2),
 
         // Delay antar API request untuk rate limiting (dalam milidetik)
-        // Diaktifkan oleh queue job via setDelayEnabled(true). Default 500ms.
-        'delay_between_requests' => env('ESAKIP_SYNC_DELAY', 500),
+        // Diaktifkan oleh queue job via setDelayEnabled(true). Default 100ms.
+        'delay_between_requests' => env('ESAKIP_SYNC_DELAY', 100),
 
         // Mode fuzzy matching untuk nama dokumen
         'fuzzy_match' => env('ESAKIP_FUZZY_MATCH', true),

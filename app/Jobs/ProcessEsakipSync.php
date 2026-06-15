@@ -23,9 +23,9 @@ class ProcessEsakipSync implements ShouldQueue
     public int $tries = 1;
 
     /**
-     * Timeout job dalam detik (1 jam — margin besar di atas estimasi ~16 menit).
+     * Timeout job dalam detik (2 jam — margin besar di atas estimasi ~16 menit).
      */
-    public int $timeout = 3600;
+    public int $timeout = 7200;
 
     public function __construct(
         public readonly int $syncProgressId,
