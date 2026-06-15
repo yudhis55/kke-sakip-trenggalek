@@ -273,7 +273,7 @@
                                     {{-- <span class="badge badge-soft-danger fs-12"><i
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>5.02 %</span> --}}
                                 </div>
-                                <p class="text-muted text-truncate mb-0">Tahun 2025</p>
+                                <p class="text-muted text-truncate mb-0">Tahun {{ $this->tahun?->tahun ?? '-' }}</p>
                             </div>
                         </div>
                     </div><!-- end card body -->
@@ -296,7 +296,7 @@
                                     {{-- <span class="badge badge-soft-success fs-12"><i
                                             class="ri-arrow-up-s-line fs-13 align-middle me-1"></i>3.58 %</span> --}}
                                 </div>
-                                <p class="text-muted mb-0">Tahun 2025</p>
+                                <p class="text-muted mb-0">Tahun {{ $this->tahun?->tahun ?? '-' }}</p>
                             </div>
                         </div>
                     </div><!-- end card body -->
@@ -321,7 +321,7 @@
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
                                         %</span> --}}
                                 </div>
-                                <p class="text-muted text-truncate mb-0">Tahun 2025
+                                <p class="text-muted text-truncate mb-0">Tahun {{ $this->tahun?->tahun ?? '-' }}
                                 </p>
                             </div>
                         </div>
@@ -347,7 +347,7 @@
                                             class="ri-arrow-down-s-line fs-13 align-middle me-1"></i>10.35
                                         %</span> --}}
                                 </div>
-                                <p class="text-muted text-truncate mb-0">Tahun 2025
+                                <p class="text-muted text-truncate mb-0">Tahun {{ $this->tahun?->tahun ?? '-' }}
                                 </p>
                             </div>
                         </div>
@@ -380,15 +380,15 @@
                                 </div>
                                 <p class="text-muted text-truncate mb-0">
                                     @if (Auth::user()->role->jenis == 'opd')
-                                        Penilaian Mandiri (Tahun 2025)
+                                        Penilaian Mandiri (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'verifikator')
-                                        Telah Diverifikasi (Tahun 2025)
+                                        Telah Diverifikasi (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'penjamin')
-                                        Penjaminan Kualitas (Tahun 2025)
+                                        Penjaminan Kualitas (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'penilai')
-                                        Tahun 2025
+                                        Tahun {{ $this->tahun?->tahun ?? '-' }}
                                     @else
-                                        Tahun 2025
+                                        Tahun {{ $this->tahun?->tahun ?? '-' }}
                                     @endif
                                 </p>
                             </div>
@@ -418,15 +418,15 @@
                                 </div>
                                 <p class="text-muted text-truncate mb-0">
                                     @if (Auth::user()->role->jenis == 'opd')
-                                        Penilaian Mandiri (Tahun 2025)
+                                        Penilaian Mandiri (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'verifikator')
-                                        Telah Diverifikasi (Tahun 2025)
+                                        Telah Diverifikasi (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'penjamin')
-                                        Penjaminan Kualitas (Tahun 2025)
+                                        Penjaminan Kualitas (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @elseif (Auth::user()->role->jenis == 'penilai')
-                                        Evaluasi (Tahun 2025)
+                                        Evaluasi (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @else
-                                        Total Dinilai OPD (Tahun 2025)
+                                        Total Dinilai OPD (Tahun {{ $this->tahun?->tahun ?? '-' }})
                                     @endif
                                 </p>
                             </div>
