@@ -1,25 +1,36 @@
 {
-    "active_plan":  "C:\\laragon\\www\\kke-sakip\\.sisyphus\\plans\\ux-bug-fix-round-2.md",
-    "started_at":  "2026-05-25T03:56:00.130Z",
-    "session_ids":  [
-                        "ses_1a81f08dfffen4IU7Plb4WFsRF"
-                    ],
-    "session_origins":  {
-                            "ses_1a81f08dfffen4IU7Plb4WFsRF":  "direct"
-                        },
-    "plan_name":  "ux-bug-fix-round-2",
-    "agent":  "atlas",
-    "task_sessions":  {
-                          "todo:1":  {
-                                         "task_key":  "todo:1",
-                                         "task_label":  "1",
-                                         "task_title":  "Fix navigation state reset + add wire:key (BUG-C)",
-                                         "session_id":  "ses_1a2b8626effeecNnSuWLwgb2w5",
-                                         "agent":  "Sisyphus-Junior",
-                                         "category":  "unspecified-high",
-                                         "updated_at":  "2026-05-25T03:59:05.492Z"
-                                     }
-                      },
-    "completed_at":  "2026-05-25T04:05:01.546Z",
-    "status":  "completed"
+  "active_plan": "C:\\laragon\\www\\kke-sakip\\.sisyphus\\plans\\queue-based-sync.md",
+  "started_at": "2026-06-14T12:53:35.217Z",
+  "session_ids": [
+    "ses_1a81f08dfffen4IU7Plb4WFsRF",
+    "ses_139b5ddaaffeYktv6HxQ1NHG87",
+    "ses_139b56c5cffetXEpsmd1WKOGoN"
+  ],
+  "plan_name": "queue-based-sync",
+  "agent": "atlas",
+  "status": "in_progress",
+  "session_origins": {
+    "ses_1a81f08dfffen4IU7Plb4WFsRF": "direct",
+    "ses_139b5ddaaffeYktv6HxQ1NHG87": "appended",
+    "ses_139b56c5cffetXEpsmd1WKOGoN": "appended"
+  },
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Migration + Model: sync_progress table",
+      "session_id": "ses_139bf941fffemeydBbw4lAQfuD",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-14T13:09:36.138Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_139b5ddaaffeYktv6HxQ1NHG87",
+      "agent": "oracle",
+      "updated_at": "2026-06-14T13:25:33.979Z"
+    }
+  }
 }
