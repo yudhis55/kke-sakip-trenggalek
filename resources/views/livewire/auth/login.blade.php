@@ -12,7 +12,7 @@
             <div class="p-3 p-sm-5">
                 <div class="mt-5 mt-sm-0">
                     <h5 class="text-primary fw-bold">Selamat Datang Kembali !</h5>
-                    <p class="text-muted">Masuk untuk melanjutkan ke Dashboard KKE SAKIP</p>
+                    <p class="text-muted">Masuk untuk melanjutkan ke Dashboard SIE-AKIP</p>
                 </div>
                 <div class="mt-4">
                     <form wire:submit="login">
@@ -55,8 +55,8 @@
             <dotlottie-wc src="https://lottie.host/df3bd7c4-a39b-4937-9ed7-c0b83f3ff6f7/INn471r6gz.lottie"
                 style="width:100%;height:400px" autoplay loop></dotlottie-wc>
             <div class="col-sm-12 my-3 align-self-center text-center">
-                <h1 class="text-dark fw-bold align-self-center">Dashboard KKE SAKIP</h1>
-                <p class="text-dark pt-2">Kertas Kerja Evaluasi Sistem Akuntabilitas Kinerja Instansi Pemerintah</p>
+                <h1 class="text-dark fw-bold align-self-center">Dashboard SIE-AKIP</h1>
+                <p class="text-dark pt-2">Sistem Informasi Evaluasi Akuntabilitas Kinerja Instansi Pemerintah</p>
             </div>
         </div>
     </div>
