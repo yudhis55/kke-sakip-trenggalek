@@ -607,11 +607,11 @@ class LembarKerja extends Component
 
         $buktiDukungList = $query->get();
 
-        // Get role IDs
+        // Get role IDs (OPD, Penjamin, Penilai adalah single-tier)
         $opdRoleId = Role::where('jenis', 'opd')->first()?->id;
-        $verifikatorRoleId = Role::where('jenis', 'verifikator')->first()?->id;
         $penjaminRoleId = Role::where('jenis', 'penjamin')->first()?->id;
         $penilaiRoleId = Role::where('jenis', 'penilai')->first()?->id;
+        // NOTE: Verifikator adalah multi-tier (3 jenis), jadi role_id per bukti berbeda - lihat $bukti->role_id
 
         foreach ($buktiDukungList as $bukti) {
             // Penilaian OPD
@@ -622,11 +622,12 @@ class LembarKerja extends Component
                 ->with('tingkatan_nilai')
                 ->first();
 
-            // Penilaian Verifikator
+            // Penilaian Verifikator - gunakan $bukti->role_id (bukan hardcoded)
+            // Karena ada 3 jenis verifikator (bappeda, bag_organisasi, inspektorat)
             $penilaianVerifikator = Penilaian::where('kriteria_komponen_id', $this->kriteria_komponen_session)
                 ->where('bukti_dukung_id', $bukti->id)
                 ->where('opd_id', $this->opd_session)
-                ->where('role_id', $verifikatorRoleId)
+                ->where('role_id', $bukti->role_id)
                 ->first();
 
             // Penilaian Penjamin
@@ -1816,7 +1817,22 @@ class LembarKerja extends Component
 
         // Pisahkan berdasarkan role
         $opdPenilaian = $penilaianList->where('role.jenis', 'opd')->first();
-        $verifikatorPenilaian = $penilaianList->where('role.jenis', 'verifikator')->first();
+
+        // Support 3 jenis verifikator (bappeda, bag_organisasi, inspektorat)
+        // Filter penilaian dari ANY verifikator, lalu check status verifikasi
+        $verifikatorPenilaianList = $penilaianList->where('role.jenis', 'verifikator');
+        $verifikatorPenilaian = null;
+        if ($verifikatorPenilaianList->isNotEmpty()) {
+            // Jika ada penilaian yang is_verified=1, tampilkan yang itu
+            $verifiedPenilaian = $verifikatorPenilaianList->where('is_verified', 1)->first();
+            if ($verifiedPenilaian) {
+                $verifikatorPenilaian = $verifiedPenilaian;
+            } else {
+                // Jika tidak ada yang verified, tampilkan penilaian pertama (untuk status ditolak/pending)
+                $verifikatorPenilaian = $verifikatorPenilaianList->first();
+            }
+        }
+
         $penjaminPenilaian = $penilaianList->where('role.jenis', 'penjamin')->first();
         $penilaiPenilaian = $penilaianList->where('role.jenis', 'penilai')->first();
 

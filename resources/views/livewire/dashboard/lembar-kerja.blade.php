@@ -949,10 +949,8 @@
                                                         <td>
                                                             @if ($lembar_kerja->penilaian_di === 'kriteria')
                                                                 @php
-                                                                    $verifikatorRoleId = \App\Models\Role::where(
-                                                                        'jenis',
-                                                                        'verifikator',
-                                                                    )->first()?->id;
+                                                                    // Support 3 jenis verifikator (bappeda, bag_organisasi, inspektorat)
+                                                                    // Gunakan whereHas untuk check penilaian dari ANY verifikator (jangan hardcode first())
                                                                     $isVerifiedByVerifikator = \App\Models\Penilaian::where(
                                                                         'opd_id',
                                                                         $this->opd_session,
@@ -961,8 +959,10 @@
                                                                             'kriteria_komponen_id',
                                                                             $lembar_kerja->id,
                                                                         )
-                                                                        ->where('role_id', $verifikatorRoleId)
-                                                                        ->where('is_verified', 1) // Cek dengan integer
+                                                                        ->whereHas('role', function ($q) {
+                                                                            $q->where('jenis', 'verifikator');
+                                                                        })
+                                                                        ->where('is_verified', 1)
                                                                         ->exists();
                                                                 @endphp
                                                                 @if ($isVerifiedByVerifikator)
@@ -1909,30 +1909,38 @@
                                                                                                     Buka di Tab Baru
                                                                                                 </a>
                                                                                                 @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
-                                                                                                    <button type="button"
+                                                                                                    <button
+                                                                                                        type="button"
                                                                                                         wire:click="openSetPageNumberModalForBukti({{ $bukti_dukung_id }}, {{ $fileIndex }})"
                                                                                                         class="btn btn-sm btn-outline-secondary me-2"
                                                                                                         data-bs-toggle="modal"
                                                                                                         data-bs-target="#modalSetPageNumber">
-                                                                                                        <i class="ri-bookmark-line me-1"></i>
+                                                                                                        <i
+                                                                                                            class="ri-bookmark-line me-1"></i>
                                                                                                         @if (isset($file['page_number']) && $file['page_number'])
-                                                                                                            Hal. {{ $file['page_number'] }}
+                                                                                                            Hal.
+                                                                                                            {{ $file['page_number'] }}
                                                                                                         @else
                                                                                                             Set Halaman
                                                                                                         @endif
                                                                                                     </button>
-                                                                                                    <button type="button"
+                                                                                                    <button
+                                                                                                        type="button"
                                                                                                         wire:click="deleteFileByIndexForBukti({{ $bukti_dukung_id }}, {{ $fileIndex }})"
                                                                                                         wire:confirm="Yakin ingin menghapus file ini saja?"
                                                                                                         class="btn btn-sm btn-outline-danger me-2"
                                                                                                         title="Hapus file ini">
-                                                                                                        <i class="ri-delete-bin-line"></i>
+                                                                                                        <i
+                                                                                                            class="ri-delete-bin-line"></i>
                                                                                                     </button>
                                                                                                 @endif
                                                                                                 @if (isset($file['page_number']) && $file['page_number'])
-                                                                                                    <span class="badge bg-info">
-                                                                                                        <i class="ri-bookmark-line me-1"></i>
-                                                                                                        Hal. {{ $file['page_number'] }}
+                                                                                                    <span
+                                                                                                        class="badge bg-info">
+                                                                                                        <i
+                                                                                                            class="ri-bookmark-line me-1"></i>
+                                                                                                        Hal.
+                                                                                                        {{ $file['page_number'] }}
                                                                                                     </span>
                                                                                                 @endif
                                                                                             </div>
@@ -2012,22 +2020,24 @@
                                                             @foreach ($semuaBuktiDukung as $buktiItem)
                                                                 <div
                                                                     class="mb-4 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
-                                                                     <div class="d-flex justify-content-between align-items-center mb-3">
-                                                                         <h6 class="fw-bold text-primary mb-0">
-                                                                             <i
-                                                                                 class="ri-folder-2-line me-1"></i>{{ $buktiItem->nama }}
-                                                                         </h6>
-                                                                         @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
-                                                                             <button type="button"
-                                                                                 wire:click="deleteAllFilesForBukti({{ $buktiItem->id }})"
-                                                                                 wire:confirm="Yakin ingin menghapus semua dokumen pada bukti dukung ini?"
-                                                                                 class="btn btn-sm btn-outline-danger"
-                                                                                 title="Hapus semua dokumen">
-                                                                                 <i class="ri-delete-bin-line me-1"></i>Hapus
-                                                                                 Semua
-                                                                             </button>
-                                                                         @endif
-                                                                     </div>
+                                                                    <div
+                                                                        class="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h6 class="fw-bold text-primary mb-0">
+                                                                            <i
+                                                                                class="ri-folder-2-line me-1"></i>{{ $buktiItem->nama }}
+                                                                        </h6>
+                                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                            <button type="button"
+                                                                                wire:click="deleteAllFilesForBukti({{ $buktiItem->id }})"
+                                                                                wire:confirm="Yakin ingin menghapus semua dokumen pada bukti dukung ini?"
+                                                                                class="btn btn-sm btn-outline-danger"
+                                                                                title="Hapus semua dokumen">
+                                                                                <i
+                                                                                    class="ri-delete-bin-line me-1"></i>Hapus
+                                                                                Semua
+                                                                            </button>
+                                                                        @endif
+                                                                    </div>
                                                                     @if ($buktiItem->penilaian_opd && $buktiItem->penilaian_opd->link_file)
                                                                         @php
                                                                             // link_file sudah auto-decoded karena cast di model
@@ -2113,36 +2123,40 @@
                                                                                             @if (str_ends_with(strtolower($fileName), '.pdf'))
                                                                                                 <div
                                                                                                     class="d-flex align-items-center mb-2">
-                                                                                             <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
-                                                                                                 target="_blank"
-                                                                                                 class="btn btn-sm btn-primary me-2">
-                                                                                                 <i
-                                                                                                     class="ri-external-link-line me-1"></i>
-                                                                                                 Buka di Tab Baru
-                                                                                             </a>
-                                                                                             @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
-                                                                                                 <button type="button"
-                                                                                                     wire:click="openSetPageNumberModalForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
-                                                                                                     class="btn btn-sm btn-outline-secondary me-2"
-                                                                                                     data-bs-toggle="modal"
-                                                                                                     data-bs-target="#modalSetPageNumber">
-                                                                                                     <i class="ri-bookmark-line me-1"></i>
-                                                                                                     @if (isset($file['page_number']) && $file['page_number'])
-                                                                                                         Hal.
-                                                                                                         {{ $file['page_number'] }}
-                                                                                                     @else
-                                                                                                         Set
-                                                                                                         Halaman
-                                                                                                     @endif
-                                                                                                 </button>
-                                                                                                 <button type="button"
-                                                                                                     wire:click="deleteFileByIndexForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
-                                                                                                     wire:confirm="Yakin ingin menghapus file ini saja?"
-                                                                                                     class="btn btn-sm btn-outline-danger"
-                                                                                                     title="Hapus file ini">
-                                                                                                     <i class="ri-delete-bin-line"></i>
-                                                                                                 </button>
-                                                                                             @endif
+                                                                                                    <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
+                                                                                                        target="_blank"
+                                                                                                        class="btn btn-sm btn-primary me-2">
+                                                                                                        <i
+                                                                                                            class="ri-external-link-line me-1"></i>
+                                                                                                        Buka di Tab Baru
+                                                                                                    </a>
+                                                                                                    @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            wire:click="openSetPageNumberModalForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
+                                                                                                            class="btn btn-sm btn-outline-secondary me-2"
+                                                                                                            data-bs-toggle="modal"
+                                                                                                            data-bs-target="#modalSetPageNumber">
+                                                                                                            <i
+                                                                                                                class="ri-bookmark-line me-1"></i>
+                                                                                                            @if (isset($file['page_number']) && $file['page_number'])
+                                                                                                                Hal.
+                                                                                                                {{ $file['page_number'] }}
+                                                                                                            @else
+                                                                                                                Set
+                                                                                                                Halaman
+                                                                                                            @endif
+                                                                                                        </button>
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            wire:click="deleteFileByIndexForBukti({{ $buktiItem->id }}, {{ $fileIndex }})"
+                                                                                                            wire:confirm="Yakin ingin menghapus file ini saja?"
+                                                                                                            class="btn btn-sm btn-outline-danger"
+                                                                                                            title="Hapus file ini">
+                                                                                                            <i
+                                                                                                                class="ri-delete-bin-line"></i>
+                                                                                                        </button>
+                                                                                                    @endif
                                                                                                     @if (isset($file['page_number']) && $file['page_number'])
                                                                                                         <span
                                                                                                             class="badge bg-info">
@@ -2177,7 +2191,7 @@
                                                                                     @if (str_ends_with(strtolower($fileName), '.pdf'))
                                                                                         <div
                                                                                             class="d-flex align-items-center mb-2">
-                                                                                             <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
+                                                                                            <a href="{{ $fileUrl }}{{ isset($file['page_number']) && $file['page_number'] ? '#page=' . $file['page_number'] : '' }}"
                                                                                                 target="_blank"
                                                                                                 class="btn btn-sm btn-primary me-2">
                                                                                                 <i
@@ -2190,9 +2204,11 @@
                                                                                                     class="btn btn-sm btn-outline-secondary me-2"
                                                                                                     data-bs-toggle="modal"
                                                                                                     data-bs-target="#modalSetPageNumber">
-                                                                                                    <i class="ri-bookmark-line me-1"></i>
+                                                                                                    <i
+                                                                                                        class="ri-bookmark-line me-1"></i>
                                                                                                     @if (isset($file['page_number']) && $file['page_number'])
-                                                                                                        Hal. {{ $file['page_number'] }}
+                                                                                                        Hal.
+                                                                                                        {{ $file['page_number'] }}
                                                                                                     @else
                                                                                                         Set Halaman
                                                                                                     @endif
@@ -2202,7 +2218,8 @@
                                                                                                     wire:confirm="Yakin ingin menghapus file ini saja?"
                                                                                                     class="btn btn-sm btn-outline-danger"
                                                                                                     title="Hapus file ini">
-                                                                                                    <i class="ri-delete-bin-line"></i>
+                                                                                                    <i
+                                                                                                        class="ri-delete-bin-line"></i>
                                                                                                 </button>
                                                                                             @endif
                                                                                             @if (isset($file['page_number']) && $file['page_number'])
@@ -2419,15 +2436,19 @@
                                                                                             wire:confirm="Yakin ingin menghapus file '{{ $fileName }}' saja? Tindakan ini tidak dapat dibatalkan."
                                                                                             class="btn btn-sm btn-outline-danger"
                                                                                             title="Hapus file ini saja">
-                                                                                            <i class="ri-delete-bin-line"></i>
+                                                                                            <i
+                                                                                                class="ri-delete-bin-line"></i>
                                                                                         </button>
                                                                                     @endif
-                                                                                @if (isset($file['page_number']) && $file['page_number'])
-                                                                                    <span class="badge bg-info ms-2">
-                                                                                        <i class="ri-bookmark-line me-1"></i>
-                                                                                        Hal. {{ $file['page_number'] }}
-                                                                                    </span>
-                                                                                @endif
+                                                                                    @if (isset($file['page_number']) && $file['page_number'])
+                                                                                        <span
+                                                                                            class="badge bg-info ms-2">
+                                                                                            <i
+                                                                                                class="ri-bookmark-line me-1"></i>
+                                                                                            Hal.
+                                                                                            {{ $file['page_number'] }}
+                                                                                        </span>
+                                                                                    @endif
                                                                                 </div>
                                                                             @endif
                                                                         </div>
@@ -2515,7 +2536,7 @@
                                                                             <i class="ri-external-link-line me-1"></i>
                                                                             Buka di Tab Baru
                                                                         </a>
-                                                                                @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
+                                                                        @if (in_array(Auth::user()->role->jenis, ['admin', 'opd']) && $this->dalamRentangAkses)
                                                                             <button type="button"
                                                                                 wire:click="openSetPageNumberModal(0)"
                                                                                 class="btn btn-sm btn-outline-secondary"
