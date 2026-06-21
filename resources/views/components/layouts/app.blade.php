@@ -114,7 +114,14 @@
         }
     </style>
 
-    @filepondScripts
+    {{-- @filepondScripts --}}
+    {{-- fix cors: --}}
+    <link rel="stylesheet"
+        href="/vendor/livewire-filepond/filepond.css?v={{ \Composer\InstalledVersions::getPrettyVersion('spatie/livewire-filepond') }}">
+
+    <script type="module"
+        src="/vendor/livewire-filepond/filepond.js?v={{ \Composer\InstalledVersions::getPrettyVersion('spatie/livewire-filepond') }}"
+        data-navigate-once defer data-navigate-track></script>
 </head>
 
 <body>
@@ -345,7 +352,10 @@
                                     $tahunSession = session('tahun_session');
 
                                     // Setiap user hanya hitung perbaikan dari dokumen yang mereka sendiri tolak
-                                    $badgeCountPerbaikan = \App\Models\PenilaianHistory::where('role_id', Auth::user()->role_id)
+                                    $badgeCountPerbaikan = \App\Models\PenilaianHistory::where(
+                                        'role_id',
+                                        Auth::user()->role_id,
+                                    )
                                         ->where('is_verified', 0)
                                         ->whereNotNull('keterangan')
                                         ->where('status_perbaikan', 'sudah_diperbaiki')
@@ -384,7 +394,10 @@
                                             ->whereNotExists(function ($q) use ($verifikatorRoleId) {
                                                 $q->select(\Illuminate\Support\Facades\DB::raw(1))
                                                     ->from('penilaian as p_verif')
-                                                    ->whereColumn('p_verif.kriteria_komponen_id', 'p_opd.kriteria_komponen_id')
+                                                    ->whereColumn(
+                                                        'p_verif.kriteria_komponen_id',
+                                                        'p_opd.kriteria_komponen_id',
+                                                    )
                                                     ->whereColumn('p_verif.opd_id', 'p_opd.opd_id')
                                                     ->whereColumn('p_verif.bukti_dukung_id', 'p_opd.bukti_dukung_id')
                                                     ->where('p_verif.role_id', $verifikatorRoleId)
@@ -398,7 +411,8 @@
                                     <i class="mdi mdi-checkbox-multiple-marked-circle-outline"></i>
                                     <span data-key="t-layouts">Rekap Verifikasi</span>
                                     @if ($belumDiverifikasi > 0)
-                                        <span class="badge bg-warning rounded-pill ms-1">{{ $belumDiverifikasi }}</span>
+                                        <span
+                                            class="badge bg-warning rounded-pill ms-1">{{ $belumDiverifikasi }}</span>
                                     @endif
                                 </a>
                             </li>
